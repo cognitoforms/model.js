@@ -1,4 +1,7 @@
+import resolve from 'rollup-plugin-node-resolve';
+import commonjs from 'rollup-plugin-commonjs';
 import typescript from 'rollup-plugin-typescript';
+import { uglify } from 'rollup-plugin-uglify';
 import pkg from './package.json';
 
 const version = process.env.VERSION || pkg.version
@@ -11,17 +14,36 @@ const banner =
   ' */'
 
 export default [
-	// UMD (for browsers) build
+	// UMD (for browsers) build (development)
 	{
 		input: 'src/main.ts',
 		output: {
 			name: 'exomodel',
-			file: pkg.browser,
+			file: pkg.browser.development,
 			format: 'umd',
 			banner: banner
 		},
 		plugins: [
-			typescript()
+			resolve(), // so Rollup can find NPM dependencies
+			commonjs(), // so Rollup can convert NPM dependencies to ES modules
+			typescript() // so Rollup can compile TypeScript files to JavaScript
+		]
+	},
+
+	// UMD (for browsers) build (production)
+	{
+		input: 'src/main.ts',
+		output: {
+			name: 'exomodel',
+			file: pkg.browser.production,
+			format: 'umd',
+			banner: banner
+		},
+		plugins: [
+			resolve(), // so Rollup can find NPM dependencies
+			commonjs(), // so Rollup can convert NPM dependencies to ES modules
+			typescript(), // so Rollup can compile TypeScript files to JavaScript
+			uglify() // so Rollup can minify the output
 		]
 	},
 
@@ -34,7 +56,9 @@ export default [
 			{ file: pkg.module, format: 'es', banner: banner }
 		],
 		plugins: [
-			typescript()
+			resolve(), // so Rollup can find NPM dependencies
+			commonjs(), // so Rollup can convert NPM dependencies to ES modules
+			typescript() // so Rollup can compile TypeScript files to JavaScript
 		]
 	}
 ];
