@@ -11,7 +11,7 @@ export function initializeProperty(obj: Entity, property: Property, val: any, fo
         return;
     }
 
-    target[property._fieldName] = val;
+    Object.defineProperty(target, property._fieldName, { value: val, writable: true });
 
     // TODO
     // target.meta.pendingInit(property, false);
@@ -19,8 +19,7 @@ export function initializeProperty(obj: Entity, property: Property, val: any, fo
     if (val instanceof Array) {
         val = new ObservableList(obj, val);
 
-        property.changed.subscribe((sender, args) => {
-            console.log(arguments);
+        property.changed.subscribe(function (sender, args) {
 			/*
 			var changes = args.get_changes();
 

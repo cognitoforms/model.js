@@ -1,4 +1,3 @@
-
 export function ensureNamespace(name, parentNamespace) {
     var result, nsTokens, target = parentNamespace;
 

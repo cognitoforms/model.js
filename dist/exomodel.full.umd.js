@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.1
+ * ExoModel.js v0.0.2
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -847,13 +847,12 @@
 	    if (curVal !== undefined && !(force === undefined || force)) {
 	        return;
 	    }
-	    target[property._fieldName] = val;
+	    Object.defineProperty(target, property._fieldName, { value: val, writable: true });
 	    // TODO
 	    // target.meta.pendingInit(property, false);
 	    if (val instanceof Array) {
 	        val = new ObservableList(obj, val);
 	        property.changed.subscribe(function (sender, args) {
-	            console.log(arguments);
 	            /*
 	            var changes = args.get_changes();
 
@@ -1048,13 +1047,6 @@
 	        enumerable: true,
 	        configurable: true
 	    });
-	    Object.defineProperty(Property.prototype, "fieldName", {
-	        get: function () {
-	            return this._fieldName;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
 	    Property.prototype.getPath = function () {
 	        return this.isStatic ? (this.containingType.fullName + "." + this.name) : this.name;
 	    };
@@ -1136,9 +1128,11 @@
 	}());
 
 	var ObjectMeta = /** @class */ (function () {
-	    function ObjectMeta(type, entity) {
-	        this.type = type;
-	        this.entity = entity;
+	    function ObjectMeta(type, entity, id, isNew) {
+	        Object.defineProperty(this, "type", { value: type, writable: false, enumerable: true, configurable: false });
+	        Object.defineProperty(this, "entity", { value: entity, writable: false, enumerable: true, configurable: false });
+	        Object.defineProperty(this, "id", { value: id, writable: true, enumerable: true, configurable: false });
+	        Object.defineProperty(this, "isNew", { value: isNew, writable: true, enumerable: true, configurable: false });
 	    }
 	    ObjectMeta.prototype.destroy = function () {
 	        this.type.unregister(this.entity);
@@ -1271,34 +1265,34 @@
 	        if (arguments.length === 2) {
 	            validateId(this, id);
 	        }
-	        obj.meta = new ObjectMeta(this, obj);
+	        var isNew;
 	        if (!id) {
 	            id = this.newId();
-	            obj.meta.isNew = true;
+	            isNew = true;
 	        }
+	        Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), writable: false });
 	        var key = id.toLowerCase();
-	        obj.meta.id = id;
-	        // TODO
-	        // Observer.makeObservable(obj);
 	        for (var propertyName in this._properties) {
-	            var property = this._properties[propertyName];
-	            if (property.isStatic) {
-	                // for static properties add property to javascript type
-	                Object.defineProperty(obj, name, {
-	                    get: makePropertyGetter(property, getPropertyValue, true),
-	                    set: makePropertySetter(property, setPropertyValue, true),
-	                    enumerable: true,
-	                    configurable: false
-	                });
-	            }
-	            else {
-	                // for instance properties add member to all instances of this javascript type
-	                Object.defineProperty(obj, name, {
-	                    get: makePropertyGetter(property, getPropertyValue, true),
-	                    set: makePropertySetter(property, setPropertyValue, true),
-	                    enumerable: true,
-	                    configurable: false
-	                });
+	            if (this._properties.hasOwnProperty(propertyName)) {
+	                var property = this._properties[propertyName];
+	                if (property.isStatic) {
+	                    // for static properties add property to javascript type
+	                    Object.defineProperty(obj, property.name, {
+	                        get: makePropertyGetter(property, getPropertyValue, true),
+	                        set: makePropertySetter(property, setPropertyValue, true),
+	                        configurable: true,
+	                        enumerable: true
+	                    });
+	                }
+	                else {
+	                    // for instance properties add member to all instances of this javascript type
+	                    Object.defineProperty(obj, property.name, {
+	                        get: makePropertyGetter(property, getPropertyValue, true),
+	                        set: makePropertySetter(property, setPropertyValue, true),
+	                        configurable: true,
+	                        enumerable: true
+	                    });
+	                }
 	            }
 	        }
 	        for (var t = this; t; t = t.baseType) {
@@ -1412,8 +1406,8 @@
 	                Object.defineProperty(entity, name, {
 	                    get: makePropertyGetter(property, getPropertyValue, true),
 	                    set: makePropertySetter(property, setPropertyValue, true),
-	                    enumerable: true,
-	                    configurable: false
+	                    configurable: true,
+	                    enumerable: true
 	                });
 	            }
 	            else {
@@ -1421,8 +1415,8 @@
 	                Object.defineProperty(entity, name, {
 	                    get: makePropertyGetter(property, getPropertyValue, true),
 	                    set: makePropertySetter(property, setPropertyValue, true),
-	                    enumerable: true,
-	                    configurable: false
+	                    configurable: true,
+	                    enumerable: true
 	                });
 	            }
 	        });

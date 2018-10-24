@@ -92,10 +92,6 @@ export class Property {
 		return this._origin ? this._origin : this.containingType.origin;
 	}
 
-	get fieldName(): string {
-		return this._fieldName;
-	}
-
 	getPath(): string {
 		return this.isStatic ? (this.containingType.fullName + "." + this.name) : this.name;
 	}

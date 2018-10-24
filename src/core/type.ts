@@ -183,38 +183,37 @@ export class Type {
 			validateId(this, id);
 		}
 
-		obj.meta = new ObjectMeta(this, obj);
+		var isNew: boolean;
 
 		if (!id) {
 			id = this.newId();
-			obj.meta.isNew = true;
+			isNew = true;
 		}
+
+		Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), writable: false });
 
 		var key = id.toLowerCase();
 
-		obj.meta.id = id;
-
-		// TODO
-		// Observer.makeObservable(obj);
-
 		for (var propertyName in this._properties) {
-			var property = this._properties[propertyName];
-			if (property.isStatic) {
-				// for static properties add property to javascript type
-				Object.defineProperty(obj, name, {
-					get: makePropertyGetter(property, getPropertyValue, true),
-					set: makePropertySetter(property, setPropertyValue, true),
-					enumerable: true,
-					configurable: false
-				});
-			} else {
-				// for instance properties add member to all instances of this javascript type
-				Object.defineProperty(obj, name, {
-					get: makePropertyGetter(property, getPropertyValue, true),
-					set: makePropertySetter(property, setPropertyValue, true),
-					enumerable: true,
-					configurable: false
-				});
+			if (this._properties.hasOwnProperty(propertyName)) {
+				var property = this._properties[propertyName];
+				if (property.isStatic) {
+					// for static properties add property to javascript type
+					Object.defineProperty(obj, property.name, {
+						get: makePropertyGetter(property, getPropertyValue, true),
+						set: makePropertySetter(property, setPropertyValue, true),
+						configurable: true,
+						enumerable: true
+					});
+				} else {
+					// for instance properties add member to all instances of this javascript type
+					Object.defineProperty(obj, property.name, {
+						get: makePropertyGetter(property, getPropertyValue, true),
+						set: makePropertySetter(property, setPropertyValue, true),
+						configurable: true,
+						enumerable: true
+					});
+				}
 			}
 		}
 
@@ -355,8 +354,8 @@ export class Type {
 				Object.defineProperty(entity, name, {
 					get: makePropertyGetter(property, getPropertyValue, true),
 					set: makePropertySetter(property, setPropertyValue, true),
-					enumerable: true,
-					configurable: false
+					configurable: true,
+					enumerable: true
 				});
 			}
 			else {
@@ -364,8 +363,8 @@ export class Type {
 				Object.defineProperty(entity, name, {
 					get: makePropertyGetter(property, getPropertyValue, true),
 					set: makePropertySetter(property, setPropertyValue, true),
-					enumerable: true,
-					configurable: false
+					configurable: true,
+					enumerable: true
 				})
 			}
 		});
