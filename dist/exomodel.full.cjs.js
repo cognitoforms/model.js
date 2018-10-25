@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.2
+ * ExoModel.js v0.0.3
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -690,7 +690,7 @@ function navigateAttribute(obj, attr, callback, thisPtr) {
     }
 }
 var funcRegex = /function\s*([\w_\$]*)/i;
-function parseFunctionName(f) {
+function parseFunctionName$1(f) {
     var result = funcRegex.exec(f);
     return result ? (result[1] || "{anonymous}") : "{anonymous}";
 }
@@ -710,6 +710,67 @@ function getDefaultValue(isList, jstype) {
     if (jstype === Number)
         return 0;
     return null;
+}
+function randomInteger(min, max) {
+    if (min === void 0) { min = 0; }
+    if (max === void 0) { max = 9; }
+    var rand = Math.random();
+    return rand === 1 ? max : Math.floor(rand * (max - min + 1)) + min;
+}
+function randomText(len, includeDigits) {
+    if (includeDigits === void 0) { includeDigits = false; }
+    var result = "";
+    for (var i = 0; i < len; i++) {
+        var min = 0;
+        var max = includeDigits ? 35 : 25;
+        var rand = randomInteger(min, max);
+        var charCode;
+        if (rand <= 25) {
+            // Alpha: add 97 for 'a'
+            charCode = rand + 97;
+        }
+        else {
+            // Num: start at 0 and add 48 for 0
+            charCode = (rand - 26) + 48;
+        }
+        result += String.fromCharCode(charCode);
+    }
+    return result;
+}
+
+var internalState = {
+    secrets: {}
+};
+function createSecret(key, len, includeLetters, includeDigits, prefix) {
+    if (len === void 0) { len = 8; }
+    if (includeLetters === void 0) { includeLetters = true; }
+    if (includeDigits === void 0) { includeDigits = false; }
+    if (prefix === void 0) { prefix = null; }
+    var secret;
+    if (internalState.secrets.hasOwnProperty(key)) {
+        // TODO: warn?
+        secret = internalState.secrets[key];
+        if (secret.indexOf(prefix) !== 0) ;
+    }
+    else {
+        var rand = "";
+        if (includeLetters) {
+            rand = randomText(len, includeDigits);
+        }
+        else if (includeDigits) {
+            for (var i = 0; i < len; i++) {
+                rand += randomInteger(0, 9).toString();
+            }
+        }
+        if (prefix) {
+            secret = prefix + rand;
+        }
+        else {
+            secret = rand;
+        }
+        internalState.secrets[key] = secret;
+    }
+    return secret;
 }
 
 /*! *****************************************************************************
@@ -838,147 +899,7 @@ var ObservableList = /** @class */ (function (_super) {
     return ObservableList;
 }(Array));
 
-function initializeProperty(obj, property, val, force) {
-    if (force === void 0) { force = false; }
-    var target = (property.isStatic ? property.containingType.jstype : obj);
-    var curVal = target[property._fieldName];
-    if (curVal !== undefined && !(force === undefined || force)) {
-        return;
-    }
-    Object.defineProperty(target, property._fieldName, { value: val, writable: true });
-    // TODO
-    // target.meta.pendingInit(property, false);
-    if (val instanceof Array) {
-        val = new ObservableList(obj, val);
-        property.changed.subscribe(function (sender, args) {
-            /*
-            var changes = args.get_changes();
-
-            // Don't raise the change event unless there is actually a change to the collection
-            if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
-                // NOTE: property change should be broadcast before rules are run so that if
-                // any rule causes a roundtrip to the server these changes will be available
-                // TODO
-                // property.containingType.model.notifyListChanged(target, property, changes);
-
-                // NOTE: oldValue is not currently implemented for lists
-                // TODO
-                // property._raiseEvent("changed", [target, { property: property, newValue: val, oldValue: undefined, changes: changes, collectionChanged: true }]);
-
-                // TODO
-                // Observer.raisePropertyChanged(target, property._name);
-            }
-            */
-        });
-        // Override the default toString on arrays so that we get a comma-delimited list
-        // TODO
-        // val.toString = Property$_arrayToString.bind(val);
-    }
-    // TODO
-    // Observer.raisePropertyChanged(target, property._name);
-}
-function ensurePropertyInited(obj, property) {
-    // Determine if the property has been initialized with a value
-    // and initialize the property if necessary
-    if (!obj.hasOwnProperty(property._fieldName)) {
-        // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
-        // TODO
-        // if (!property.isCalculated) {
-        initializeProperty(obj, property, getDefaultValue(property.isList, property.jstype));
-        // }
-        // TODO
-        // Mark the property as pending initialization
-        // obj.meta.pendingInit(property, true);
-    }
-}
-function getPropertyValue(property, obj) {
-    // Ensure that the property has an initial (possibly default) value
-    ensurePropertyInited(obj, property);
-    /*
-    // Raise get events
-    var getEvent = property._getEventHandler("get");
-    if (getEvent && !getEvent.isEmpty()) {
-        getEvent(obj, { property: property, value: obj[property._fieldName] });
-    }
-    */
-    // Return the property value
-    return obj[property._fieldName];
-}
-function setPropertyValue(property, obj, val, skipTypeCheck, additionalArgs) {
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
-    if (additionalArgs === void 0) { additionalArgs = null; }
-    // Ensure that the property has an initial (possibly default) value
-    ensurePropertyInited(obj, property);
-    if (!property.canSetValue(obj, val)) {
-        throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.get_fullName() : parseFunctionName(property.jstype)) + " was expected.");
-    }
-    var old = obj[property._fieldName];
-    // Update lists as batch remove/add operations
-    if (property.isList) {
-        // TODO
-        // old.beginUpdate();
-        // update(old, val);
-        // old.endUpdate();
-        throw new Error("Property set on lists is not permitted");
-    }
-    else {
-        // compare values so that this check is accurate for primitives
-        var oldValue = (old === undefined || old === null) ? old : old.valueOf();
-        var newValue = (val === undefined || val === null) ? val : val.valueOf();
-        // Do nothing if the new value is the same as the old value. Account for NaN numbers, which are
-        // not equivalent (even to themselves). Although isNaN returns true for non-Number values, we won't
-        // get this far for Number properties unless the value is actually of type Number (a number or NaN).
-        if (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue))) {
-            // Set the backing field value
-            obj[property._fieldName] = val;
-            // TODO
-            // obj.meta.pendingInit(property, false);
-            // Do not raise change if the property has not been initialized. 
-            if (old !== undefined) {
-                var eventArgs = { property: property, newValue: val, oldValue: old };
-                if (additionalArgs) {
-                    for (var arg in additionalArgs) {
-                        if (additionalArgs.hasOwnProperty(arg)) {
-                            eventArgs[arg] = additionalArgs[arg];
-                        }
-                    }
-                }
-                property._changedEvent.dispatch(obj, eventArgs);
-            }
-        }
-    }
-}
-function makePropertyGetter(property, getter, skipTypeCheck) {
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
-    return function () {
-        // ensure the property is initialized
-        var result = getter(property, this, skipTypeCheck);
-        /*
-        // TODO
-        // ensure the property is initialized
-        if (result === undefined || (property.isList && LazyLoader.isRegistered(result))) {
-            throw new Error(
-                `Property ${property.containingType.fullName}.${} is not initialized.  Make sure instances are loaded before accessing property values.  ${}|${}`);
-                ,
-                property.name,
-                this.meta.type.fullName(),
-                this.meta.id
-            ));
-        }
-        */
-        // return the result
-        return result;
-    };
-}
-function makePropertySetter(prop, setter, skipTypeCheck) {
-    // TODO
-    // setter.__notifies = true;
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
-    return function (val) {
-        setter(prop, this, val, skipTypeCheck);
-    };
-}
-
+var fieldNamePrefix = createSecret('fieldNamePrefix', 3, false, true, "_fN");
 var Property = /** @class */ (function () {
     function Property(containingType, name, jstype, isList, isStatic) {
         this.containingType = containingType;
@@ -987,7 +908,6 @@ var Property = /** @class */ (function () {
         this.isList = isList === true;
         this.isStatic = isStatic === true;
         this._changedEvent = new dist_1$1();
-        this._fieldName = "_" + name;
         if (containingType.originForNewProperties) {
             this._origin = containingType.originForNewProperties;
         }
@@ -999,6 +919,13 @@ var Property = /** @class */ (function () {
         }
         */
     }
+    Object.defineProperty(Property.prototype, "fieldName", {
+        get: function () {
+            return fieldNamePrefix + "_" + this.name;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Property.prototype, "changed", {
         get: function () {
             return this._changedEvent.asEvent();
@@ -1124,6 +1051,158 @@ var Property = /** @class */ (function () {
     };
     return Property;
 }());
+function Property$_generateProperty(property) {
+    var type = property.containingType;
+    // for static properties add property to javascript type
+    // for instance properties add member to all instances of this javascript type via the prototype
+    var target = property.isStatic ? type.jstype : type.jstype.prototype;
+    Object.defineProperty(target, property.name, {
+        configurable: false,
+        enumerable: true,
+        get: Property$_makeGetter(property, Property$_getter, true),
+        set: Property$_makeSetter(property, Property$_setter)
+    });
+}
+function Property$_init(obj, property, val, force) {
+    if (force === void 0) { force = false; }
+    var target = (property.isStatic ? property.containingType.jstype : obj);
+    var curVal = target[property.fieldName];
+    if (curVal !== undefined && !(force === undefined || force)) {
+        return;
+    }
+    Object.defineProperty(target, property.fieldName, { value: val, writable: true });
+    // TODO
+    // target.meta.pendingInit(property, false);
+    if (val instanceof Array) {
+        val = new ObservableList(obj, val);
+        property.changed.subscribe(function (sender, args) {
+            /*
+            var changes = args.get_changes();
+
+            // Don't raise the change event unless there is actually a change to the collection
+            if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
+                // NOTE: property change should be broadcast before rules are run so that if
+                // any rule causes a roundtrip to the server these changes will be available
+                // TODO
+                // property.containingType.model.notifyListChanged(target, property, changes);
+
+                // NOTE: oldValue is not currently implemented for lists
+                // TODO
+                // property._raiseEvent("changed", [target, { property: property, newValue: val, oldValue: undefined, changes: changes, collectionChanged: true }]);
+
+                // TODO
+                // Observer.raisePropertyChanged(target, property._name);
+            }
+            */
+        });
+        // Override the default toString on arrays so that we get a comma-delimited list
+        // TODO
+        // val.toString = Property$_arrayToString.bind(val);
+    }
+    // TODO
+    // Observer.raisePropertyChanged(target, property._name);
+}
+function Property$_ensureInited(property, obj) {
+    // Determine if the property has been initialized with a value
+    // and initialize the property if necessary
+    if (!obj.hasOwnProperty(property.fieldName)) {
+        // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
+        // TODO
+        // if (!property.isCalculated) {
+        Property$_init(obj, property, getDefaultValue(property.isList, property.jstype));
+        // }
+        // TODO
+        // Mark the property as pending initialization
+        // obj.meta.pendingInit(property, true);
+    }
+}
+function Property$_getter(property, obj) {
+    // Ensure that the property has an initial (possibly default) value
+    Property$_ensureInited(property, obj);
+    /*
+    // Raise get events
+    var getEvent = property._getEventHandler("get");
+    if (getEvent && !getEvent.isEmpty()) {
+        getEvent(obj, { property: property, value: obj[property.fieldName] });
+    }
+    */
+    // Return the property value
+    return obj[property.fieldName];
+}
+function Property$_setter(property, obj, val, skipTypeCheck, additionalArgs) {
+    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+    if (additionalArgs === void 0) { additionalArgs = null; }
+    // Ensure that the property has an initial (possibly default) value
+    Property$_ensureInited(property, obj);
+    if (!property.canSetValue(obj, val)) {
+        throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.get_fullName() : parseFunctionName(property.jstype)) + " was expected.");
+    }
+    var old = obj[property.fieldName];
+    // Update lists as batch remove/add operations
+    if (property.isList) {
+        // TODO
+        // old.beginUpdate();
+        // update(old, val);
+        // old.endUpdate();
+        throw new Error("Property set on lists is not permitted");
+    }
+    else {
+        // compare values so that this check is accurate for primitives
+        var oldValue = (old === undefined || old === null) ? old : old.valueOf();
+        var newValue = (val === undefined || val === null) ? val : val.valueOf();
+        // Do nothing if the new value is the same as the old value. Account for NaN numbers, which are
+        // not equivalent (even to themselves). Although isNaN returns true for non-Number values, we won't
+        // get this far for Number properties unless the value is actually of type Number (a number or NaN).
+        if (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue))) {
+            // Set the backing field value
+            obj[property.fieldName] = val;
+            // TODO
+            // obj.meta.pendingInit(property, false);
+            // Do not raise change if the property has not been initialized. 
+            if (old !== undefined) {
+                var eventArgs = { property: property, newValue: val, oldValue: old };
+                if (additionalArgs) {
+                    for (var arg in additionalArgs) {
+                        if (additionalArgs.hasOwnProperty(arg)) {
+                            eventArgs[arg] = additionalArgs[arg];
+                        }
+                    }
+                }
+                property._changedEvent.dispatch(obj, eventArgs);
+            }
+        }
+    }
+}
+function Property$_makeGetter(property, getter, skipTypeCheck) {
+    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+    return function () {
+        // ensure the property is initialized
+        var result = getter(property, this, skipTypeCheck);
+        /*
+        // TODO
+        // ensure the property is initialized
+        if (result === undefined || (property.isList && LazyLoader.isRegistered(result))) {
+            throw new Error(
+                `Property ${property.containingType.fullName}.${} is not initialized.  Make sure instances are loaded before accessing property values.  ${}|${}`);
+                ,
+                property.name,
+                this.meta.type.fullName(),
+                this.meta.id
+            ));
+        }
+        */
+        // return the result
+        return result;
+    };
+}
+function Property$_makeSetter(prop, setter, skipTypeCheck) {
+    // TODO
+    // setter.__notifies = true;
+    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+    return function (val) {
+        setter(prop, this, val, skipTypeCheck);
+    };
+}
 
 var ObjectMeta = /** @class */ (function () {
     function ObjectMeta(type, entity, id, isNew) {
@@ -1139,7 +1218,6 @@ var ObjectMeta = /** @class */ (function () {
 }());
 
 var newIdPrefix = "+c";
-var disableConstruction = false;
 var Type = /** @class */ (function () {
     function Type(model, name, baseType, origin) {
         this.model = model;
@@ -1166,7 +1244,7 @@ var Type = /** @class */ (function () {
         }
         // the final name to use is the last token
         var finalName = token;
-        jstype = generateClass(this);
+        jstype = Type$_generateClass(this);
         this._jstype = jstype;
         // If the namespace already contains a type with this name, append a '$' to the name
         if (!namespaceObj[finalName]) {
@@ -1202,7 +1280,7 @@ var Type = /** @class */ (function () {
         disableConstruction = false;
         this._jstype.prototype.constructor = this._jstype;
         // helpers
-        jstype.meta = this;
+        Object.defineProperty(jstype, "meta", { value: this, configurable: false, enumerable: false, writable: false });
         // Register the type with the model
         model._types[name] = this;
         // TODO
@@ -1261,38 +1339,15 @@ var Type = /** @class */ (function () {
         if (suppressModelEvent === void 0) { suppressModelEvent = false; }
         // register is called with single argument from default constructor
         if (arguments.length === 2) {
-            validateId(this, id);
+            Type$_validateId(this, id);
         }
         var isNew;
         if (!id) {
             id = this.newId();
             isNew = true;
         }
-        Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), writable: false });
+        Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), configurable: false, enumerable: false, writable: false });
         var key = id.toLowerCase();
-        for (var propertyName in this._properties) {
-            if (this._properties.hasOwnProperty(propertyName)) {
-                var property = this._properties[propertyName];
-                if (property.isStatic) {
-                    // for static properties add property to javascript type
-                    Object.defineProperty(obj, property.name, {
-                        get: makePropertyGetter(property, getPropertyValue, true),
-                        set: makePropertySetter(property, setPropertyValue, true),
-                        configurable: true,
-                        enumerable: true
-                    });
-                }
-                else {
-                    // for instance properties add member to all instances of this javascript type
-                    Object.defineProperty(obj, property.name, {
-                        get: makePropertyGetter(property, getPropertyValue, true),
-                        set: makePropertySetter(property, setPropertyValue, true),
-                        configurable: true,
-                        enumerable: true
-                    });
-                }
-            }
-        }
         for (var t = this; t; t = t.baseType) {
             if (t._pool.hasOwnProperty(key)) {
                 throw new Error("Object \"" + this.fullName + "|" + id + "\" has already been registered.");
@@ -1307,8 +1362,8 @@ var Type = /** @class */ (function () {
         }
     };
     Type.prototype.changeObjectId = function (oldId, newId) {
-        validateId(this, oldId);
-        validateId(this, newId);
+        Type$_validateId(this, oldId);
+        Type$_validateId(this, newId);
         var oldKey = oldId.toLowerCase();
         var newKey = newId.toLowerCase();
         var obj = this._pool[oldKey];
@@ -1398,26 +1453,7 @@ var Type = /** @class */ (function () {
         }
         genPropertyShortcut(this, true);
         */
-        this.known().forEach(function (entity) {
-            if (property.isStatic) {
-                // for static properties add property to javascript type
-                Object.defineProperty(entity, name, {
-                    get: makePropertyGetter(property, getPropertyValue, true),
-                    set: makePropertySetter(property, setPropertyValue, true),
-                    configurable: true,
-                    enumerable: true
-                });
-            }
-            else {
-                // for instance properties add member to all instances of this javascript type
-                Object.defineProperty(entity, name, {
-                    get: makePropertyGetter(property, getPropertyValue, true),
-                    set: makePropertySetter(property, setPropertyValue, true),
-                    configurable: true,
-                    enumerable: true
-                });
-            }
-        });
+        Property$_generateProperty(property);
         this._propertyAddedEvent.dispatch(this, { property: property });
         return property;
     };
@@ -1446,18 +1482,20 @@ var Type = /** @class */ (function () {
     };
     return Type;
 }());
-function validateId(type, id) {
+// TODO: what to do with this?
+function Type$_validateId(type, id) {
     if (id === null || id === undefined) {
         throw new Error("Id cannot be " + (id === null ? "null" : "undefined") + " (entity = " + type.fullName + ").");
     }
     else if (getTypeName(id) !== "string") {
-        throw new Error("Id must be a string:  encountered id " + id + " of type \"" + parseFunctionName(id.constructor) + "\" (entity = " + type.fullName + ").");
+        throw new Error("Id must be a string:  encountered id " + id + " of type \"" + parseFunctionName$1(id.constructor) + "\" (entity = " + type.fullName + ").");
     }
     else if (id === "") {
         throw new Error("Id cannot be a blank string (entity = " + type.fullName + ").");
     }
 }
-function generateClass(type) {
+var disableConstruction = false;
+function Type$_generateClass(type) {
     function construct(idOrProps, props, suppressModelEvent) {
         if (!disableConstruction) {
             if (idOrProps && idOrProps.constructor === String) {

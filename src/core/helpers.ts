@@ -53,3 +53,28 @@ export function getDefaultValue(isList: boolean, jstype: any) {
     if (jstype === Number) return 0;
     return null;
 }
+
+export function randomInteger(min: number = 0, max: number = 9) {
+	var rand = Math.random();
+	return rand === 1 ? max : Math.floor(rand * (max - min + 1)) + min;
+}
+
+export function randomText(len: number, includeDigits: boolean = false) {
+	var result = "";
+	for (var i = 0; i < len; i++) {
+		var min = 0;
+		var max = includeDigits ? 35 : 25;
+		var rand = randomInteger(min, max);
+		var charCode;
+		if (rand <= 25) {
+			// Alpha: add 97 for 'a'
+			charCode = rand + 97;
+		}
+		else {
+			// Num: start at 0 and add 48 for 0
+			charCode = (rand - 26) + 48;
+		}
+		result += String.fromCharCode(charCode);
+	}
+	return result;
+}

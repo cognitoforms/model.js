@@ -1,15 +1,12 @@
 import { Model } from "./model";
 import { Entity } from "./entity";
-import { Property } from "./property";
+import { Property, Property$_generateProperty } from "./property";
 import { navigateAttribute, ensureNamespace, getTypeName, parseFunctionName } from "./helpers";
 import { ObjectMeta } from "./object-meta";
 import { EventDispatcher, IEvent } from "ste-events";
-import { getPropertyValue, makePropertyGetter, setPropertyValue, makePropertySetter } from "./internals";
 import { ObservableList } from "./observable-list";
 
 let newIdPrefix = "+c"
-
-let disableConstruction = false;
 
 export interface TypeEntityInitEventArguments {
 	entity: Entity;
@@ -82,7 +79,7 @@ export class Type {
 
 		// the final name to use is the last token
 		var finalName = token;
-		jstype = generateClass(this);
+		jstype = Type$_generateClass(this);
 
 		this._jstype = jstype;
 
@@ -129,7 +126,7 @@ export class Type {
 		this._jstype.prototype.constructor = this._jstype;
 
 		// helpers
-		jstype.meta = this;
+		Object.defineProperty(jstype, "meta", { value: this, configurable: false, enumerable: false, writable: false });
 
 		// Register the type with the model
 		model._types[name] = this;
@@ -180,7 +177,7 @@ export class Type {
 	register(obj: Entity, id: string, suppressModelEvent: boolean = false) {
 		// register is called with single argument from default constructor
 		if (arguments.length === 2) {
-			validateId(this, id);
+			Type$_validateId(this, id);
 		}
 
 		var isNew: boolean;
@@ -190,32 +187,9 @@ export class Type {
 			isNew = true;
 		}
 
-		Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), writable: false });
+		Object.defineProperty(obj, "meta", { value: new ObjectMeta(this, obj, id, isNew), configurable: false, enumerable: false, writable: false });
 
 		var key = id.toLowerCase();
-
-		for (var propertyName in this._properties) {
-			if (this._properties.hasOwnProperty(propertyName)) {
-				var property = this._properties[propertyName];
-				if (property.isStatic) {
-					// for static properties add property to javascript type
-					Object.defineProperty(obj, property.name, {
-						get: makePropertyGetter(property, getPropertyValue, true),
-						set: makePropertySetter(property, setPropertyValue, true),
-						configurable: true,
-						enumerable: true
-					});
-				} else {
-					// for instance properties add member to all instances of this javascript type
-					Object.defineProperty(obj, property.name, {
-						get: makePropertyGetter(property, getPropertyValue, true),
-						set: makePropertySetter(property, setPropertyValue, true),
-						configurable: true,
-						enumerable: true
-					});
-				}
-			}
-		}
 
 		for (var t: Type = this; t; t = t.baseType) {
 			if (t._pool.hasOwnProperty(key)) {
@@ -235,8 +209,8 @@ export class Type {
 	}
 
 	changeObjectId(oldId, newId) {
-		validateId(this, oldId);
-		validateId(this, newId);
+		Type$_validateId(this, oldId);
+		Type$_validateId(this, newId);
 
 		var oldKey = oldId.toLowerCase();
 		var newKey = newId.toLowerCase();
@@ -348,26 +322,7 @@ export class Type {
 		genPropertyShortcut(this, true);
 		*/
 
-		this.known().forEach(function(entity) {
-			if (property.isStatic) {
-				// for static properties add property to javascript type
-				Object.defineProperty(entity, name, {
-					get: makePropertyGetter(property, getPropertyValue, true),
-					set: makePropertySetter(property, setPropertyValue, true),
-					configurable: true,
-					enumerable: true
-				});
-			}
-			else {
-				// for instance properties add member to all instances of this javascript type
-				Object.defineProperty(entity, name, {
-					get: makePropertyGetter(property, getPropertyValue, true),
-					set: makePropertySetter(property, setPropertyValue, true),
-					configurable: true,
-					enumerable: true
-				})
-			}
-		});
+		Property$_generateProperty(property);
 
 		this._propertyAddedEvent.dispatch(this, { property: property });
 
@@ -405,7 +360,8 @@ export class Type {
 
 }
 
-function validateId(type: Type, id: string) {
+// TODO: what to do with this?
+function Type$_validateId(type: Type, id: string) {
 	if (id === null || id === undefined) {
 		throw new Error(`Id cannot be ${(id === null ? "null" : "undefined")} (entity = ${type.fullName}).`);
 	} else if (getTypeName(id) !== "string") {
@@ -415,7 +371,9 @@ function validateId(type: Type, id: string) {
 	}
 }
 
-function generateClass(type: Type) {
+let disableConstruction = false;
+
+function Type$_generateClass(type: Type) {
 	function construct(idOrProps, props, suppressModelEvent) {
 		if (!disableConstruction) {
 			if (idOrProps && idOrProps.constructor === String) {
