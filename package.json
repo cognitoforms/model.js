@@ -1,5 +1,5 @@
 {
-  "version": "0.0.3",
+  "version": "0.0.4",
   "name": "exomodel",
   "license": "MIT",
   "main": "dist/exomodel.full.cjs.js",

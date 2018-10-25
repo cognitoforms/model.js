@@ -1,7 +1,7 @@
 import { Type } from "./type";
 import { Entity } from "./entity";
 import { EventDispatcher, IEvent } from "ste-events";
-import { getTypeName, getDefaultValue } from "./helpers";
+import { getTypeName, getDefaultValue, parseFunctionName } from "./helpers";
 import { createSecret } from "./internals";
 import { ObservableList } from "./observable-list";
 
@@ -13,6 +13,11 @@ export interface PropertyChangeEventArguments {
 	oldValue: any
 }
 
+export interface PropertyAccessEventArguments {
+	property: Property,
+	value: any
+}
+
 export class Property {
 
 	readonly containingType: Type;
@@ -22,6 +27,7 @@ export class Property {
 	readonly isStatic: boolean;
 
 	readonly _changedEvent: EventDispatcher<Entity, PropertyChangeEventArguments>;
+	readonly _accessedEvent: EventDispatcher<Entity, PropertyAccessEventArguments>;
 
 	// Declare "private" fields
 	readonly _origin: string;
@@ -34,6 +40,7 @@ export class Property {
 		this.isStatic = isStatic === true;
 
 		this._changedEvent = new EventDispatcher<Entity, PropertyChangeEventArguments>();
+		this._accessedEvent = new EventDispatcher<Entity, PropertyAccessEventArguments>();
 
 		if (containingType.originForNewProperties) {
 			this._origin = containingType.originForNewProperties;
@@ -54,6 +61,10 @@ export class Property {
 
 	get changed(): IEvent<Entity, PropertyChangeEventArguments> {
 		return this._changedEvent.asEvent();
+	}
+
+	get accessed(): IEvent<Entity, PropertyAccessEventArguments> {
+		return this._accessedEvent.asEvent();
 	}
 
 	equals(prop) {
@@ -174,9 +185,9 @@ export class Property {
 		}
 
 		if (arguments.length > 1) {
-			setPropertyValue(this, target, val, false, args);
+			Property$_setter(this, target, val, false, args);
 		} else {
-			return getPropertyValue(this, target);
+			return Property$_getter(this, target);
 		}
 	}
 
@@ -273,13 +284,8 @@ export function Property$_getter(property: Property, obj: Entity) {
     // Ensure that the property has an initial (possibly default) value
     Property$_ensureInited(property, obj);
 
-	/*
 	// Raise get events
-	var getEvent = property._getEventHandler("get");
-	if (getEvent && !getEvent.isEmpty()) {
-		getEvent(obj, { property: property, value: obj[property.fieldName] });
-	}
-	*/
+	property._accessedEvent.dispatch(obj, { property: property, value: obj[property.fieldName] })
 
     // Return the property value
     return obj[property.fieldName];
@@ -291,7 +297,7 @@ export function Property$_setter(property: Property, obj: Entity, val: any, skip
     Property$_ensureInited(property, obj);
 
     if (!property.canSetValue(obj, val)) {
-        throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.get_fullName() : parseFunctionName(property.jstype)) + " was expected.");
+        throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.fullName : parseFunctionName(property.jstype)) + " was expected.");
     }
 
     var old = obj[property.fieldName];

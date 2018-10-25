@@ -341,6 +341,18 @@ export class Type {
 		return null;
 	}
 
+	get properties(): Array<Property> {
+		let propertiesArray: Array<Property> = [];
+		for (var type: Type = this; type != null; type = type.baseType) {
+			for (var propertyName in type._properties) {
+				if (type._properties.hasOwnProperty(propertyName)) {
+					propertiesArray.push(type._properties[propertyName]);
+				}
+			}
+		}
+		return propertiesArray;
+	}
+
 	isSubclassOf(mtype) {
 		var result = false;
 

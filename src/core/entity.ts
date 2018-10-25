@@ -76,7 +76,7 @@ export class Entity {
 
 	// Gets the typed string id suitable for roundtripping via fromIdString
 	static toIdString(obj) {
-		return `${obj.meta.type.get_fullName()}|${obj.meta.id}`;
+		return `${obj.meta.type.fullName}|${obj.meta.id}`;
 	}
 
 	// Gets or loads the entity with the specified typed string id

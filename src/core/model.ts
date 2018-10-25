@@ -59,6 +59,16 @@ export class Model {
 		// }
 	}
 
+	get types(): Array<Type> {
+		let typesArray: Array<Type> = [];
+		for (var typeName in this._types) {
+			if (this._types.hasOwnProperty(typeName)) {
+				typesArray.push(this._types[typeName]);
+			}
+		}
+		return typesArray;
+	}
+
 	addType(name: string, baseType: Type = null, origin: string = "client") {
 		var type = new Type(this, name, baseType, origin);
 		this._types[name] = type;
