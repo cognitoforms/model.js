@@ -47,7 +47,7 @@ export function getTypeName(obj) {
     return Object.prototype.toString.call(obj).match(typeNameExpr)[1].toLowerCase();
 }
 
-export function getDefaultValue(isList: boolean, jstype: any) {
+export function getDefaultValue(isList: boolean, jstype: any): any {
     if (isList) return [];
     if (jstype === Boolean) return false;
     if (jstype === Number) return 0;

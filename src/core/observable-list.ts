@@ -1,76 +1,149 @@
 ﻿import { EventDispatcher, IEvent } from "ste-events";
+import { createSecret } from "./internals";
 
-export class ObservableList<OwnerType, ListType> extends Array<ListType> {
+let observableListMarkerField = createSecret('ObservableList.markerField', 3, false, true, "_oL");
 
-	private readonly owner: OwnerType;
+export interface ObservableListChangedArguments<ItemType> {
+	added: ItemType[];
+	addedIndex: number;
+	removed: ItemType[];
+	removedIndex: number;
+}
 
-	private readonly changedEvent: EventDispatcher<OwnerType, { added: ListType[], removed: ListType[] }>;
+class ObservableListMethods {
 
 	/**
-	 * Creates a new model list with the specified owner.
-	 * @param owner
+	 * Add an item and raise the list changed event.
+	 * @param item The item to add
 	 */
-	constructor(owner: OwnerType, items: ListType[] = null) {
+	static add<ItemType>(list: ObservableListImplementation<ItemType>, item: ItemType): void {
+		let added = [item];
+		let newLength = Array.prototype.push.apply(list, added);
+		let addedIndex = newLength - 1;
+		list._changedEvent.dispatch(list, { added, addedIndex, removed: [], removedIndex: -1 });
+	}
+
+	/**
+	 * Remove an item and raise the list changed event.
+	 * @param item The item to remove
+	 * @returns True if removed, otherwise false.
+	 */
+	static remove<ItemType>(list: ObservableListImplementation<ItemType>, item: ItemType): boolean {
+		let removedIndex = Array.prototype.indexOf.call(list, item);
+		if (removedIndex !== -1) {
+			let removed = Array.prototype.splice.call(list, removedIndex, 1);
+			list._changedEvent.dispatch(list, { added: [], addedIndex: -1, removed, removedIndex });
+			return true;
+		}
+	}
+
+}
+
+export abstract class ObservableList<ItemType> extends Array<ItemType> {
+
+	/**
+	 * Creates a new observable list
+	 * @param items The array of initial items
+	 */
+	protected constructor(items: ItemType[] = null) {
 		super(...items);
-		this.owner = owner;
+	}
+
+	// ObservableList members:
+	abstract changed: IEvent<Array<ItemType>, ObservableListChangedArguments<ItemType>>;
+	abstract add(item: ItemType): void;
+	// abstract addRange(items: ItemType[]): void;
+	// abstract clear(): void;
+	// abstract insert(index: number, item: ItemType): void;
+	abstract remove(item: ItemType): boolean;
+
+	public static isObservableList<ItemType>(array: Array<ItemType>): boolean {
+		return Object.prototype.hasOwnProperty.call(array, observableListMarkerField) && array[observableListMarkerField] === true;
+	}
+
+	protected static _markObservable(target: any) {
+		Object.defineProperty(target, observableListMarkerField, {
+			configurable: false,
+			enumerable: false,
+			value: true,
+			writable: false
+		});
+	}
+
+	public static ensureObservable<ItemType>(array: Array<ItemType> | ObservableListImplementation<ItemType>): ObservableList<ItemType> {
+
+		// Check to see if the array is already an observable list
+		if (this.isObservableList(array)) {
+			var implementation = array as ObservableListImplementation<ItemType>;
+			return (implementation as unknown) as ObservableList<ItemType>;
+		}
+
+		return ObservableListImplementation.implementObservableList(array);
+	}
+
+	public static create<ItemType>(items: ItemType[] = null): ObservableList<ItemType> {
+		var implementation = new ObservableListImplementation(items);
+		var list = ObservableListImplementation.ensureObservable<ItemType>(implementation);
+		return list;
+	}
+
+}
+
+class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
+
+	readonly _changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>>;
+
+	/**
+	 * Creates a new observable list
+	 * @param items The array of initial items
+	 */
+	public constructor(items: ItemType[] = null) {
+		super(items);
+		ObservableListImplementation._initFields<ItemType>(this);
+		ObservableList._markObservable(this);
+	}
+
+	private static _initFields<ItemType>(target: any, changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>> = null) {
+
+		if (changedEvent == null) {
+			changedEvent = new EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>>();
+		}
+
+		// Define the `_changedEvent` readonly property
+		Object.defineProperty(target, "_changedEvent", {
+			configurable: false,
+			enumerable: false,
+			value: changedEvent,
+			writable: false
+		});
+
+	}
+
+	public static implementObservableList<ItemType>(array: Array<ItemType> | ObservableListImplementation<ItemType>): ObservableList<ItemType> {
+
+		ObservableListImplementation._initFields(array);
+
+		array["add"] = (function (item: ItemType) { ObservableListMethods.add(this, item); });
+		array["remove"] = (function (item: ItemType) { return ObservableListMethods.remove(this, item); });
+
+		Object.defineProperty(array, 'changed', {
+			get: function() {
+				return this._changedEvent.asEvent();
+			}
+		});
+
+		ObservableListImplementation._markObservable(array);
+	
+		return (array as unknown) as ObservableList<ItemType>;
+
 	}
 
 	/**
-	 * Override push to raise the list changed event.
-	 * @param items The item or items to add
+	 * Add an item and raise the list changed event.
+	 * @param item The item to add
 	 */
-	push(...items: ListType[]): number {
-		let result = super.push.call(items);
-		this.changedEvent.dispatch(this.owner, { added: items, removed: [] });
-		return result;
-	}
-
-	/** Override pop to raise the list changed event. */
-	pop(): ListType {
-		let result = super.pop();
-		this.changedEvent.dispatch(this.owner, { added: [], removed: [result] });
-		return result;
-	}
-
-	/**
-	 * Override unshift to raise the list changed event.
-	 * @param items The item or items to add
-	 */
-	unshift(...items: ListType[]): number {
-		let result = super.unshift.call(items);
-		this.changedEvent.dispatch(this.owner, { added: items, removed: [] });
-		return result;
-	}
-
-	/**
-	 * Override splice to raise the list changed event.
-	 * @param items The item or items to add
-	 */
-	splice(start: number, deleteCount: number, ...itemsToAdd: ListType[]): ListType[] {
-		let removed = super.splice.call(start, deleteCount, itemsToAdd);
-		this.changedEvent.dispatch(this.owner, { added: itemsToAdd, removed: removed });
-		return removed;
-	}
-
-	/** Override shift to raise the list changed event. */
-	shift(): ListType {
-		let result = super.shift();
-		this.changedEvent.dispatch(this.owner, { added: [], removed: [result] });
-		return result;
-	}
-
-	/** Override sort to raise the list changed event. */
-	sort(): this {
-		super.sort();
-		this.changedEvent.dispatch(this.owner, { added: [], removed: [] });
-		return this;
-	}
-
-	/** Override reverse to raise the list changed event. */
-	reverse(): ListType[] {
-		let result = super.reverse();
-		this.changedEvent.dispatch(this.owner, { added: [], removed: [] });
-		return result;
+	add(item: ItemType): void {
+		ObservableListMethods.add(this, item);
 	}
 
 	/**
@@ -78,16 +151,13 @@ export class ObservableList<OwnerType, ListType> extends Array<ListType> {
 	 * @param item The item to remove.
 	 * @returns True if removed, otherwise false.
 	 */
-	remove(item: ListType): boolean {
-		let index = this.indexOf(item);
-		if (index > -1)
-			this.splice(index, 1);
-		return index > -1;
+	remove(item: ItemType): boolean {
+		return ObservableListMethods.remove(this, item);
 	}
 
 	/** Expose the changed event */
-	get changed(): IEvent<OwnerType, { added: ListType[], removed: ListType[] }> {
-		return this.changedEvent.asEvent();
+	get changed(): IEvent<Array<ItemType>, ObservableListChangedArguments<ItemType>> {
+		return this._changedEvent.asEvent();
 	}
 
 }

@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.4
+ * ExoModel.js v0.0.5
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -667,104 +667,137 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	}
 
+	var observableListMarkerField = createSecret('ObservableList.markerField', 3, false, true, "_oL");
+	var ObservableListMethods = /** @class */ (function () {
+	    function ObservableListMethods() {
+	    }
+	    /**
+	     * Add an item and raise the list changed event.
+	     * @param item The item to add
+	     */
+	    ObservableListMethods.add = function (list, item) {
+	        var added = [item];
+	        var newLength = Array.prototype.push.apply(list, added);
+	        var addedIndex = newLength - 1;
+	        list._changedEvent.dispatch(list, { added: added, addedIndex: addedIndex, removed: [], removedIndex: -1 });
+	    };
+	    /**
+	     * Remove an item and raise the list changed event.
+	     * @param item The item to remove
+	     * @returns True if removed, otherwise false.
+	     */
+	    ObservableListMethods.remove = function (list, item) {
+	        var removedIndex = Array.prototype.indexOf.call(list, item);
+	        if (removedIndex !== -1) {
+	            var removed = Array.prototype.splice.call(list, removedIndex, 1);
+	            list._changedEvent.dispatch(list, { added: [], addedIndex: -1, removed: removed, removedIndex: removedIndex });
+	            return true;
+	        }
+	    };
+	    return ObservableListMethods;
+	}());
 	var ObservableList = /** @class */ (function (_super) {
 	    __extends(ObservableList, _super);
 	    /**
-	     * Creates a new model list with the specified owner.
-	     * @param owner
+	     * Creates a new observable list
+	     * @param items The array of initial items
 	     */
-	    function ObservableList(owner, items) {
+	    function ObservableList(items) {
 	        if (items === void 0) { items = null; }
-	        var _this = _super.apply(this, items) || this;
-	        _this.owner = owner;
+	        return _super.apply(this, items) || this;
+	    }
+	    ObservableList.isObservableList = function (array) {
+	        return Object.prototype.hasOwnProperty.call(array, observableListMarkerField) && array[observableListMarkerField] === true;
+	    };
+	    ObservableList._markObservable = function (target) {
+	        Object.defineProperty(target, observableListMarkerField, {
+	            configurable: false,
+	            enumerable: false,
+	            value: true,
+	            writable: false
+	        });
+	    };
+	    ObservableList.ensureObservable = function (array) {
+	        // Check to see if the array is already an observable list
+	        if (this.isObservableList(array)) {
+	            var implementation = array;
+	            return implementation;
+	        }
+	        return ObservableListImplementation.implementObservableList(array);
+	    };
+	    ObservableList.create = function (items) {
+	        if (items === void 0) { items = null; }
+	        var implementation = new ObservableListImplementation(items);
+	        var list = ObservableListImplementation.ensureObservable(implementation);
+	        return list;
+	    };
+	    return ObservableList;
+	}(Array));
+	var ObservableListImplementation = /** @class */ (function (_super) {
+	    __extends(ObservableListImplementation, _super);
+	    /**
+	     * Creates a new observable list
+	     * @param items The array of initial items
+	     */
+	    function ObservableListImplementation(items) {
+	        if (items === void 0) { items = null; }
+	        var _this = _super.call(this, items) || this;
+	        ObservableListImplementation._initFields(_this);
+	        ObservableList._markObservable(_this);
 	        return _this;
 	    }
-	    /**
-	     * Override push to raise the list changed event.
-	     * @param items The item or items to add
-	     */
-	    ObservableList.prototype.push = function () {
-	        var items = [];
-	        for (var _i = 0; _i < arguments.length; _i++) {
-	            items[_i] = arguments[_i];
+	    ObservableListImplementation._initFields = function (target, changedEvent) {
+	        if (changedEvent === void 0) { changedEvent = null; }
+	        if (changedEvent == null) {
+	            changedEvent = new dist_1$1();
 	        }
-	        var result = _super.prototype.push.call(items);
-	        this.changedEvent.dispatch(this.owner, { added: items, removed: [] });
-	        return result;
+	        // Define the `_changedEvent` readonly property
+	        Object.defineProperty(target, "_changedEvent", {
+	            configurable: false,
+	            enumerable: false,
+	            value: changedEvent,
+	            writable: false
+	        });
 	    };
-	    /** Override pop to raise the list changed event. */
-	    ObservableList.prototype.pop = function () {
-	        var result = _super.prototype.pop.call(this);
-	        this.changedEvent.dispatch(this.owner, { added: [], removed: [result] });
-	        return result;
-	    };
-	    /**
-	     * Override unshift to raise the list changed event.
-	     * @param items The item or items to add
-	     */
-	    ObservableList.prototype.unshift = function () {
-	        var items = [];
-	        for (var _i = 0; _i < arguments.length; _i++) {
-	            items[_i] = arguments[_i];
-	        }
-	        var result = _super.prototype.unshift.call(items);
-	        this.changedEvent.dispatch(this.owner, { added: items, removed: [] });
-	        return result;
+	    ObservableListImplementation.implementObservableList = function (array) {
+	        ObservableListImplementation._initFields(array);
+	        array["add"] = (function (item) { ObservableListMethods.add(this, item); });
+	        array["remove"] = (function (item) { return ObservableListMethods.remove(this, item); });
+	        Object.defineProperty(array, 'changed', {
+	            get: function () {
+	                return this._changedEvent.asEvent();
+	            }
+	        });
+	        ObservableListImplementation._markObservable(array);
+	        return array;
 	    };
 	    /**
-	     * Override splice to raise the list changed event.
-	     * @param items The item or items to add
+	     * Add an item and raise the list changed event.
+	     * @param item The item to add
 	     */
-	    ObservableList.prototype.splice = function (start, deleteCount) {
-	        var itemsToAdd = [];
-	        for (var _i = 2; _i < arguments.length; _i++) {
-	            itemsToAdd[_i - 2] = arguments[_i];
-	        }
-	        var removed = _super.prototype.splice.call(start, deleteCount, itemsToAdd);
-	        this.changedEvent.dispatch(this.owner, { added: itemsToAdd, removed: removed });
-	        return removed;
-	    };
-	    /** Override shift to raise the list changed event. */
-	    ObservableList.prototype.shift = function () {
-	        var result = _super.prototype.shift.call(this);
-	        this.changedEvent.dispatch(this.owner, { added: [], removed: [result] });
-	        return result;
-	    };
-	    /** Override sort to raise the list changed event. */
-	    ObservableList.prototype.sort = function () {
-	        _super.prototype.sort.call(this);
-	        this.changedEvent.dispatch(this.owner, { added: [], removed: [] });
-	        return this;
-	    };
-	    /** Override reverse to raise the list changed event. */
-	    ObservableList.prototype.reverse = function () {
-	        var result = _super.prototype.reverse.call(this);
-	        this.changedEvent.dispatch(this.owner, { added: [], removed: [] });
-	        return result;
+	    ObservableListImplementation.prototype.add = function (item) {
+	        ObservableListMethods.add(this, item);
 	    };
 	    /**
 	     * Removes the specified item from the list.
 	     * @param item The item to remove.
 	     * @returns True if removed, otherwise false.
 	     */
-	    ObservableList.prototype.remove = function (item) {
-	        var index = this.indexOf(item);
-	        if (index > -1)
-	            this.splice(index, 1);
-	        return index > -1;
+	    ObservableListImplementation.prototype.remove = function (item) {
+	        return ObservableListMethods.remove(this, item);
 	    };
-	    Object.defineProperty(ObservableList.prototype, "changed", {
+	    Object.defineProperty(ObservableListImplementation.prototype, "changed", {
 	        /** Expose the changed event */
 	        get: function () {
-	            return this.changedEvent.asEvent();
+	            return this._changedEvent.asEvent();
 	        },
 	        enumerable: true,
 	        configurable: true
 	    });
-	    return ObservableList;
-	}(Array));
+	    return ObservableListImplementation;
+	}(ObservableList));
 
-	var fieldNamePrefix = createSecret('fieldNamePrefix', 3, false, true, "_fN");
+	var fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
 	var Property = /** @class */ (function () {
 	    function Property(containingType, name, jstype, isList, isStatic) {
 	        this.containingType = containingType;
@@ -947,8 +980,15 @@
 	    // TODO
 	    // target.meta.pendingInit(property, false);
 	    if (val instanceof Array) {
-	        val = new ObservableList(obj, val);
-	        property.changed.subscribe(function (sender, args) {
+	        var list = ObservableList.ensureObservable(val);
+	        val = list;
+	        list.changed.subscribe(function (sender, args) {
+	            if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
+	                var eventArgs = { property: property, newValue: val, oldValue: undefined };
+	                eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
+	                eventArgs['collectionChanged'] = true;
+	                property._changedEvent.dispatch(obj, eventArgs);
+	            }
 	            /*
 	            var changes = args.get_changes();
 
@@ -982,7 +1022,11 @@
 	        // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
 	        // TODO
 	        // if (!property.isCalculated) {
-	        Property$_init(obj, property, getDefaultValue(property.isList, property.jstype));
+	        var defaultValue = getDefaultValue(property.isList, property.jstype);
+	        if (Array.isArray(defaultValue)) {
+	            defaultValue = ObservableList.ensureObservable(defaultValue);
+	        }
+	        Property$_init(obj, property, defaultValue);
 	        // }
 	        // TODO
 	        // Mark the property as pending initialization
@@ -1222,7 +1266,7 @@
 	            }
 	            t._pool[key] = obj;
 	            if (t._known) {
-	                t._known.push(obj);
+	                t._known.add(obj);
 	            }
 	        }
 	        if (!suppressModelEvent) {
@@ -1283,7 +1327,7 @@
 	            for (var id in this._pool) {
 	                list.push(this._pool[id]);
 	            }
-	            known = this._known = new ObservableList(this, list);
+	            known = this._known = ObservableList.ensureObservable(list);
 	        }
 	        return known;
 	    };

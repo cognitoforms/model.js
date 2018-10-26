@@ -20,7 +20,7 @@ export class Type {
 
 	private _counter: number;
 	private _jstype: any;
-	private _known: ObservableList<Type, Entity>;
+	private _known: ObservableList<Entity>;
 	private _pool: { [id: string]: Entity };
 	private _legacyPool: { [id: string]: Entity }
 
@@ -199,7 +199,7 @@ export class Type {
 			t._pool[key] = obj;
 
 			if (t._known) {
-				t._known.push(obj);
+				t._known.add(obj);
 			}
 		}
 
@@ -280,7 +280,7 @@ export class Type {
 				list.push(this._pool[id]);
 			}
 
-			known = this._known = new ObservableList<Type, Entity>(this, list);
+			known = this._known = ObservableList.ensureObservable(list);
 		}
 
 		return known;

@@ -5,7 +5,7 @@ import { getTypeName, getDefaultValue, parseFunctionName } from "./helpers";
 import { createSecret } from "./internals";
 import { ObservableList } from "./observable-list";
 
-let fieldNamePrefix = createSecret('fieldNamePrefix', 3, false, true, "_fN");
+let fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
 
 export interface PropertyChangeEventArguments {
 	property: Property,
@@ -230,9 +230,21 @@ export function Property$_init(obj: Entity, property: Property, val: any, force:
     // target.meta.pendingInit(property, false);
 
     if (val instanceof Array) {
-        val = new ObservableList(obj, val);
+		let list: ObservableList<any> = ObservableList.ensureObservable(val as Array<any>);
 
-        property.changed.subscribe(function (sender, args) {
+		val = list;
+
+        list.changed.subscribe(function (sender, args) {
+
+			if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
+				var eventArgs: PropertyChangeEventArguments = { property: property, newValue: val, oldValue: undefined };
+
+				eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
+				eventArgs['collectionChanged'] = true;
+
+				property._changedEvent.dispatch(obj, eventArgs);
+			}
+
 			/*
 			var changes = args.get_changes();
 
@@ -270,7 +282,12 @@ export function Property$_ensureInited(property: Property, obj: Entity) {
         // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
         // TODO
         // if (!property.isCalculated) {
-			Property$_init(obj, property, getDefaultValue(property.isList, property.jstype));
+			var defaultValue = getDefaultValue(property.isList, property.jstype);
+			if (Array.isArray(defaultValue)) {
+				defaultValue = ObservableList.ensureObservable(defaultValue as Array<any>);
+			}
+
+			Property$_init(obj, property, defaultValue);
         // }
 
         // TODO
