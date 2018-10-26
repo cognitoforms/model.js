@@ -7,6 +7,11 @@ import { ObservableList } from "./observable-list";
 
 let fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
 
+export enum PropertyCreationTarget {
+	PrototypeWithBackingField = 0,
+	DirectlyOnObject = 1
+}
+
 export interface PropertyChangeEventArguments {
 	property: Property,
 	newValue: any,
@@ -199,15 +204,9 @@ export class Property {
 
 }
 
-export function Property$_generateProperty(property: Property) {
+export function Property$_generateStaticProperty(property: Property) {
 
-	let type = property.containingType;
-
-	// for static properties add property to javascript type
-	// for instance properties add member to all instances of this javascript type via the prototype
-    let target = property.isStatic ? type.jstype : type.jstype.prototype;
-
-	Object.defineProperty(target, property.name, {
+	Object.defineProperty(property.containingType.jstype, property.name, {
 		configurable: false,
 		enumerable: true,
 		get: Property$_makeGetter(property, Property$_getter, true),
@@ -216,65 +215,140 @@ export function Property$_generateProperty(property: Property) {
 
 }
 
-export function Property$_init(obj: Entity, property: Property, val: any, force: boolean = false) {
-    var target = (property.isStatic ? property.containingType.jstype : obj);
-    var curVal = target[property.fieldName];
+export function Property$_generatePrototypeProperty(property: Property) {
 
-    if (curVal !== undefined && !(force === undefined || force)) {
-        return;
-    }
+	Object.defineProperty(property.containingType.jstype.prototype, property.name, {
+		configurable: false,
+		enumerable: true,
+		get: Property$_makeGetter(property, Property$_getter, true),
+		set: Property$_makeSetter(property, Property$_setter)
+	});
 
-    Object.defineProperty(target, property.fieldName, { value: val, writable: true });
-
-    // TODO
-    // target.meta.pendingInit(property, false);
-
-    if (val instanceof Array) {
-		let list: ObservableList<any> = ObservableList.ensureObservable(val as Array<any>);
-
-		val = list;
-
-        list.changed.subscribe(function (sender, args) {
-
-			if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
-				var eventArgs: PropertyChangeEventArguments = { property: property, newValue: val, oldValue: undefined };
-
-				eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
-				eventArgs['collectionChanged'] = true;
-
-				property._changedEvent.dispatch(obj, eventArgs);
-			}
-
-			/*
-			var changes = args.get_changes();
-
-			// Don't raise the change event unless there is actually a change to the collection
-			if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
-				// NOTE: property change should be broadcast before rules are run so that if 
-				// any rule causes a roundtrip to the server these changes will be available
-				// TODO
-				// property.containingType.model.notifyListChanged(target, property, changes);
-
-				// NOTE: oldValue is not currently implemented for lists
-				// TODO
-				// property._raiseEvent("changed", [target, { property: property, newValue: val, oldValue: undefined, changes: changes, collectionChanged: true }]);
-
-				// TODO
-				// Observer.raisePropertyChanged(target, property._name);
-			}
-			*/
-        });
-
-        // Override the default toString on arrays so that we get a comma-delimited list
-        // TODO
-        // val.toString = Property$_arrayToString.bind(val);
-    }
-
-    // TODO
-    // Observer.raisePropertyChanged(target, property._name);
 }
 
-export function Property$_ensureInited(property: Property, obj: Entity) {
+export function Property$_generateOwnProperty(property: Property, obj: Entity) {
+
+	let val = null;
+
+	let isInitialized: boolean = false;
+
+	var _ensureInited = function() {
+		if (!isInitialized) {
+			// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
+			// TODO
+			// if (!property.isCalculated) {
+				// TODO
+				// target.meta.pendingInit(property, false);
+
+				val = Property$_getInitialValue(property);
+
+				if (Array.isArray(val)) {
+					Property$_subListEvents(obj, property, val as ObservableList<any>);
+				}
+
+				// TODO
+				// Observer.raisePropertyChanged(obj, property._name);
+			// }
+
+			// TODO
+			// Mark the property as pending initialization
+			// obj.meta.pendingInit(property, true);
+
+			isInitialized = true;
+		}
+	};
+
+	Object.defineProperty(obj, property.name, {
+		configurable: false,
+		enumerable: true,
+		get: function() {
+			_ensureInited();
+
+			// Raise get events
+			property._accessedEvent.dispatch(obj, { property: property, value: val });
+
+			return val;
+		},
+		set: function (newVal) {
+			_ensureInited();
+
+			if (Property$_shouldSetValue(property, obj, val, newVal)) {
+				let old = val;
+
+				// Update lists as batch remove/add operations
+				if (property.isList) {
+					// TODO
+					// old.beginUpdate();
+					// update(old, newVal);
+					// old.endUpdate();
+					throw new Error("Property set on lists is not implemented.");
+				} else {
+					val = newVal;
+
+					// TODO
+					// obj.meta.pendingInit(property, false);
+
+					// Do not raise change if the property has not been initialized. 
+					if (old !== undefined) {
+						property._changedEvent.dispatch(obj, { property: property, newValue: val, oldValue: old });
+					}
+				}
+			}	
+		}
+	});
+
+}
+
+function Property$_subListEvents(obj: Entity, property: Property, list: ObservableList<any>) {
+
+	list.changed.subscribe(function (sender, args) {
+
+		if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
+			var eventArgs: PropertyChangeEventArguments = { property: property, newValue: list, oldValue: undefined };
+
+			eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
+			eventArgs['collectionChanged'] = true;
+
+			property._changedEvent.dispatch(obj, eventArgs);
+		}
+
+		/*
+		var changes = args.get_changes();
+
+		// Don't raise the change event unless there is actually a change to the collection
+		if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
+			// NOTE: property change should be broadcast before rules are run so that if 
+			// any rule causes a roundtrip to the server these changes will be available
+			// TODO
+			// property.containingType.model.notifyListChanged(target, property, changes);
+
+			// NOTE: oldValue is not currently implemented for lists
+			// TODO
+			// property._raiseEvent("changed", [target, { property: property, newValue: list, oldValue: undefined, changes: changes, collectionChanged: true }]);
+
+			// TODO
+			// Observer.raisePropertyChanged(target, property._name);
+		}
+		*/
+	});
+
+}
+
+function Property$_getInitialValue(property: Property) {
+	var val = getDefaultValue(property.isList, property.jstype);
+
+    if (Array.isArray(val)) {
+		val = ObservableList.ensureObservable(val as Array<any>);
+
+		// Override the default toString on arrays so that we get a comma-delimited list
+		// TODO
+		// val.toString = Property$_arrayToString.bind(val);
+	}
+
+	return val;
+}
+
+function Property$_ensureInited(property: Property, obj: Entity) {
     // Determine if the property has been initialized with a value
     // and initialize the property if necessary
     if (!obj.hasOwnProperty(property.fieldName)) {
@@ -282,12 +356,21 @@ export function Property$_ensureInited(property: Property, obj: Entity) {
         // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
         // TODO
         // if (!property.isCalculated) {
-			var defaultValue = getDefaultValue(property.isList, property.jstype);
-			if (Array.isArray(defaultValue)) {
-				defaultValue = ObservableList.ensureObservable(defaultValue as Array<any>);
+			var target = (property.isStatic ? property.containingType.jstype : obj);
+
+			// TODO
+			// target.meta.pendingInit(property, false);
+
+			let val = Property$_getInitialValue(property);
+
+			Object.defineProperty(target, property.fieldName, { value: val, writable: true });
+
+			if (Array.isArray(val)) {
+				Property$_subListEvents(obj, property, val as ObservableList<any>);
 			}
 
-			Property$_init(obj, property, defaultValue);
+			// TODO
+			// Observer.raisePropertyChanged(target, property._name);
         // }
 
         // TODO
@@ -296,7 +379,7 @@ export function Property$_ensureInited(property: Property, obj: Entity) {
     }
 }
 
-export function Property$_getter(property: Property, obj: Entity) {
+function Property$_getter(property: Property, obj: Entity) {
 
     // Ensure that the property has an initial (possibly default) value
     Property$_ensureInited(property, obj);
@@ -308,24 +391,28 @@ export function Property$_getter(property: Property, obj: Entity) {
     return obj[property.fieldName];
 }
 
-export function Property$_setter(property: Property, obj: Entity, val: any, skipTypeCheck: boolean = false, additionalArgs: any = null) {
+function Property$_setter(property: Property, obj: Entity, val: any, skipTypeCheck: boolean = false, additionalArgs: any = null) {
 
     // Ensure that the property has an initial (possibly default) value
-    Property$_ensureInited(property, obj);
+	Property$_ensureInited(property, obj);
+
+    var old = obj[property.fieldName];
+
+	if (Property$_shouldSetValue(property, obj, old, val, skipTypeCheck)) {
+		Property$_setValue(property, obj, old, val, skipTypeCheck, additionalArgs);
+	}
+
+}
+
+function Property$_shouldSetValue(property: Property, obj: Entity, old: any, val: any, skipTypeCheck: boolean = false) {
 
     if (!property.canSetValue(obj, val)) {
         throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.fullName : parseFunctionName(property.jstype)) + " was expected.");
     }
 
-    var old = obj[property.fieldName];
-
     // Update lists as batch remove/add operations
     if (property.isList) {
-        // TODO
-        // old.beginUpdate();
-        // update(old, val);
-        // old.endUpdate();
-        throw new Error("Property set on lists is not permitted");
+        throw new Error("Property set on lists is not permitted.");
     } else {
 
         // compare values so that this check is accurate for primitives
@@ -335,28 +422,42 @@ export function Property$_setter(property: Property, obj: Entity, val: any, skip
         // Do nothing if the new value is the same as the old value. Account for NaN numbers, which are
         // not equivalent (even to themselves). Although isNaN returns true for non-Number values, we won't
         // get this far for Number properties unless the value is actually of type Number (a number or NaN).
-        if (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue))) {
-            // Set the backing field value
-            obj[property.fieldName] = val;
+        return (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue)));
+	}
 
-            // TODO
-            // obj.meta.pendingInit(property, false);
+}
 
-            // Do not raise change if the property has not been initialized. 
-            if (old !== undefined) {
-                var eventArgs: PropertyChangeEventArguments = { property: property, newValue: val, oldValue: old };
+function Property$_setValue(property: Property, obj: Entity, old: any, val: any, skipTypeCheck: boolean = false, additionalArgs: any = null) {
 
-                if (additionalArgs) {
-                    for (var arg in additionalArgs) {
-                        if (additionalArgs.hasOwnProperty(arg)) {
-                            eventArgs[arg] = additionalArgs[arg];
-                        }
-                    }
-                }
+    // Update lists as batch remove/add operations
+    if (property.isList) {
+        // TODO
+        // old.beginUpdate();
+        // update(old, val);
+        // old.endUpdate();
+        throw new Error("Property set on lists is not implemented.");
+    } else {
 
-                property._changedEvent.dispatch(obj, eventArgs);
-            }
-        }
+		// Set the backing field value
+		obj[property.fieldName] = val;
+
+		// TODO
+		// obj.meta.pendingInit(property, false);
+
+		// Do not raise change if the property has not been initialized. 
+		if (old !== undefined) {
+			var eventArgs: PropertyChangeEventArguments = { property: property, newValue: val, oldValue: old };
+
+			if (additionalArgs) {
+				for (var arg in additionalArgs) {
+					if (additionalArgs.hasOwnProperty(arg)) {
+						eventArgs[arg] = additionalArgs[arg];
+					}
+				}
+			}
+
+			property._changedEvent.dispatch(obj, eventArgs);
+		}
     }
 }
 

@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.5
+ * ExoModel.js v0.0.6
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -798,6 +798,11 @@
 	}(ObservableList));
 
 	var fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
+	var PropertyCreationTarget;
+	(function (PropertyCreationTarget) {
+	    PropertyCreationTarget[PropertyCreationTarget["PrototypeWithBackingField"] = 0] = "PrototypeWithBackingField";
+	    PropertyCreationTarget[PropertyCreationTarget["DirectlyOnObject"] = 1] = "DirectlyOnObject";
+	})(PropertyCreationTarget || (PropertyCreationTarget = {}));
 	var Property = /** @class */ (function () {
 	    function Property(containingType, name, jstype, isList, isStatic) {
 	        this.containingType = containingType;
@@ -957,63 +962,116 @@
 	    };
 	    return Property;
 	}());
-	function Property$_generateProperty(property) {
-	    var type = property.containingType;
-	    // for static properties add property to javascript type
-	    // for instance properties add member to all instances of this javascript type via the prototype
-	    var target = property.isStatic ? type.jstype : type.jstype.prototype;
-	    Object.defineProperty(target, property.name, {
+	function Property$_generateStaticProperty(property) {
+	    Object.defineProperty(property.containingType.jstype, property.name, {
 	        configurable: false,
 	        enumerable: true,
 	        get: Property$_makeGetter(property, Property$_getter, true),
 	        set: Property$_makeSetter(property, Property$_setter)
 	    });
 	}
-	function Property$_init(obj, property, val, force) {
-	    if (force === void 0) { force = false; }
-	    var target = (property.isStatic ? property.containingType.jstype : obj);
-	    var curVal = target[property.fieldName];
-	    if (curVal !== undefined && !(force === undefined || force)) {
-	        return;
-	    }
-	    Object.defineProperty(target, property.fieldName, { value: val, writable: true });
-	    // TODO
-	    // target.meta.pendingInit(property, false);
-	    if (val instanceof Array) {
-	        var list = ObservableList.ensureObservable(val);
-	        val = list;
-	        list.changed.subscribe(function (sender, args) {
-	            if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
-	                var eventArgs = { property: property, newValue: val, oldValue: undefined };
-	                eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
-	                eventArgs['collectionChanged'] = true;
-	                property._changedEvent.dispatch(obj, eventArgs);
+	function Property$_generatePrototypeProperty(property) {
+	    Object.defineProperty(property.containingType.jstype.prototype, property.name, {
+	        configurable: false,
+	        enumerable: true,
+	        get: Property$_makeGetter(property, Property$_getter, true),
+	        set: Property$_makeSetter(property, Property$_setter)
+	    });
+	}
+	function Property$_generateOwnProperty(property, obj) {
+	    var val = null;
+	    var isInitialized = false;
+	    var _ensureInited = function () {
+	        if (!isInitialized) {
+	            // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
+	            // TODO
+	            // if (!property.isCalculated) {
+	            // TODO
+	            // target.meta.pendingInit(property, false);
+	            val = Property$_getInitialValue(property);
+	            if (Array.isArray(val)) {
+	                Property$_subListEvents(obj, property, val);
 	            }
-	            /*
-	            var changes = args.get_changes();
-
-	            // Don't raise the change event unless there is actually a change to the collection
-	            if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
-	                // NOTE: property change should be broadcast before rules are run so that if
-	                // any rule causes a roundtrip to the server these changes will be available
-	                // TODO
-	                // property.containingType.model.notifyListChanged(target, property, changes);
-
-	                // NOTE: oldValue is not currently implemented for lists
-	                // TODO
-	                // property._raiseEvent("changed", [target, { property: property, newValue: val, oldValue: undefined, changes: changes, collectionChanged: true }]);
-
-	                // TODO
-	                // Observer.raisePropertyChanged(target, property._name);
+	            // TODO
+	            // Observer.raisePropertyChanged(obj, property._name);
+	            // }
+	            // TODO
+	            // Mark the property as pending initialization
+	            // obj.meta.pendingInit(property, true);
+	            isInitialized = true;
+	        }
+	    };
+	    Object.defineProperty(obj, property.name, {
+	        configurable: false,
+	        enumerable: true,
+	        get: function () {
+	            _ensureInited();
+	            // Raise get events
+	            property._accessedEvent.dispatch(obj, { property: property, value: val });
+	            return val;
+	        },
+	        set: function (newVal) {
+	            _ensureInited();
+	            if (Property$_shouldSetValue(property, obj, val, newVal)) {
+	                var old = val;
+	                // Update lists as batch remove/add operations
+	                if (property.isList) {
+	                    // TODO
+	                    // old.beginUpdate();
+	                    // update(old, newVal);
+	                    // old.endUpdate();
+	                    throw new Error("Property set on lists is not implemented.");
+	                }
+	                else {
+	                    val = newVal;
+	                    // TODO
+	                    // obj.meta.pendingInit(property, false);
+	                    // Do not raise change if the property has not been initialized. 
+	                    if (old !== undefined) {
+	                        property._changedEvent.dispatch(obj, { property: property, newValue: val, oldValue: old });
+	                    }
+	                }
 	            }
-	            */
-	        });
+	        }
+	    });
+	}
+	function Property$_subListEvents(obj, property, list) {
+	    list.changed.subscribe(function (sender, args) {
+	        if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
+	            var eventArgs = { property: property, newValue: list, oldValue: undefined };
+	            eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
+	            eventArgs['collectionChanged'] = true;
+	            property._changedEvent.dispatch(obj, eventArgs);
+	        }
+	        /*
+	        var changes = args.get_changes();
+
+	        // Don't raise the change event unless there is actually a change to the collection
+	        if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
+	            // NOTE: property change should be broadcast before rules are run so that if
+	            // any rule causes a roundtrip to the server these changes will be available
+	            // TODO
+	            // property.containingType.model.notifyListChanged(target, property, changes);
+
+	            // NOTE: oldValue is not currently implemented for lists
+	            // TODO
+	            // property._raiseEvent("changed", [target, { property: property, newValue: list, oldValue: undefined, changes: changes, collectionChanged: true }]);
+
+	            // TODO
+	            // Observer.raisePropertyChanged(target, property._name);
+	        }
+	        */
+	    });
+	}
+	function Property$_getInitialValue(property) {
+	    var val = getDefaultValue(property.isList, property.jstype);
+	    if (Array.isArray(val)) {
+	        val = ObservableList.ensureObservable(val);
 	        // Override the default toString on arrays so that we get a comma-delimited list
 	        // TODO
 	        // val.toString = Property$_arrayToString.bind(val);
 	    }
-	    // TODO
-	    // Observer.raisePropertyChanged(target, property._name);
+	    return val;
 	}
 	function Property$_ensureInited(property, obj) {
 	    // Determine if the property has been initialized with a value
@@ -1022,11 +1080,16 @@
 	        // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
 	        // TODO
 	        // if (!property.isCalculated) {
-	        var defaultValue = getDefaultValue(property.isList, property.jstype);
-	        if (Array.isArray(defaultValue)) {
-	            defaultValue = ObservableList.ensureObservable(defaultValue);
+	        var target = (property.isStatic ? property.containingType.jstype : obj);
+	        // TODO
+	        // target.meta.pendingInit(property, false);
+	        var val = Property$_getInitialValue(property);
+	        Object.defineProperty(target, property.fieldName, { value: val, writable: true });
+	        if (Array.isArray(val)) {
+	            Property$_subListEvents(obj, property, val);
 	        }
-	        Property$_init(obj, property, defaultValue);
+	        // TODO
+	        // Observer.raisePropertyChanged(target, property._name);
 	        // }
 	        // TODO
 	        // Mark the property as pending initialization
@@ -1046,17 +1109,19 @@
 	    if (additionalArgs === void 0) { additionalArgs = null; }
 	    // Ensure that the property has an initial (possibly default) value
 	    Property$_ensureInited(property, obj);
+	    var old = obj[property.fieldName];
+	    if (Property$_shouldSetValue(property, obj, old, val, skipTypeCheck)) {
+	        Property$_setValue(property, obj, old, val, skipTypeCheck, additionalArgs);
+	    }
+	}
+	function Property$_shouldSetValue(property, obj, old, val, skipTypeCheck) {
+	    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
 	    if (!property.canSetValue(obj, val)) {
 	        throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (property.jstype && property.jstype.meta ? property.jstype.meta.fullName : parseFunctionName(property.jstype)) + " was expected.");
 	    }
-	    var old = obj[property.fieldName];
 	    // Update lists as batch remove/add operations
 	    if (property.isList) {
-	        // TODO
-	        // old.beginUpdate();
-	        // update(old, val);
-	        // old.endUpdate();
-	        throw new Error("Property set on lists is not permitted");
+	        throw new Error("Property set on lists is not permitted.");
 	    }
 	    else {
 	        // compare values so that this check is accurate for primitives
@@ -1065,23 +1130,36 @@
 	        // Do nothing if the new value is the same as the old value. Account for NaN numbers, which are
 	        // not equivalent (even to themselves). Although isNaN returns true for non-Number values, we won't
 	        // get this far for Number properties unless the value is actually of type Number (a number or NaN).
-	        if (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue))) {
-	            // Set the backing field value
-	            obj[property.fieldName] = val;
-	            // TODO
-	            // obj.meta.pendingInit(property, false);
-	            // Do not raise change if the property has not been initialized. 
-	            if (old !== undefined) {
-	                var eventArgs = { property: property, newValue: val, oldValue: old };
-	                if (additionalArgs) {
-	                    for (var arg in additionalArgs) {
-	                        if (additionalArgs.hasOwnProperty(arg)) {
-	                            eventArgs[arg] = additionalArgs[arg];
-	                        }
+	        return (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue)));
+	    }
+	}
+	function Property$_setValue(property, obj, old, val, skipTypeCheck, additionalArgs) {
+	    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+	    if (additionalArgs === void 0) { additionalArgs = null; }
+	    // Update lists as batch remove/add operations
+	    if (property.isList) {
+	        // TODO
+	        // old.beginUpdate();
+	        // update(old, val);
+	        // old.endUpdate();
+	        throw new Error("Property set on lists is not implemented.");
+	    }
+	    else {
+	        // Set the backing field value
+	        obj[property.fieldName] = val;
+	        // TODO
+	        // obj.meta.pendingInit(property, false);
+	        // Do not raise change if the property has not been initialized. 
+	        if (old !== undefined) {
+	            var eventArgs = { property: property, newValue: val, oldValue: old };
+	            if (additionalArgs) {
+	                for (var arg in additionalArgs) {
+	                    if (additionalArgs.hasOwnProperty(arg)) {
+	                        eventArgs[arg] = additionalArgs[arg];
 	                    }
 	                }
-	                property._changedEvent.dispatch(obj, eventArgs);
 	            }
+	            property._changedEvent.dispatch(obj, eventArgs);
 	        }
 	    }
 	}
@@ -1269,6 +1347,16 @@
 	                t._known.add(obj);
 	            }
 	        }
+	        if (this.model._settings.propertyTarget == PropertyCreationTarget.DirectlyOnObject) {
+	            for (var prop in this._properties) {
+	                if (Object.prototype.hasOwnProperty.call(this._properties, prop)) {
+	                    var property = this._properties[prop];
+	                    if (!property.isStatic) {
+	                        Property$_generateOwnProperty(property, obj);
+	                    }
+	                }
+	            }
+	        }
 	        if (!suppressModelEvent) {
 	            this.model._entityRegisteredEvent.dispatch(this.model, { entity: obj });
 	        }
@@ -1325,7 +1413,9 @@
 	        if (!known) {
 	            var list = [];
 	            for (var id in this._pool) {
-	                list.push(this._pool[id]);
+	                if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
+	                    list.push(this._pool[id]);
+	                }
 	            }
 	            known = this._known = ObservableList.ensureObservable(list);
 	        }
@@ -1365,7 +1455,19 @@
 	        }
 	        genPropertyShortcut(this, true);
 	        */
-	        Property$_generateProperty(property);
+	        if (property.isStatic) {
+	            Property$_generateStaticProperty(property);
+	        }
+	        else if (this.model._settings.propertyTarget === PropertyCreationTarget.DirectlyOnObject) {
+	            for (var id in this._pool) {
+	                if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
+	                    Property$_generateOwnProperty(property, this._pool[id]);
+	                }
+	            }
+	        }
+	        else {
+	            Property$_generatePrototypeProperty(property);
+	        }
 	        this._propertyAddedEvent.dispatch(this, { property: property });
 	        return property;
 	    };
@@ -1470,12 +1572,35 @@
 
 	var intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
 	var Model = /** @class */ (function () {
-	    function Model() {
+	    function Model(options) {
+	        if (options === void 0) { options = null; }
 	        this._types = {};
+	        this._settings = Model.convertOptions(options);
 	        this._typeAddedEvent = new dist_1$1();
 	        this._entityRegisteredEvent = new dist_1$1();
 	        this._entityUnregisteredEvent = new dist_1$1();
 	    }
+	    Model.convertOptions = function (options) {
+	        if (options === void 0) { options = null; }
+	        var settings = { propertyTarget: PropertyCreationTarget.PrototypeWithBackingField };
+	        if (options) {
+	            if (options.propertyTarget) {
+	                if (typeof options.propertyTarget === "number") {
+	                    settings.propertyTarget = options.propertyTarget;
+	                }
+	                else if (typeof options.propertyTarget === "string") {
+	                    var propertyTargetString = options.propertyTarget.toLowerCase();
+	                    if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.PrototypeWithBackingField].toLowerCase()) {
+	                        settings.propertyTarget = PropertyCreationTarget.PrototypeWithBackingField;
+	                    }
+	                    else if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.DirectlyOnObject].toLowerCase()) {
+	                        settings.propertyTarget = PropertyCreationTarget.DirectlyOnObject;
+	                    }
+	                }
+	            }
+	        }
+	        return settings;
+	    };
 	    Object.defineProperty(Model.prototype, "typeAdded", {
 	        get: function () {
 	            return this._typeAddedEvent.asEvent();

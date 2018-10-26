@@ -1,6 +1,6 @@
 import { Model } from "./model";
 import { Entity } from "./entity";
-import { Property, Property$_generateProperty } from "./property";
+import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty, PropertyCreationTarget } from "./property";
 import { navigateAttribute, ensureNamespace, getTypeName, parseFunctionName } from "./helpers";
 import { ObjectMeta } from "./object-meta";
 import { EventDispatcher, IEvent } from "ste-events";
@@ -203,6 +203,17 @@ export class Type {
 			}
 		}
 
+		if (this.model._settings.propertyTarget == PropertyCreationTarget.DirectlyOnObject) {
+			for (let prop in this._properties) {
+				if (Object.prototype.hasOwnProperty.call(this._properties, prop)) {
+					let property = this._properties[prop];
+					if (!property.isStatic) {
+						Property$_generateOwnProperty(property, obj);
+					}
+				}
+			}
+		}
+
 		if (!suppressModelEvent) {
 			this.model._entityRegisteredEvent.dispatch(this.model, { entity: obj });
 		}
@@ -277,7 +288,9 @@ export class Type {
 			var list: Array<Entity> = [];
 
 			for (var id in this._pool) {
-				list.push(this._pool[id]);
+				if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
+					list.push(this._pool[id]);
+				}
 			}
 
 			known = this._known = ObservableList.ensureObservable(list);
@@ -322,7 +335,17 @@ export class Type {
 		genPropertyShortcut(this, true);
 		*/
 
-		Property$_generateProperty(property);
+		if (property.isStatic) {
+			Property$_generateStaticProperty(property);
+		} else if (this.model._settings.propertyTarget === PropertyCreationTarget.DirectlyOnObject) {
+			for (var id in this._pool) {
+				if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
+					Property$_generateOwnProperty(property, this._pool[id]);
+				}
+			}
+		} else {
+			Property$_generatePrototypeProperty(property);
+		}
 
 		this._propertyAddedEvent.dispatch(this, { property: property });
 

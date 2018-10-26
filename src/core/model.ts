@@ -1,6 +1,7 @@
 import { Type } from "./type";
 import { EventDispatcher, IEvent } from "ste-events";
 import { Entity } from "./entity";
+import { PropertyCreationTarget } from "./property";
 
 const intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
 
@@ -20,11 +21,21 @@ export interface ModelEntityUnregisteredEventArguments {
 	entity: Entity;
 }
 
+export interface ModelOptions {
+	propertyTarget: PropertyCreationTarget | string;
+}
+
+export interface ModelSettings {
+	propertyTarget: PropertyCreationTarget;
+}
+
 export class Model {
 
 	static readonly _allTypesRoot: IModelTypeOrNamespace = {};
 
 	readonly _types: { [name: string]: Type };
+
+	readonly _settings: ModelSettings;
 
 	readonly _typeAddedEvent: EventDispatcher<Model, ModelTypeAddedEventArguments>;
 
@@ -32,12 +43,35 @@ export class Model {
 
 	readonly _entityUnregisteredEvent: EventDispatcher<Model, ModelEntityUnregisteredEventArguments>;
 
-	constructor() {
+	constructor(options: ModelOptions = null) {
 		this._types = {};
-
+		this._settings = Model.convertOptions(options);
 		this._typeAddedEvent = new EventDispatcher<Model, ModelTypeAddedEventArguments>();
 		this._entityRegisteredEvent = new EventDispatcher<Model, ModelEntityRegisteredEventArguments>();
 		this._entityUnregisteredEvent = new EventDispatcher<Model, ModelEntityUnregisteredEventArguments>();
+	}
+
+	private static convertOptions(options: ModelOptions = null): ModelSettings {
+		let settings = { propertyTarget: PropertyCreationTarget.PrototypeWithBackingField };
+
+		if (options) {
+			if (options.propertyTarget) {
+				if (typeof options.propertyTarget === "number") {
+					settings.propertyTarget = options.propertyTarget as PropertyCreationTarget;
+				} else if (typeof options.propertyTarget === "string") {
+					let propertyTargetString = options.propertyTarget.toLowerCase();
+					if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.PrototypeWithBackingField].toLowerCase()) {
+						settings.propertyTarget = PropertyCreationTarget.PrototypeWithBackingField;
+					} else if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.DirectlyOnObject].toLowerCase()) {
+						settings.propertyTarget = PropertyCreationTarget.DirectlyOnObject;
+					}
+				} else {
+
+				}
+			}
+		}
+
+		return settings;
 	}
 
 	get typeAdded(): IEvent<Model, ModelTypeAddedEventArguments> {
