@@ -3,7 +3,7 @@ import { createSecret } from "./internals";
 
 let observableListMarkerField = createSecret('ObservableList.markerField', 3, false, true, "_oL");
 
-export interface ObservableListChangedArguments<ItemType> {
+export interface ObservableListChangedArgs<ItemType> {
 	added: ItemType[];
 	addedIndex: number;
 	removed: ItemType[];
@@ -50,7 +50,7 @@ export abstract class ObservableList<ItemType> extends Array<ItemType> {
 	}
 
 	// ObservableList members:
-	abstract changed: IEvent<Array<ItemType>, ObservableListChangedArguments<ItemType>>;
+	abstract changed: IEvent<Array<ItemType>, ObservableListChangedArgs<ItemType>>;
 	abstract add(item: ItemType): void;
 	// abstract addRange(items: ItemType[]): void;
 	// abstract clear(): void;
@@ -91,7 +91,7 @@ export abstract class ObservableList<ItemType> extends Array<ItemType> {
 
 class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
 
-	readonly _changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>>;
+	readonly _changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArgs<ItemType>>;
 
 	/**
 	 * Creates a new observable list
@@ -103,10 +103,10 @@ class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
 		ObservableList._markObservable(this);
 	}
 
-	private static _initFields<ItemType>(target: any, changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>> = null) {
+	private static _initFields<ItemType>(target: any, changedEvent: EventDispatcher<Array<ItemType>, ObservableListChangedArgs<ItemType>> = null) {
 
 		if (changedEvent == null) {
-			changedEvent = new EventDispatcher<Array<ItemType>, ObservableListChangedArguments<ItemType>>();
+			changedEvent = new EventDispatcher<Array<ItemType>, ObservableListChangedArgs<ItemType>>();
 		}
 
 		// Define the `_changedEvent` readonly property
@@ -156,7 +156,7 @@ class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
 	}
 
 	/** Expose the changed event */
-	get changed(): IEvent<Array<ItemType>, ObservableListChangedArguments<ItemType>> {
+	get changed(): IEvent<Array<ItemType>, ObservableListChangedArgs<ItemType>> {
 		return this._changedEvent.asEvent();
 	}
 

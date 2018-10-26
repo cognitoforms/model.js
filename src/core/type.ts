@@ -1,4 +1,4 @@
-import { Model } from "./model";
+import { Model, Model$_allTypesRoot } from "./model";
 import { Entity } from "./entity";
 import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty, PropertyCreationTarget } from "./property";
 import { navigateAttribute, ensureNamespace, getTypeName, parseFunctionName } from "./helpers";
@@ -8,12 +8,32 @@ import { ObservableList } from "./observable-list";
 
 let newIdPrefix = "+c"
 
-export interface TypeEntityInitEventArguments {
+export interface TypeEntityInitNewEventArgs {
 	entity: Entity;
 }
 
-export interface TypePropertyAddedEventArguments {
-	property: Property;
+export interface TypeEntityInitExistingEventArgs {
+	entity: Entity;
+}
+
+export interface TypeEntityDestroyEventArgs {
+	entity: Entity;
+}
+
+class TypeEventDispatchers {
+
+	readonly initNew: EventDispatcher<Type, TypeEntityInitNewEventArgs>;
+
+	readonly initExisting: EventDispatcher<Type, TypeEntityInitExistingEventArgs>;
+
+	readonly destroy: EventDispatcher<Type, TypeEntityDestroyEventArgs>;
+
+	constructor() {
+		this.initNew = new EventDispatcher<Type, TypeEntityInitNewEventArgs>();
+		this.initExisting = new EventDispatcher<Type, TypeEntityInitExistingEventArgs>();
+		this.initNew = new EventDispatcher<Type, TypeEntityDestroyEventArgs>();
+	}
+
 }
 
 export class Type {
@@ -26,12 +46,6 @@ export class Type {
 
 	private readonly _properties: { [name: string]: Property };
 
-	readonly _initNewEvent: EventDispatcher<Type, TypeEntityInitEventArguments>;
-
-	readonly _initExistingEvent: EventDispatcher<Type, TypeEntityInitEventArguments>;
-
-	readonly _propertyAddedEvent: EventDispatcher<Type, TypePropertyAddedEventArguments>;
-
 	model: Model;
 	baseType: Type;
 	derivedTypes: Type[];
@@ -40,15 +54,15 @@ export class Type {
 	origin: string;
 	originForNewProperties: string;
 
+	readonly _eventDispatchers: TypeEventDispatchers;
+
 	constructor(model: Model, name: string, baseType: Type, origin: string) {
 
 		this.model = model;
 
 		this.fullName = name;
-
-		this._initNewEvent = new EventDispatcher<Type, TypeEntityInitEventArguments>();
-		this._initExistingEvent = new EventDispatcher<Type, TypeEntityInitEventArguments>();
-		this._propertyAddedEvent = new EventDispatcher<Type, TypePropertyAddedEventArguments>();
+	
+		Object.defineProperty(this, "_eventDispatchers", { value: new TypeEventDispatchers() });
 
 		this._properties = {};
 
@@ -68,7 +82,7 @@ export class Type {
 		// create namespaces as needed
 		var nameTokens = name.split("."),
 			token = nameTokens.shift(),
-			namespaceObj = Model._allTypesRoot,
+			namespaceObj = Model$_allTypesRoot,
 			globalObj = window;
 
 		while (nameTokens.length > 0) {
@@ -137,16 +151,16 @@ export class Type {
 		// this.type = this;
 	}
 
-	get propertyAdded(): IEvent<Type, TypePropertyAddedEventArguments> {
-		return this._propertyAddedEvent.asEvent();
+	get destroyEvent(): IEvent<Type, TypeEntityDestroyEventArgs> {
+		return this._eventDispatchers.destroy.asEvent();
 	}
 
-	get initNew(): IEvent<Type, TypeEntityInitEventArguments> {
-		return this._initNewEvent.asEvent();
+	get initNewEvent(): IEvent<Type, TypeEntityInitNewEventArgs> {
+		return this._eventDispatchers.initNew.asEvent();
 	}
 
-	get initExisting(): IEvent<Type, TypeEntityInitEventArguments> {
-		return this._initExistingEvent.asEvent();
+	get initExistingEvent(): IEvent<Type, TypeEntityInitExistingEventArgs> {
+		return this._eventDispatchers.initExisting.asEvent();
 	}
 
 	static get newIdPrefix() {
@@ -215,7 +229,7 @@ export class Type {
 		}
 
 		if (!suppressModelEvent) {
-			this.model._entityRegisteredEvent.dispatch(this.model, { entity: obj });
+			this.model._eventDispatchers.entityRegistered.dispatch(this.model, { entity: obj });
 		}
 	}
 
@@ -263,7 +277,7 @@ export class Type {
 			}
 		}
 
-		this.model._entityUnregisteredEvent.dispatch(this.model, { entity: obj });
+		this.model._eventDispatchers.entityUnregistered.dispatch(this.model, { entity: obj });
 	}
 
 	get(id, exactTypeOnly) {
@@ -347,7 +361,7 @@ export class Type {
 			Property$_generatePrototypeProperty(property);
 		}
 
-		this._propertyAddedEvent.dispatch(this, { property: property });
+		this.model._eventDispatchers.propertyAdded.dispatch(this.model, { property: property });
 
 		return property;
 	}
@@ -440,7 +454,7 @@ function Type$_generateClass(type: Type) {
 
 				// Raise the initExisting event on this type and all base types
 				for (var t: Type = type; t; t = t.baseType) {
-					t._initExistingEvent.dispatch(t, { entity: this });
+					t._eventDispatchers.initExisting.dispatch(t, { entity: this });
 				}
 			}
 			else {
@@ -455,7 +469,7 @@ function Type$_generateClass(type: Type) {
 
 				// Raise the initNew event on this type and all base types
 				for (var t: Type = type; t; t = t.baseType) {
-					t._initNewEvent.dispatch(t, { entity: this });
+					t._eventDispatchers.initNew.dispatch(t, { entity: this });
 				}
 			}
 		}

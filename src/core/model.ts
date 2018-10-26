@@ -1,7 +1,7 @@
 import { Type } from "./type";
 import { EventDispatcher, IEvent } from "ste-events";
 import { Entity } from "./entity";
-import { PropertyCreationTarget } from "./property";
+import { PropertyCreationTarget, Property } from "./property";
 
 const intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
 
@@ -9,16 +9,20 @@ export interface IModelTypeOrNamespace {
 	[name: string]: Type | IModelTypeOrNamespace;
 }
 
-export interface ModelTypeAddedEventArguments {
+export interface ModelTypeAddedEventArgs {
 	type: Type;
 }
 
-export interface ModelEntityRegisteredEventArguments {
+export interface ModelEntityRegisteredEventArgs {
 	entity: Entity;
 }
 
-export interface ModelEntityUnregisteredEventArguments {
+export interface ModelEntityUnregisteredEventArgs {
 	entity: Entity;
+}
+
+export interface ModelPropertyAddedEventArgs {
+	property: Property;
 }
 
 export interface ModelOptions {
@@ -29,29 +33,44 @@ export interface ModelSettings {
 	propertyTarget: PropertyCreationTarget;
 }
 
-export class Model {
+class ModelEventDispatchers {
 
-	static readonly _allTypesRoot: IModelTypeOrNamespace = {};
+	readonly typeAdded: EventDispatcher<Model, ModelTypeAddedEventArgs>;
+
+	readonly entityRegistered: EventDispatcher<Model, ModelEntityRegisteredEventArgs>;
+
+	readonly entityUnregistered: EventDispatcher<Model, ModelEntityUnregisteredEventArgs>;
+
+	readonly propertyAdded: EventDispatcher<Model, ModelPropertyAddedEventArgs>;
+
+	constructor() {
+		this.typeAdded = new EventDispatcher<Model, ModelTypeAddedEventArgs>();
+		this.entityRegistered = new EventDispatcher<Model, ModelEntityRegisteredEventArgs>();
+		this.entityUnregistered = new EventDispatcher<Model, ModelEntityUnregisteredEventArgs>();
+		this.propertyAdded = new EventDispatcher<Model, ModelPropertyAddedEventArgs>();
+	}
+
+}
+
+export let Model$_allTypesRoot: IModelTypeOrNamespace = {};
+
+export class Model {
 
 	readonly _types: { [name: string]: Type };
 
 	readonly _settings: ModelSettings;
 
-	readonly _typeAddedEvent: EventDispatcher<Model, ModelTypeAddedEventArguments>;
+	readonly _eventDispatchers: ModelEventDispatchers;
 
-	readonly _entityRegisteredEvent: EventDispatcher<Model, ModelEntityRegisteredEventArguments>;
-
-	readonly _entityUnregisteredEvent: EventDispatcher<Model, ModelEntityUnregisteredEventArguments>;
+	static readonly events: GlobalEventHandlers;
 
 	constructor(options: ModelOptions = null) {
-		this._types = {};
-		this._settings = Model.convertOptions(options);
-		this._typeAddedEvent = new EventDispatcher<Model, ModelTypeAddedEventArguments>();
-		this._entityRegisteredEvent = new EventDispatcher<Model, ModelEntityRegisteredEventArguments>();
-		this._entityUnregisteredEvent = new EventDispatcher<Model, ModelEntityUnregisteredEventArguments>();
+		Object.defineProperty(this, "_types", { value: {} });
+		Object.defineProperty(this, "_settings", { value: this.convertOptions(options) });
+		Object.defineProperty(this, "_eventDispatchers", { value: new ModelEventDispatchers() });
 	}
 
-	private static convertOptions(options: ModelOptions = null): ModelSettings {
+	private convertOptions(options: ModelOptions = null): ModelSettings {
 		let settings = { propertyTarget: PropertyCreationTarget.PrototypeWithBackingField };
 
 		if (options) {
@@ -74,16 +93,20 @@ export class Model {
 		return settings;
 	}
 
-	get typeAdded(): IEvent<Model, ModelTypeAddedEventArguments> {
-		return this._typeAddedEvent.asEvent();
+	get typeAddedEvent(): IEvent<Model, ModelTypeAddedEventArgs> {
+		return this._eventDispatchers.typeAdded.asEvent();
 	}
 
-	get entityRegistered(): IEvent<Model, ModelEntityRegisteredEventArguments> {
-		return this._entityRegisteredEvent.asEvent();
+	get entityRegisteredEvent(): IEvent<Model, ModelEntityRegisteredEventArgs> {
+		return this._eventDispatchers.entityRegistered.asEvent();
 	}
 
-	get entityUnregistered(): IEvent<Model, ModelEntityUnregisteredEventArguments> {
-		return this._entityUnregisteredEvent.asEvent();
+	get entityUnregisteredEvent(): IEvent<Model, ModelEntityUnregisteredEventArgs> {
+		return this._eventDispatchers.entityUnregistered.asEvent();
+	}
+
+	get propertyAddedEvent(): IEvent<Model, ModelPropertyAddedEventArgs> {
+		return this._eventDispatchers.propertyAdded.asEvent();
 	}
 
 	dispose() {
@@ -106,7 +129,7 @@ export class Model {
 	addType(name: string, baseType: Type = null, origin: string = "client") {
 		var type = new Type(this, name, baseType, origin);
 		this._types[name] = type;
-		this._typeAddedEvent.dispatch(this, { type: type });
+		this._eventDispatchers.typeAdded.dispatch(this, { type: type });
 		return type;
 	}
 
@@ -115,7 +138,7 @@ export class Model {
 	 * @param name The name of the type
 	 */
 	static getJsType(name: string, allowUndefined: boolean = false): any {
-		var obj: IModelTypeOrNamespace = Model._allTypesRoot;
+		var obj: IModelTypeOrNamespace = Model$_allTypesRoot;
 		var steps = name.split(".");
 		if (steps.length === 1 && intrinsicJsTypes.indexOf(name) > -1) {
 			return window[name];

@@ -20,5 +20,10 @@ export class ObjectMeta {
 
 	destroy() {
 		this.type.unregister(this.entity);
+
+		// Raise the destroy event on this type and all base types
+		for (var t: Type = this.type; t; t = t.baseType) {
+			t._eventDispatchers.destroy.dispatch(t, { entity: this.entity });
+		}
 	}
 }
