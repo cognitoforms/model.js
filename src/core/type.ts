@@ -1,6 +1,6 @@
 import { Model, Model$_allTypesRoot } from "./model";
 import { Entity } from "./entity";
-import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty, PropertyCreationTarget } from "./property";
+import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty } from "./property";
 import { navigateAttribute, ensureNamespace, getTypeName, parseFunctionName } from "./helpers";
 import { ObjectMeta } from "./object-meta";
 import { EventDispatcher, IEvent } from "ste-events";
@@ -217,7 +217,7 @@ export class Type {
 			}
 		}
 
-		if (this.model._settings.propertyTarget == PropertyCreationTarget.DirectlyOnObject) {
+		if (this.model._settings.createOwnProperties === true) {
 			for (let prop in this._properties) {
 				if (Object.prototype.hasOwnProperty.call(this._properties, prop)) {
 					let property = this._properties[prop];
@@ -351,11 +351,11 @@ export class Type {
 
 		if (property.isStatic) {
 			Property$_generateStaticProperty(property);
-		} else if (this.model._settings.propertyTarget === PropertyCreationTarget.DirectlyOnObject) {
+		} else if (this.model._settings.createOwnProperties === true) {
 			for (var id in this._pool) {
 				if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
 					Property$_generateOwnProperty(property, this._pool[id]);
-				}
+			}
 			}
 		} else {
 			Property$_generatePrototypeProperty(property);

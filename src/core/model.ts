@@ -1,7 +1,7 @@
 import { Type } from "./type";
 import { EventDispatcher, IEvent } from "ste-events";
 import { Entity } from "./entity";
-import { PropertyCreationTarget, Property } from "./property";
+import { Property } from "./property";
 
 const intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
 
@@ -26,12 +26,18 @@ export interface ModelPropertyAddedEventArgs {
 }
 
 export interface ModelOptions {
-	propertyTarget: PropertyCreationTarget | string;
+	createOwnProperties: Boolean;
 }
 
 export interface ModelSettings {
-	propertyTarget: PropertyCreationTarget;
+	createOwnProperties: Boolean;
 }
+
+const defaultModelSettings: ModelSettings = {
+	// There is a slight speed cost to creating own properties,
+	// which may be noticeable with very large object counts.
+	createOwnProperties: false,
+};
 
 class ModelEventDispatchers {
 
@@ -71,21 +77,17 @@ export class Model {
 	}
 
 	private convertOptions(options: ModelOptions = null): ModelSettings {
-		let settings = { propertyTarget: PropertyCreationTarget.PrototypeWithBackingField };
+		// Start with the default settings...
+		let settings: ModelSettings = {
+			createOwnProperties: defaultModelSettings.createOwnProperties
+		};
 
 		if (options) {
-			if (options.propertyTarget) {
-				if (typeof options.propertyTarget === "number") {
-					settings.propertyTarget = options.propertyTarget as PropertyCreationTarget;
-				} else if (typeof options.propertyTarget === "string") {
-					let propertyTargetString = options.propertyTarget.toLowerCase();
-					if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.PrototypeWithBackingField].toLowerCase()) {
-						settings.propertyTarget = PropertyCreationTarget.PrototypeWithBackingField;
-					} else if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.DirectlyOnObject].toLowerCase()) {
-						settings.propertyTarget = PropertyCreationTarget.DirectlyOnObject;
-					}
+			if (Object.prototype.hasOwnProperty.call(options, 'createOwnProperties')) {
+				if (typeof options.createOwnProperties === "boolean") {
+					settings.createOwnProperties = options.createOwnProperties;
 				} else {
-
+					// TODO: warn?
 				}
 			}
 		}

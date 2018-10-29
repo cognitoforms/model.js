@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.7
+ * ExoModel.js v0.0.8
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -796,11 +796,6 @@ var ObservableListImplementation = /** @class */ (function (_super) {
 }(ObservableList));
 
 var fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
-var PropertyCreationTarget;
-(function (PropertyCreationTarget) {
-    PropertyCreationTarget[PropertyCreationTarget["PrototypeWithBackingField"] = 0] = "PrototypeWithBackingField";
-    PropertyCreationTarget[PropertyCreationTarget["DirectlyOnObject"] = 1] = "DirectlyOnObject";
-})(PropertyCreationTarget || (PropertyCreationTarget = {}));
 var PropertyEventDispatchers = /** @class */ (function () {
     function PropertyEventDispatchers() {
         this.changed = new dist_1$1();
@@ -819,6 +814,8 @@ var Property = /** @class */ (function () {
             this._origin = containingType.originForNewProperties;
         }
         Object.defineProperty(this, "_eventDispatchers", { value: new PropertyEventDispatchers() });
+        Object.defineProperty(this, "_getter", { value: Property$_makeGetter(this, Property$_getter) });
+        Object.defineProperty(this, "_setter", { value: Property$_makeSetter(this, Property$_setter) });
         /*
         if (this._origin === "client" && this._isPersisted) {
             // TODO
@@ -946,17 +943,18 @@ var Property = /** @class */ (function () {
                 }, this));
         }
     };
-    Property.prototype.value = function (obj, val, args) {
-        if (args === void 0) { args = null; }
+    Property.prototype.value = function (obj, val, additionalArgs) {
+        if (val === void 0) { val = null; }
+        if (additionalArgs === void 0) { additionalArgs = null; }
         var target = (this.isStatic ? this.containingType.jstype : obj);
         if (target === undefined || target === null) {
             throw new Error("Cannot " + (arguments.length > 1 ? "set" : "get") + " value for " + (this.isStatic ? "" : "non-") + "static property \"" + this.getPath() + "\" on type \"" + this.containingType.fullName + "\": target is null or undefined.");
         }
         if (arguments.length > 1) {
-            Property$_setter(this, target, val, {}, false, args);
+            Property$_setter(this, obj, val, additionalArgs);
         }
         else {
-            return Property$_getter(this, target, {});
+            return Property$_getter(this, obj);
         }
     };
     Property.prototype.rootedPath = function (type) {
@@ -967,85 +965,33 @@ var Property = /** @class */ (function () {
     return Property;
 }());
 function Property$_generateStaticProperty(property) {
-    var state = {};
     Object.defineProperty(property.containingType.jstype, property.name, {
         configurable: false,
         enumerable: true,
-        get: Property$_makeGetter(property, Property$_getter, state, true),
-        set: Property$_makeSetter(property, Property$_setter, state)
+        get: property._getter,
+        set: property._setter
     });
 }
 function Property$_generatePrototypeProperty(property) {
-    var state = {};
     Object.defineProperty(property.containingType.jstype.prototype, property.name, {
         configurable: false,
         enumerable: true,
-        get: Property$_makeGetter(property, Property$_getter, state, true),
-        set: Property$_makeSetter(property, Property$_setter, state)
+        get: property._getter,
+        set: property._setter
     });
 }
 function Property$_generateOwnProperty(property, obj) {
-    var val = null;
-    var isInitialized = false;
-    var state = {};
-    var _ensureInited = function () {
-        if (!isInitialized) {
-            // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
-            // TODO
-            // if (!property.isCalculated) {
-            // TODO
-            // target.meta.pendingInit(property, false);
-            val = Property$_getInitialValue(property);
-            if (Array.isArray(val)) {
-                Property$_subListEvents(obj, property, val, state);
-            }
-            // TODO
-            // Observer.raisePropertyChanged(obj, property._name);
-            // }
-            // TODO
-            // Mark the property as pending initialization
-            // obj.meta.pendingInit(property, true);
-            isInitialized = true;
-        }
-    };
     Object.defineProperty(obj, property.name, {
         configurable: false,
         enumerable: true,
-        get: function () {
-            _ensureInited();
-            // Raise get events
-            property._eventDispatchers.accessed.dispatch(obj, { property: property, value: val, state: state });
-            return val;
-        },
-        set: function (newVal) {
-            _ensureInited();
-            if (Property$_shouldSetValue(property, obj, val, newVal)) {
-                var old = val;
-                // Update lists as batch remove/add operations
-                if (property.isList) {
-                    // TODO
-                    // old.beginUpdate();
-                    // update(old, newVal);
-                    // old.endUpdate();
-                    throw new Error("Property set on lists is not implemented.");
-                }
-                else {
-                    val = newVal;
-                    // TODO
-                    // obj.meta.pendingInit(property, false);
-                    // Do not raise change if the property has not been initialized. 
-                    if (old !== undefined) {
-                        property._eventDispatchers.changed.dispatch(obj, { property: property, newValue: val, oldValue: old, state: state });
-                    }
-                }
-            }
-        }
+        get: property._getter,
+        set: property._setter
     });
 }
-function Property$_subListEvents(obj, property, list, state) {
+function Property$_subListEvents(obj, property, list) {
     list.changed.subscribe(function (sender, args) {
         if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
-            var eventArgs = { property: property, newValue: list, oldValue: undefined, state: state };
+            var eventArgs = { property: property, newValue: list, oldValue: undefined };
             eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
             eventArgs['collectionChanged'] = true;
             property._eventDispatchers.changed.dispatch(obj, eventArgs);
@@ -1080,7 +1026,7 @@ function Property$_getInitialValue(property) {
     }
     return val;
 }
-function Property$_ensureInited(property, obj, state) {
+function Property$_ensureInited(property, obj) {
     // Determine if the property has been initialized with a value
     // and initialize the property if necessary
     if (!obj.hasOwnProperty(property.fieldName)) {
@@ -1093,7 +1039,7 @@ function Property$_ensureInited(property, obj, state) {
         var val = Property$_getInitialValue(property);
         Object.defineProperty(target, property.fieldName, { value: val, writable: true });
         if (Array.isArray(val)) {
-            Property$_subListEvents(obj, property, val, state);
+            Property$_subListEvents(obj, property, val);
         }
         // TODO
         // Observer.raisePropertyChanged(target, property._name);
@@ -1103,25 +1049,23 @@ function Property$_ensureInited(property, obj, state) {
         // obj.meta.pendingInit(property, true);
     }
 }
-function Property$_getter(property, obj, state, skipTypeCheck) {
-    if (state === void 0) { state = {}; }
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+function Property$_getter(property, obj) {
     // Ensure that the property has an initial (possibly default) value
-    Property$_ensureInited(property, obj, state);
+    Property$_ensureInited(property, obj);
+    var eventArgs = { property: property, value: obj[property.fieldName] };
     // Raise get events
-    property._eventDispatchers.accessed.dispatch(obj, { property: property, value: obj[property.fieldName], state: state });
+    property._eventDispatchers.accessed.dispatch(obj, eventArgs);
     // Return the property value
     return obj[property.fieldName];
 }
-function Property$_setter(property, obj, val, state, skipTypeCheck, additionalArgs) {
-    if (state === void 0) { state = {}; }
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+function Property$_setter(property, obj, val, additionalArgs, skipTypeCheck) {
     if (additionalArgs === void 0) { additionalArgs = null; }
+    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
     // Ensure that the property has an initial (possibly default) value
-    Property$_ensureInited(property, obj, state);
+    Property$_ensureInited(property, obj);
     var old = obj[property.fieldName];
     if (Property$_shouldSetValue(property, obj, old, val, skipTypeCheck)) {
-        Property$_setValue(property, obj, old, val, state, skipTypeCheck, additionalArgs);
+        Property$_setValue(property, obj, old, val, additionalArgs);
     }
 }
 function Property$_shouldSetValue(property, obj, old, val, skipTypeCheck) {
@@ -1143,8 +1087,7 @@ function Property$_shouldSetValue(property, obj, old, val, skipTypeCheck) {
         return (oldValue !== newValue && !(property.jstype === Number && isNaN(oldValue) && isNaN(newValue)));
     }
 }
-function Property$_setValue(property, obj, old, val, state, skipTypeCheck, additionalArgs) {
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
+function Property$_setValue(property, obj, old, val, additionalArgs) {
     if (additionalArgs === void 0) { additionalArgs = null; }
     // Update lists as batch remove/add operations
     if (property.isList) {
@@ -1161,7 +1104,7 @@ function Property$_setValue(property, obj, old, val, state, skipTypeCheck, addit
         // obj.meta.pendingInit(property, false);
         // Do not raise change if the property has not been initialized. 
         if (old !== undefined) {
-            var eventArgs = { property: property, newValue: val, oldValue: old, state: state };
+            var eventArgs = { property: property, newValue: val, oldValue: old };
             if (additionalArgs) {
                 for (var arg in additionalArgs) {
                     if (additionalArgs.hasOwnProperty(arg)) {
@@ -1173,11 +1116,11 @@ function Property$_setValue(property, obj, old, val, state, skipTypeCheck, addit
         }
     }
 }
-function Property$_makeGetter(property, getter, state, skipTypeCheck) {
-    if (skipTypeCheck === void 0) { skipTypeCheck = false; }
-    return function () {
+function Property$_makeGetter(property, getter) {
+    return function (additionalArgs) {
+        if (additionalArgs === void 0) { additionalArgs = null; }
         // ensure the property is initialized
-        var result = getter(property, this, state, skipTypeCheck);
+        var result = getter(property, this, additionalArgs);
         /*
         // TODO
         // ensure the property is initialized
@@ -1195,12 +1138,13 @@ function Property$_makeGetter(property, getter, state, skipTypeCheck) {
         return result;
     };
 }
-function Property$_makeSetter(prop, setter, state, skipTypeCheck) {
+function Property$_makeSetter(prop, setter, skipTypeCheck) {
     // TODO
     // setter.__notifies = true;
     if (skipTypeCheck === void 0) { skipTypeCheck = false; }
-    return function (val) {
-        setter(prop, this, val, state, skipTypeCheck);
+    return function (val, additionalArgs) {
+        if (additionalArgs === void 0) { additionalArgs = null; }
+        setter(prop, this, val, additionalArgs, skipTypeCheck);
     };
 }
 
@@ -1367,7 +1311,7 @@ var Type = /** @class */ (function () {
                 t._known.add(obj);
             }
         }
-        if (this.model._settings.propertyTarget == PropertyCreationTarget.DirectlyOnObject) {
+        if (this.model._settings.createOwnProperties === true) {
             for (var prop in this._properties) {
                 if (Object.prototype.hasOwnProperty.call(this._properties, prop)) {
                     var property = this._properties[prop];
@@ -1478,7 +1422,7 @@ var Type = /** @class */ (function () {
         if (property.isStatic) {
             Property$_generateStaticProperty(property);
         }
-        else if (this.model._settings.propertyTarget === PropertyCreationTarget.DirectlyOnObject) {
+        else if (this.model._settings.createOwnProperties === true) {
             for (var id in this._pool) {
                 if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
                     Property$_generateOwnProperty(property, this._pool[id]);
@@ -1591,6 +1535,11 @@ function Type$_generateClass(type) {
 }
 
 var intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
+var defaultModelSettings = {
+    // There is a slight speed cost to creating own properties,
+    // which may be noticeable with very large object counts.
+    createOwnProperties: false
+};
 var ModelEventDispatchers = /** @class */ (function () {
     function ModelEventDispatchers() {
         this.typeAdded = new dist_1$1();
@@ -1610,20 +1559,14 @@ var Model = /** @class */ (function () {
     }
     Model.prototype.convertOptions = function (options) {
         if (options === void 0) { options = null; }
-        var settings = { propertyTarget: PropertyCreationTarget.PrototypeWithBackingField };
+        // Start with the default settings...
+        var settings = {
+            createOwnProperties: defaultModelSettings.createOwnProperties
+        };
         if (options) {
-            if (options.propertyTarget) {
-                if (typeof options.propertyTarget === "number") {
-                    settings.propertyTarget = options.propertyTarget;
-                }
-                else if (typeof options.propertyTarget === "string") {
-                    var propertyTargetString = options.propertyTarget.toLowerCase();
-                    if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.PrototypeWithBackingField].toLowerCase()) {
-                        settings.propertyTarget = PropertyCreationTarget.PrototypeWithBackingField;
-                    }
-                    else if (propertyTargetString === PropertyCreationTarget[PropertyCreationTarget.DirectlyOnObject].toLowerCase()) {
-                        settings.propertyTarget = PropertyCreationTarget.DirectlyOnObject;
-                    }
+            if (Object.prototype.hasOwnProperty.call(options, 'createOwnProperties')) {
+                if (typeof options.createOwnProperties === "boolean") {
+                    settings.createOwnProperties = options.createOwnProperties;
                 }
             }
         }
