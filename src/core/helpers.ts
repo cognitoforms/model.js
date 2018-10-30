@@ -32,6 +32,66 @@ export function navigateAttribute(obj, attr: string, callback: Function, thisPtr
     }
 }
 
+function isObject(obj) {
+	return getTypeName(obj) === "object" || (obj && obj instanceof Object);
+}
+
+// If a getter method matching the given property name is found on the target it is invoked and returns the 
+// value, unless the the value is undefined, in which case null is returned instead.  This is done so that 
+// calling code can interpret a return value of undefined to mean that the property it requested does not exist.
+function getValue(target, property) {
+	var value;
+
+	// the see if there is an explicit getter function for the property
+	var getter = target["get_" + property];
+	if (getter) {
+		value = getter.call(target);
+		if (value === undefined) {
+			value = null;
+		}
+	}
+
+	// otherwise search for the property
+	else {
+		if ((isObject(target) && property in target) ||
+			Object.prototype.hasOwnProperty.call(target, property) ||
+			(target.constructor === String && /^[0-9]+$/.test(property) && parseInt(property, 10) < target.length)) {
+			value = target[property];
+			if (value === undefined) {
+				value = null;
+			}
+		}
+		else if (/\./.test(property)) {
+            // TODO: Warn about passing multi-hop path to `getValue()`
+			// logWarning("Possible incorrect usage of \"getValue()\", the path \"" + property + "\" does not exist on the target and appears to represent a multi-hop path.");
+		}
+	}
+
+	return value;
+}
+
+export function evalPath(obj: any, path: string, nullValue = null, undefinedValue = undefined) {
+    let value = obj;
+
+	let steps = path.split(".");
+
+	for (let i = 0; i < steps.length; ++i) {
+		let name = steps[i];
+		let source = value;
+		value = getValue(source, name);
+
+		if (value === null) {
+			return nullValue;
+        }
+
+		if (value === undefined) {
+			return undefinedValue;
+		}
+	}
+
+	return value;
+}
+
 var funcRegex = /function\s*([\w_\$]*)/i;
 
 export function parseFunctionName(f) {
@@ -77,4 +137,33 @@ export function randomText(len: number, includeDigits: boolean = false) {
 		result += String.fromCharCode(charCode);
 	}
 	return result;
+}
+
+export function toTitleCase(input) {
+	// https://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript/6475125#6475125
+	var i, j, str, lowers, uppers;
+
+	str = input.replace(/([^\W_]+[^\s-]*) */g, function(txt) {
+		return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+	});
+
+	// Certain minor words should be left lowercase unless 
+	// they are the first or last words in the string
+	lowers = ['A', 'An', 'The', 'And', 'But', 'Or', 'For', 'Nor', 'As', 'At',
+				'By', 'For', 'From', 'In', 'Into', 'Near', 'Of', 'On', 'Onto',
+				'To', 'With'];
+
+	for (i = 0, j = lowers.length; i < j; i++) {
+		str = str.replace(new RegExp('\\s' + lowers[i] + '\\s', 'g'), function(txt) {
+			return txt.toLowerCase();
+		});
+	}
+
+	// Certain words such as initialisms or acronyms should be left uppercase
+	uppers = ['Id', 'Tv'];
+	for (i = 0, j = uppers.length; i < j; i++) {
+		str = str.replace(new RegExp('\\b' + uppers[i] + '\\b', 'g'), uppers[i].toUpperCase());
+	}
+
+	return str;
 }

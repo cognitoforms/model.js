@@ -7,11 +7,10 @@ let internalState = {
 export function createSecret(key: string, len: number = 8, includeLetters: boolean = true, includeDigits: boolean = false, prefix: string = null) {
     let secret: string;
     if (internalState.secrets.hasOwnProperty(key)) {
-        // TODO: warn?
         secret = internalState.secrets[key];
 
         if (secret.indexOf(prefix) !== 0) {
-            // TODO: warn?
+            // TODO: Warn about existing secret without prefix?
         }
     } else {
         let rand: string = "";
@@ -22,7 +21,7 @@ export function createSecret(key: string, len: number = 8, includeLetters: boole
                 rand += randomInteger(0, 9).toString();
             }
         } else {
-            // TODO: warn?
+            // TODO: Warn about not including digits or letters?
         }
 
         if (prefix) {
@@ -43,7 +42,7 @@ export function getSecret(key: string): string {
     if (internalState.secrets.hasOwnProperty(key)) {
         secret = internalState.secrets[key];
     } else {
-        // TODO: warn?
+        // TODO: Warn about secret not found?
     }
 
     return secret;

@@ -1,9 +1,10 @@
 import { Type } from "./type";
 import { Entity } from "./entity";
 import { EventDispatcher, IEvent } from "ste-events";
-import { getTypeName, getDefaultValue, parseFunctionName } from "./helpers";
+import { getTypeName, getDefaultValue, parseFunctionName, toTitleCase } from "./helpers";
 import { createSecret } from "./internals";
 import { ObservableList } from "./observable-list";
+import { Format } from "./format";
 
 let fieldNamePrefix = createSecret('Property.fieldNamePrefix', 3, false, true, "_fN");
 
@@ -39,54 +40,71 @@ type PropertySetMethod = (property: Property, entity: Entity, val: any, addition
 
 export class Property {
 
+	// Public read-only properties: aspects of the property that cannot be
+	// changed without fundamentally changing what the property is
 	readonly containingType: Type;
 	readonly name: string;
 	readonly jstype: any;
 	readonly isList: boolean;
 	readonly isStatic: boolean;
 
-	// Declare "private" fields
-	readonly _origin: string;
+	// Public settable properties that are simple values with no side-effects or logic
+	helptext: string;
+	isPersisted: boolean;
+	isCalculated: boolean;
+
+	// Backing fields for properties that are settable and also derived from
+	// other data, calculated in some way, or cannot simply be changed
+	private _label: string;
+	private _format: Format;
+	private _origin: string;
+	private _defaultValue: any;
 
 	readonly _eventDispatchers: PropertyEventDispatchers;
 
 	readonly _getter: (args?: any) => any;
 	readonly _setter: (value: any, args?: any) => void;
 
-	constructor(containingType: Type, name: string, jstype, isList, isStatic) {
-		this.containingType = containingType;
-		this.name = name;
-		this.jstype = jstype;
-		this.isList = isList === true;
-		this.isStatic = isStatic === true;
+	constructor(containingType: Type, name: string, jstype, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue: any = undefined, origin: string = containingType.originForNewProperties) {
 
-		if (containingType.originForNewProperties) {
-			this._origin = containingType.originForNewProperties;
-		}
+		// Public read-only properties
+		Object.defineProperty(this, "containingType", { enumerable: true, value: containingType });
+		Object.defineProperty(this, "name", { enumerable: true, value: name });
+		Object.defineProperty(this, "jstype", { enumerable: true, value: jstype });
+		Object.defineProperty(this, "isList", { enumerable: true, value: isList === true });
+		Object.defineProperty(this, "isStatic", { enumerable: true, value: isStatic === true });
+
+		// Public settable properties
+		this.helptext = helptext;
+		this.isPersisted = isPersisted;
+		this.isCalculated = isCalculated;
+
+		// Backing fields for properties
+		if (label) Object.defineProperty(this, "_label", { enumerable: false, value: label, writable: true });
+		if (format) Object.defineProperty(this, "_format", { enumerable: false, value: format, writable: true });
+		if (origin) Object.defineProperty(this, "_origin", { enumerable: false, value: containingType.originForNewProperties, writable: true });
+		if (defaultValue) Object.defineProperty(this, "_defaultValue", { enumerable: false, value: defaultValue, writable: true });
 
 		Object.defineProperty(this, "_eventDispatchers", { value: new PropertyEventDispatchers() });
 
 		Object.defineProperty(this, "_getter", { value: Property$_makeGetter(this, Property$_getter) });
 		Object.defineProperty(this, "_setter", { value: Property$_makeSetter(this, Property$_setter) });
 
-		/*
-		if (this._origin === "client" && this._isPersisted) {
-			// TODO
+		if (this.origin === "client" && this.isPersisted) {
+			// TODO: Warn about client-origin property marked as persisted?
 			// logWarning($format("Client-origin properties should not be marked as persisted: Type = {0}, Name = {1}", containingType.get_fullName(), name));
-			console.warn(`Client-origin properties should not be marked as persisted: Type = ${containingType.fullName}, Name = ${name}`);
 		}
-		*/
 	}
 
 	get fieldName(): string {
 		return fieldNamePrefix + "_" + this.name;
 	}
 
-	get changed(): IEvent<Entity, PropertyChangeEventArgs> {
+	get changedEvent(): IEvent<Entity, PropertyChangeEventArgs> {
 		return this._eventDispatchers.changed.asEvent();
 	}
 
-	get accessed(): IEvent<Entity, PropertyAccessEventArgs> {
+	get accessedEvent(): IEvent<Entity, PropertyAccessEventArgs> {
 		return this._eventDispatchers.accessed.asEvent();
 	}
 
@@ -95,6 +113,7 @@ export class Property {
 			if (prop instanceof Property) {
 				return this === prop;
 			}
+			// TODO: Implement property chain
 			// else if (prop instanceof PropertyChain) {
 			// 	var props = prop.all();
 			// 	return props.length === 1 && this.equals(props[0]);
@@ -115,19 +134,31 @@ export class Property {
 		return this.containingType === mtype || mtype.isSubclassOf(this.containingType);
 	}
 
-	/*
-	get_defaultValue() {
-		// clone array and date defaults since they are mutable javascript types
-		return this._defaultValue instanceof Array ? this._defaultValue.slice() :
-			this._defaultValue instanceof Date ? new Date(+this._defaultValue) :
-				this._defaultValue instanceof TimeSpan ? new TimeSpan(this._defaultValue.totalMilliseconds) :
-					this._defaultValue instanceof Function ? this._defaultValue() :
-						this._defaultValue;
+	get label(): String {
+		return this._label || toTitleCase(this.name.replace(/([^A-Z]+)([A-Z])/g, "$1 $2"));
 	}
-	*/
+
+	get format(): Format {
+		// TODO: Compile format from specifier if needed
+		return this._format;
+	}
 
 	get origin(): string {
 		return this._origin ? this._origin : this.containingType.origin;
+	}
+
+	get defaultValue() {
+		if (Object.prototype.hasOwnProperty.call(this, '_defaultValue')) {
+			// clone array and date defaults since they are mutable javascript types
+			return this._defaultValue instanceof Array ? this._defaultValue.slice() :
+				this._defaultValue instanceof Date ? new Date(+this._defaultValue) :
+					// TODO: Implement TimeSpan class/type?
+					// this._defaultValue instanceof TimeSpan ? new TimeSpan(this._defaultValue.totalMilliseconds) :
+						this._defaultValue instanceof Function ? this._defaultValue() :
+							this._defaultValue;
+		} else {
+			return getDefaultValue(this.isList, this.jstype);
+		}
 	}
 
 	getPath(): string {
@@ -138,9 +169,9 @@ export class Property {
 		// NOTE: only allow values of the correct data type to be set in the model
 
 		if (val === undefined) {
-			// TODO
+			// TODO: Warn about setting value to undefined?
 			// logWarning("You should not set property values to undefined, use null instead: property = ." + this._name + ".");
-			console.warn(`You should not set property values to undefined, use null instead: property = ${this.name}.`);
+			// console.warn(`You should not set property values to undefined, use null instead: property = ${this.name}.`);
 			return true;
 		}
 
@@ -222,6 +253,24 @@ export class Property {
 
 }
 
+export function Property$_generateShortcuts(property: Property, target: any, recurse: Boolean = true, overwrite: Boolean = null) {
+	var shortcutName = "$" + property.name;
+
+	if (!(Object.prototype.hasOwnProperty.call(target, shortcutName)) || overwrite) {
+		target[shortcutName] = property;
+	}
+
+	if (recurse) {
+		if (overwrite == null) {
+			overwrite = false;
+		}
+
+		property.containingType.derivedTypes.forEach(function (t) {
+			Property$_generateShortcuts(property, t, true, overwrite);
+		});
+	}
+}
+
 export function Property$_generateStaticProperty(property: Property) {
 
 	Object.defineProperty(property.containingType.jstype, property.name, {
@@ -255,7 +304,7 @@ export function Property$_generateOwnProperty(property: Property, obj: Entity) {
 
 }
 
-// TODO: Get rid of this...
+// TODO: Get rid of `Property$_generateOwnPropertyWithClosure`...
 export function Property$_generateOwnPropertyWithClosure(property: Property, obj: Entity) {
 
 	let val = null;
@@ -265,9 +314,8 @@ export function Property$_generateOwnPropertyWithClosure(property: Property, obj
 	var _ensureInited = function() {
 		if (!isInitialized) {
 			// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
-			// TODO
-			// if (!property.isCalculated) {
-				// TODO
+			if (!property.isCalculated) {
+				// TODO: Implement pendingInit
 				// target.meta.pendingInit(property, false);
 
 				val = Property$_getInitialValue(property);
@@ -276,11 +324,11 @@ export function Property$_generateOwnPropertyWithClosure(property: Property, obj
 					Property$_subListEvents(obj, property, val as ObservableList<any>);
 				}
 
-				// TODO
+				// TODO: Implement observer?
 				// Observer.raisePropertyChanged(obj, property._name);
-			// }
+			}
 
-			// TODO
+			// TODO: Implement pendingInit
 			// Mark the property as pending initialization
 			// obj.meta.pendingInit(property, true);
 
@@ -307,7 +355,7 @@ export function Property$_generateOwnPropertyWithClosure(property: Property, obj
 
 				// Update lists as batch remove/add operations
 				if (property.isList) {
-					// TODO
+					// TODO: Implement observable array update
 					// old.beginUpdate();
 					// update(old, newVal);
 					// old.endUpdate();
@@ -315,7 +363,7 @@ export function Property$_generateOwnPropertyWithClosure(property: Property, obj
 				} else {
 					val = newVal;
 
-					// TODO
+					// TODO: Implement pendingInit
 					// obj.meta.pendingInit(property, false);
 
 					// Do not raise change if the property has not been initialized. 
@@ -332,46 +380,35 @@ export function Property$_generateOwnPropertyWithClosure(property: Property, obj
 function Property$_subListEvents(obj: Entity, property: Property, list: ObservableList<any>) {
 
 	list.changed.subscribe(function (sender, args) {
-
 		if ((args.added && args.added.length > 0) || (args.removed && args.removed.length > 0)) {
+			// NOTE: property change should be broadcast before rules are run so that if 
+			// any rule causes a roundtrip to the server these changes will be available
+			// TODO: Implement notifyListChanged?
+			// property.containingType.model.notifyListChanged(target, property, changes);
+
+			// NOTE: oldValue is not currently implemented for lists
 			var eventArgs: PropertyChangeEventArgs = { property: property, newValue: list, oldValue: undefined };
 
 			eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
 			eventArgs['collectionChanged'] = true;
 
 			property._eventDispatchers.changed.dispatch(obj, eventArgs);
-		}
 
-		/*
-		var changes = args.get_changes();
-
-		// Don't raise the change event unless there is actually a change to the collection
-		if (changes && changes.some(function (change) { return (change.newItems && change.newItems.length > 0) || (change.oldItems && change.oldItems.length > 0); })) {
-			// NOTE: property change should be broadcast before rules are run so that if 
-			// any rule causes a roundtrip to the server these changes will be available
-			// TODO
-			// property.containingType.model.notifyListChanged(target, property, changes);
-
-			// NOTE: oldValue is not currently implemented for lists
-			// TODO
-			// property._raiseEvent("changed", [target, { property: property, newValue: list, oldValue: undefined, changes: changes, collectionChanged: true }]);
-
-			// TODO
+			// TODO: Implement observer?
 			// Observer.raisePropertyChanged(target, property._name);
 		}
-		*/
 	});
 
 }
 
 function Property$_getInitialValue(property: Property) {
-	var val = getDefaultValue(property.isList, property.jstype);
+	var val = property.defaultValue;
 
     if (Array.isArray(val)) {
 		val = ObservableList.ensureObservable(val as Array<any>);
 
 		// Override the default toString on arrays so that we get a comma-delimited list
-		// TODO
+		// TODO: Implement toString on observable list?
 		// val.toString = Property$_arrayToString.bind(val);
 	}
 
@@ -384,11 +421,10 @@ function Property$_ensureInited(property: Property, obj: Entity) {
     if (!obj.hasOwnProperty(property.fieldName)) {
 
         // Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.  
-        // TODO
-        // if (!property.isCalculated) {
+        if (!property.isCalculated) {
 			var target = (property.isStatic ? property.containingType.jstype : obj);
 
-			// TODO
+			// TODO: Implement pendingInit
 			// target.meta.pendingInit(property, false);
 
 			let val = Property$_getInitialValue(property);
@@ -399,11 +435,11 @@ function Property$_ensureInited(property: Property, obj: Entity) {
 				Property$_subListEvents(obj, property, val as ObservableList<any>);
 			}
 
-			// TODO
+			// TODO: Implement observable?
 			// Observer.raisePropertyChanged(target, property._name);
-        // }
+        }
 
-        // TODO
+        // TODO: Implement pendingInit
         // Mark the property as pending initialization
         // obj.meta.pendingInit(property, true);
     }
@@ -463,7 +499,7 @@ function Property$_setValue(property: Property, obj: Entity, old: any, val: any,
 
     // Update lists as batch remove/add operations
     if (property.isList) {
-        // TODO
+        // TODO: Implement observable array update
         // old.beginUpdate();
         // update(old, val);
         // old.endUpdate();
@@ -473,7 +509,7 @@ function Property$_setValue(property: Property, obj: Entity, old: any, val: any,
 		// Set the backing field value
 		obj[property.fieldName] = val;
 
-		// TODO
+		// TODO: Implement pendingInit
 		// obj.meta.pendingInit(property, false);
 
 		// Do not raise change if the property has not been initialized. 
@@ -499,7 +535,7 @@ function Property$_makeGetter(property: Property, getter: PropertyGetMethod) {
         var result = getter(property, this, additionalArgs);
 
         /*
-        // TODO
+        // TODO: Implement lazy loading pattern?
         // ensure the property is initialized
         if (result === undefined || (property.isList && LazyLoader.isRegistered(result))) {
             throw new Error(
@@ -512,13 +548,12 @@ function Property$_makeGetter(property: Property, getter: PropertyGetMethod) {
         }
         */
 
-        // return the result
         return result;
     };
 }
 
 function Property$_makeSetter(prop: Property, setter: PropertySetMethod, skipTypeCheck: boolean = false) {
-    // TODO
+    // TODO: Is setter "__notifies" needed?
     // setter.__notifies = true;
 
     return function (val: any, additionalArgs: any = null) {

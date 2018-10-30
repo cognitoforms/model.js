@@ -1,10 +1,11 @@
-import { Model, Model$_allTypesRoot } from "./model";
+import { Model, Model$_allTypesRoot, NamespaceOrConstructor } from "./model";
 import { Entity } from "./entity";
-import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty } from "./property";
+import { Property, Property$_generateStaticProperty, Property$_generatePrototypeProperty, Property$_generateOwnProperty, Property$_generateShortcuts } from "./property";
 import { navigateAttribute, ensureNamespace, getTypeName, parseFunctionName } from "./helpers";
 import { ObjectMeta } from "./object-meta";
 import { EventDispatcher, IEvent } from "ste-events";
 import { ObservableList } from "./observable-list";
+import { Format } from "./format";
 
 let newIdPrefix = "+c"
 
@@ -31,121 +32,72 @@ class TypeEventDispatchers {
 	constructor() {
 		this.initNew = new EventDispatcher<Type, TypeEntityInitNewEventArgs>();
 		this.initExisting = new EventDispatcher<Type, TypeEntityInitExistingEventArgs>();
-		this.initNew = new EventDispatcher<Type, TypeEntityDestroyEventArgs>();
+		this.destroy = new EventDispatcher<Type, TypeEntityDestroyEventArgs>();
 	}
 
 }
 
+export interface TypePropertyOptions {
+	label?: string;
+	helptext?: string;
+	format?: Format;
+	isPersisted?: boolean;
+	isCalculated?: boolean;
+	defaultValue?: any;
+}
+
 export class Type {
 
-	private _counter: number;
-	private _jstype: any;
-	private _known: ObservableList<Entity>;
-	private _pool: { [id: string]: Entity };
-	private _legacyPool: { [id: string]: Entity }
+	// Public read-only properties: aspects of the object that cannot be
+	// changed without fundamentally changing what it represents
+	readonly model: Model;
+	readonly fullName: string;
+	readonly jstype: any;
+	readonly baseType: Type;
 
-	private readonly _properties: { [name: string]: Property };
-
-	model: Model;
-	baseType: Type;
-	derivedTypes: Type[];
-	fullName: string;
-
+	// Public settable properties that are simple values with no side-effects or logic
 	origin: string;
 	originForNewProperties: string;
 
+	// Backing fields for properties that are settable and also derived from
+	// other data, calculated in some way, or cannot simply be changed
+	private _counter: number;
+	private _known: ObservableList<Entity>;
+	private readonly _pool: { [id: string]: Entity };
+	private readonly _legacyPool: { [id: string]: Entity }
+	private readonly _properties: { [name: string]: Property };
+	private readonly _derivedTypes: Type[];
+
 	readonly _eventDispatchers: TypeEventDispatchers;
 
-	constructor(model: Model, name: string, baseType: Type, origin: string) {
+	constructor(model: Model, fullName: string, baseType: Type = null, origin: string = "client") {
 
-		this.model = model;
-
-		this.fullName = name;
+		// Public read-only properties
+		Object.defineProperty(this, "model", { enumerable: true, value: model });
+		Object.defineProperty(this, "fullName", { enumerable: true, value: fullName });
+		Object.defineProperty(this, "jstype", { enumerable: true, value: Type$_generateClass(this, fullName, baseType) });
+		Object.defineProperty(this, "baseType", { enumerable: true, value: baseType });
 	
-		Object.defineProperty(this, "_eventDispatchers", { value: new TypeEventDispatchers() });
-
-		this._properties = {};
-
-		// If origin is not provided it is assumed to be client
-		this.origin = origin || "client";
+		// Public settable properties
+		this.origin = origin;
 		this.originForNewProperties = this.origin;
 
-		this._pool = {};
-		this._legacyPool = {};
-		this._counter = 0;
+		// Backing fields for properties
+		Object.defineProperty(this, "_counter", { enumerable: false, value: 0, writable: true });
+		Object.defineProperty(this, "_pool", { enumerable: false, value: {}, writable: false });
+		Object.defineProperty(this, "_legacyPool", { enumerable: false, value: {}, writable: false });
+		Object.defineProperty(this, "_properties", { enumerable: false, value: {}, writable: false });
+		Object.defineProperty(this, '_derivedTypes', { enumerable: false, value: [], writable: false });
 
-		Object.defineProperty(this, "rules", { value: [] });
+		Object.defineProperty(this, "_eventDispatchers", { value: new TypeEventDispatchers() });
 
-		// generate class and constructor
-		var jstype = Model.getJsType(name, true);
-
-		// create namespaces as needed
-		var nameTokens = name.split("."),
-			token = nameTokens.shift(),
-			namespaceObj = Model$_allTypesRoot,
-			globalObj = window;
-
-		while (nameTokens.length > 0) {
-			namespaceObj = ensureNamespace(token, namespaceObj);
-			globalObj = ensureNamespace(token, globalObj);
-			token = nameTokens.shift();
-		}
-
-		// the final name to use is the last token
-		var finalName = token;
-		jstype = Type$_generateClass(this);
-
-		this._jstype = jstype;
-
-		// If the namespace already contains a type with this name, append a '$' to the name
-		if (!namespaceObj[finalName]) {
-			namespaceObj[finalName] = jstype;
-		}
-		else {
-			namespaceObj['$' + finalName] = jstype;
-		}
-
-		// If the global object already contains a type with this name, append a '$' to the name
-		if (!globalObj[finalName]) {
-			globalObj[finalName] = jstype;
-		}
-		else {
-			globalObj['$' + finalName] = jstype;
-		}
-
-		// setup inheritance
-		this.derivedTypes = [];
-
-		var baseJsType;
-
-		if (baseType) {
-			baseJsType = baseType._jstype;
-
-			this.baseType = baseType;
-			baseType.derivedTypes.push(this);
-
-			// TODO
-			// inherit all shortcut properties that have aleady been defined
-			// inheritBaseTypePropShortcuts(jstype, baseType);
-		}
-		else {
-			baseJsType = Entity;
-			this.baseType = null;
-		}
-
-		disableConstruction = true;
-		this._jstype.prototype = new baseJsType();
-		disableConstruction = false;
-
-		this._jstype.prototype.constructor = this._jstype;
-
-		// helpers
-		Object.defineProperty(jstype, "meta", { value: this, configurable: false, enumerable: false, writable: false });
+		// TODO: Implement rules
+		// Object.defineProperty(this, "rules", { value: [] });
 
 		// Register the type with the model
-		model._types[name] = this;
+		model._types[fullName] = this;
 
-		// TODO
+		// TODO: Is self-reference to type needed?
 		// Add self-reference to decrease the likelihood of errors
 		// due to an absence of the necessary type vs. entity.
 		// this.type = this;
@@ -243,7 +195,7 @@ export class Type {
 		var obj = this._pool[oldKey];
 
 		if (obj) {
-			obj.meta._legacyId = oldId;
+			obj.meta.legacyId = oldId;
 
 			for (var t: Type = this; t; t = t.baseType) {
 				t._pool[newKey] = obj;
@@ -256,11 +208,10 @@ export class Type {
 			obj.meta.id = newId;
 
 			return obj;
-		}
-		else {
-			// TODO
+		} else {
+			// TODO: Warn about attempting to change id of object that couldn't be found
 			// logWarning($format("Attempting to change id: Instance of type \"{0}\" with id = \"{1}\" could not be found.", this.get_fullName(), oldId));
-			console.warn(`Attempting to change id: Instance of type \"${this.fullName}\" with id = \"${oldId}\" could not be found.`);
+			// console.warn(`Attempting to change id: Instance of type \"${this.fullName}\" with id = \"${oldId}\" could not be found.`);
 		}
 	}
 
@@ -268,8 +219,8 @@ export class Type {
 		for (var t: Type = this; t; t = t.baseType) {
 			delete t._pool[obj.meta.id.toLowerCase()];
 
-			if (obj.meta._legacyId) {
-				delete t._legacyPool[obj.meta._legacyId.toLowerCase()];
+			if (obj.meta.legacyId) {
+				delete t._legacyPool[obj.meta.legacyId.toLowerCase()];
 			}
 
 			if (t._known) {
@@ -313,41 +264,27 @@ export class Type {
 		return known;
 	}
 
-	get jstype() {
-		return this._jstype;
-	}
+	addProperty(name: string, jstype: any, isList: boolean, isStatic: boolean, options: TypePropertyOptions = {}) {
+		// TODO: Compile format specifier to format object
+		// let format: Format = null;
+		// if (options.format) {
+		// 	if (typeof(options.format) === "string") {
+		// 		format = getFormat(jstype, options.format);
+		// 	} else if (format.constructor === Format) {
+		// 		format = options.format;
+		// 	} else {
+		// 		// TODO: Warn about format option that is neither Format or string
+		// 	}
+		// }
 
-	addProperty(name: string, jstype: any, isList: boolean, isStatic: boolean) {
-		/*
-		// TODO
-		var format = def.format;
-		if (format && format.constructor === String) {
-			format = getFormat(def.type, format);
-		}
-		*/
-
-		var property = new Property(this, name, jstype, isList, isStatic);
+		var property = new Property(this, name, jstype, options.label, options.helptext, options.format, isList, isStatic, options.isPersisted, options.isCalculated, options.defaultValue);
 
 		this._properties[name] = property;
 
-		// TODO
+		// TODO: Implement static and instance property storage?
 		// (isStatic ? this._staticProperties : this._instanceProperties)[name] = property;
 
-		/*
-		// TODO: Make this an extension?
-		// modify jstype to include functionality based on the type definition
-		function genPropertyShortcut(mtype, overwrite) {
-			var shortcutName = "$" + name;
-			if (!(shortcutName in mtype._jstype) || overwrite) {
-				mtype._jstype[shortcutName] = property;
-			}
-
-			mtype.derivedTypes.forEach(function (t) {
-				genPropertyShortcut(t, false);
-			});
-		}
-		genPropertyShortcut(this, true);
-		*/
+		Property$_generateShortcuts(property, property.containingType.jstype);
 
 		if (property.isStatic) {
 			Property$_generateStaticProperty(property);
@@ -390,6 +327,10 @@ export class Type {
 		return propertiesArray;
 	}
 
+	get derivedTypes(): Type[] {
+		return this._derivedTypes;
+	}
+
 	isSubclassOf(mtype) {
 		var result = false;
 
@@ -409,7 +350,6 @@ export class Type {
 
 }
 
-// TODO: what to do with this?
 function Type$_validateId(type: Type, id: string) {
 	if (id === null || id === undefined) {
 		throw new Error(`Id cannot be ${(id === null ? "null" : "undefined")} (entity = ${type.fullName}).`);
@@ -422,8 +362,26 @@ function Type$_validateId(type: Type, id: string) {
 
 let disableConstruction = false;
 
-function Type$_generateClass(type: Type) {
-	function construct(idOrProps, props, suppressModelEvent) {
+function Type$_generateClass(type: Type, fullName: string, baseType: Type = null) {
+
+	// Create namespaces as needed
+	var nameTokens = fullName.split("."),
+		token = nameTokens.shift(),
+		namespaceObj = Model$_allTypesRoot,
+		globalObj = window;
+
+	while (nameTokens.length > 0) {
+		namespaceObj = ensureNamespace(token, namespaceObj);
+		globalObj = ensureNamespace(token, globalObj);
+		token = nameTokens.shift();
+	}
+
+	// The final name to use is the last token
+	var finalName = token;
+
+	var jstypeFactory = new Function("construct", "return function " + finalName + " () { construct.apply(this, arguments); }");
+
+	var construct = function construct(idOrProps, props, suppressModelEvent) {
 		if (!disableConstruction) {
 			if (idOrProps && idOrProps.constructor === String) {
 				var id = idOrProps;
@@ -473,7 +431,51 @@ function Type$_generateClass(type: Type) {
 				}
 			}
 		}
+	};
+
+	var jstype = jstypeFactory(construct);
+
+	var ctor: NamespaceOrConstructor = (jstype as unknown) as NamespaceOrConstructor;
+
+	// If the namespace already contains a type with this name, prepend a '$' to the name
+	if (!namespaceObj[finalName]) {
+		namespaceObj[finalName] = ctor;
+	} else {
+		namespaceObj['$' + finalName] = ctor;
 	}
 
-	return construct;
+	// If the global object already contains a type with this name, append a '$' to the name
+	if (!globalObj[finalName]) {
+		globalObj[finalName] = ctor;
+	} else {
+		globalObj['$' + finalName] = ctor;
+	}
+
+	// Setup inheritance
+
+	var baseJsType = null;
+
+	if (baseJsType) {
+		baseJsType = baseType.jstype;
+
+		// TODO: Implement `inheritBaseTypePropShortcuts`
+		// inherit all shortcut properties that have aleady been defined
+		// inheritBaseTypePropShortcuts(jstype, baseType);
+	}
+	else {
+		baseJsType = Entity;
+	}
+
+	disableConstruction = true;
+
+	jstype.prototype = new baseJsType();
+
+	disableConstruction = false;
+
+	jstype.prototype.constructor = jstype;
+
+	// Add the 'meta' helper
+	Object.defineProperty(jstype, "meta", { enumerable: false, value: type, configurable: false, writable: false });
+
+	return jstype;
 }

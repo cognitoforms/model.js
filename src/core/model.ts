@@ -5,8 +5,8 @@ import { Property } from "./property";
 
 const intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
 
-export interface IModelTypeOrNamespace {
-	[name: string]: Type | IModelTypeOrNamespace;
+export interface NamespaceOrConstructor {
+	[name: string]: NamespaceOrConstructor;
 }
 
 export interface ModelTypeAddedEventArgs {
@@ -58,17 +58,15 @@ class ModelEventDispatchers {
 
 }
 
-export let Model$_allTypesRoot: IModelTypeOrNamespace = {};
+export let Model$_allTypesRoot: NamespaceOrConstructor = {};
 
 export class Model {
 
+	// Readonly fields 
 	readonly _types: { [name: string]: Type };
-
 	readonly _settings: ModelSettings;
 
 	readonly _eventDispatchers: ModelEventDispatchers;
-
-	static readonly events: GlobalEventHandlers;
 
 	constructor(options: ModelOptions = null) {
 		Object.defineProperty(this, "_types", { value: {} });
@@ -87,7 +85,7 @@ export class Model {
 				if (typeof options.createOwnProperties === "boolean") {
 					settings.createOwnProperties = options.createOwnProperties;
 				} else {
-					// TODO: warn?
+					// TODO: Warn about invalid `createOwnProperties` option value?
 				}
 			}
 		}
@@ -112,7 +110,7 @@ export class Model {
 	}
 
 	dispose() {
-		// TODO
+		// TODO: Implement model disposal
 		// for (var key in this._types) {
 		// 	delete window[key];
 		// }
@@ -140,14 +138,14 @@ export class Model {
 	 * @param name The name of the type
 	 */
 	static getJsType(name: string, allowUndefined: boolean = false): any {
-		var obj: IModelTypeOrNamespace = Model$_allTypesRoot;
+		var obj = Model$_allTypesRoot;
 		var steps = name.split(".");
 		if (steps.length === 1 && intrinsicJsTypes.indexOf(name) > -1) {
 			return window[name];
 		} else {
 			for (var i = 0; i < steps.length; i++) {
 				var step = steps[i];
-				obj = obj[step] as IModelTypeOrNamespace;
+				obj = obj[step] as NamespaceOrConstructor;
 				if (obj === undefined) {
 					if (allowUndefined) {
 						return;

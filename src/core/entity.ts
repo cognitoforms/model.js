@@ -3,8 +3,8 @@ import { Model } from "./model";
 
 export class Entity {
 
-	meta: ObjectMeta;
-
+	readonly meta: ObjectMeta;
+	
 	init(properties: { [name: string]: any }): void;
 	init(property: string, value: any): void;
 	init(property: any, value?: any): void {
@@ -60,11 +60,11 @@ export class Entity {
 
 	toString(format) {
 		if (format) {
-			// TODO
+			// TODO: Use format to convert entity to string
 			// format = getFormat(this.constructor, format);
 		}
 		else {
-			// TODO
+			// TODO: Use format to convert entity to string
 			// format = this.meta.type.get_format();
 		}
 
