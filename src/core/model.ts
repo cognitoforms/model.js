@@ -25,15 +25,11 @@ export interface ModelPropertyAddedEventArgs {
 	property: Property;
 }
 
-export interface ModelOptions {
-	createOwnProperties: Boolean;
-}
-
 export interface ModelSettings {
-	createOwnProperties: Boolean;
+	createOwnProperties: boolean;
 }
 
-const defaultModelSettings: ModelSettings = {
+const ModelSettingsDefaults: ModelSettings = {
 	// There is a slight speed cost to creating own properties,
 	// which may be noticeable with very large object counts.
 	createOwnProperties: false,
@@ -50,6 +46,8 @@ class ModelEventDispatchers {
 	readonly propertyAdded: EventDispatcher<Model, ModelPropertyAddedEventArgs>;
 
 	constructor() {
+		// TODO: Don't construct events by default, only when subscribed (optimization)
+		// TODO: Extend `EventDispatcher` with `any()` function to check for subscribers (optimization)
 		this.typeAdded = new EventDispatcher<Model, ModelTypeAddedEventArgs>();
 		this.entityRegistered = new EventDispatcher<Model, ModelEntityRegisteredEventArgs>();
 		this.entityUnregistered = new EventDispatcher<Model, ModelEntityUnregisteredEventArgs>();
@@ -68,29 +66,10 @@ export class Model {
 
 	readonly _eventDispatchers: ModelEventDispatchers;
 
-	constructor(options: ModelOptions = null) {
+	constructor(createOwnProperties: boolean = undefined) {
 		Object.defineProperty(this, "_types", { value: {} });
-		Object.defineProperty(this, "_settings", { value: this.convertOptions(options) });
+		Object.defineProperty(this, "_settings", { value: Model$_createSettingsObject(createOwnProperties) });
 		Object.defineProperty(this, "_eventDispatchers", { value: new ModelEventDispatchers() });
-	}
-
-	private convertOptions(options: ModelOptions = null): ModelSettings {
-		// Start with the default settings...
-		let settings: ModelSettings = {
-			createOwnProperties: defaultModelSettings.createOwnProperties
-		};
-
-		if (options) {
-			if (Object.prototype.hasOwnProperty.call(options, 'createOwnProperties')) {
-				if (typeof options.createOwnProperties === "boolean") {
-					settings.createOwnProperties = options.createOwnProperties;
-				} else {
-					// TODO: Warn about invalid `createOwnProperties` option value?
-				}
-			}
-		}
-
-		return settings;
 	}
 
 	get typeAddedEvent(): IEvent<Model, ModelTypeAddedEventArgs> {
@@ -141,7 +120,7 @@ export class Model {
 		var obj = Model$_allTypesRoot;
 		var steps = name.split(".");
 		if (steps.length === 1 && intrinsicJsTypes.indexOf(name) > -1) {
-			return window[name];
+			return obj[name];
 		} else {
 			for (var i = 0; i < steps.length; i++) {
 				var step = steps[i];
@@ -157,4 +136,12 @@ export class Model {
 			return obj;
 		}
 	}
+}
+
+function Model$_createSettingsObject(createOwnProperties: boolean = ModelSettingsDefaults.createOwnProperties): ModelSettings {
+	let settings: ModelSettings = {
+		createOwnProperties: createOwnProperties
+	};
+
+	return settings;
 }

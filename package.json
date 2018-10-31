@@ -1,5 +1,5 @@
 {
-  "version": "0.0.9",
+  "version": "0.0.10",
   "name": "exomodel",
   "license": "MIT",
   "main": "dist/exomodel.full.cjs.js",
@@ -8,6 +8,7 @@
     "development": "dist/exomodel.full.umd.js",
     "production": "dist/exomodel.full.umd.min.js"
   },
+  "types": "dist/exomodel.d.ts",
   "private": true,
   "devDependencies": {
     "rollup": "^0.66.6",

@@ -1,5 +1,5 @@
 /*!
- * ExoModel.js v0.0.9
+ * ExoModel.js v0.0.10
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -548,10 +548,10 @@ function navigateAttribute(obj, attr, callback, thisPtr) {
         }
     }
 }
-var funcRegex = /function\s*([\w_\$]*)/i;
-function parseFunctionName(f) {
-    var result = funcRegex.exec(f);
-    return result ? (result[1] || "{anonymous}") : "{anonymous}";
+var fnRegex = /function\s*([\w_\$]*)/i;
+function parseFunctionName(fn) {
+    var fnMatch = fnRegex.exec(fn.toString());
+    return fnMatch ? (fnMatch[1] || "{anonymous}") : "{anonymous}";
 }
 var typeNameExpr = /\s([a-z|A-Z]+)/;
 function getTypeName(obj) {
@@ -870,7 +870,7 @@ var Property = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Property.prototype.equals = function (prop) {
+    Property.prototype.equals = function (prop /* | PropertyChain */) {
         if (prop !== undefined && prop !== null) {
             if (prop instanceof Property) {
                 return this === prop;
@@ -890,8 +890,8 @@ var Property = /** @class */ (function () {
             return "this<" + this.containingType + ">." + this.name;
         }
     };
-    Property.prototype.isDefinedBy = function (mtype) {
-        return this.containingType === mtype || mtype.isSubclassOf(this.containingType);
+    Property.prototype.isDefinedBy = function (type) {
+        return this.containingType === type || type.isSubclassOf(this.containingType);
     };
     Object.defineProperty(Property.prototype, "label", {
         get: function () {
@@ -1403,6 +1403,7 @@ var Type = /** @class */ (function () {
         this.model._eventDispatchers.entityUnregistered.dispatch(this.model, { entity: obj });
     };
     Type.prototype.get = function (id, exactTypeOnly) {
+        if (exactTypeOnly === void 0) { exactTypeOnly = false; }
         var key = id.toLowerCase();
         var obj = this._pool[key] || this._legacyPool[key];
         // If exactTypeOnly is specified, don't return sub-types.
@@ -1494,10 +1495,10 @@ var Type = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Type.prototype.isSubclassOf = function (mtype) {
+    Type.prototype.isSubclassOf = function (type) {
         var result = false;
         navigateAttribute(this, 'baseType', function (baseType) {
-            if (baseType === mtype) {
+            if (baseType === type) {
                 result = true;
                 return false;
             }
@@ -1533,10 +1534,13 @@ function Type$_generateClass(type, fullName, baseType) {
     // The final name to use is the last token
     var finalName = token;
     var jstypeFactory = new Function("construct", "return function " + finalName + " () { construct.apply(this, arguments); }");
-    var construct = function construct(idOrProps, props, suppressModelEvent) {
+    function construct() {
         if (!disableConstruction) {
-            if (idOrProps && idOrProps.constructor === String) {
-                var id = idOrProps;
+            if (arguments.length > 0 && arguments[0] != null && arguments[0].constructor === String) {
+                var id = arguments[0];
+                var props = arguments[1];
+                // TODO: Is this needed?
+                var suppressModelEvent = arguments[2];
                 // When a constructor is called we do not want to silently
                 // return an instance of a sub type, so fetch using exact type.
                 var exactTypeOnly = true;
@@ -1561,12 +1565,15 @@ function Type$_generateClass(type, fullName, baseType) {
                 }
             }
             else {
+                var props = arguments[0];
+                // TODO: Is this needed?
+                var suppressModelEvent = arguments[2];
                 // Register the newly constructed new instance. It will
                 // be assigned a sequential client-generated id.
                 type.register(this, null, suppressModelEvent);
                 // Set properties passed into constructor.
-                if (idOrProps) {
-                    this.set(idOrProps);
+                if (props) {
+                    this.set(props);
                 }
                 // Raise the initNew event on this type and all base types
                 for (var t = type; t; t = t.baseType) {
@@ -1574,7 +1581,7 @@ function Type$_generateClass(type, fullName, baseType) {
                 }
             }
         }
-    };
+    }
     var jstype = jstypeFactory(construct);
     var ctor = jstype;
     // If the namespace already contains a type with this name, prepend a '$' to the name
@@ -1612,13 +1619,15 @@ function Type$_generateClass(type, fullName, baseType) {
 }
 
 var intrinsicJsTypes = ["Object", "String", "Number", "Boolean", "Date", "TimeSpan", "Array"];
-var defaultModelSettings = {
+var ModelSettingsDefaults = {
     // There is a slight speed cost to creating own properties,
     // which may be noticeable with very large object counts.
-    createOwnProperties: false
+    createOwnProperties: false,
 };
 var ModelEventDispatchers = /** @class */ (function () {
     function ModelEventDispatchers() {
+        // TODO: Don't construct events by default, only when subscribed (optimization)
+        // TODO: Extend `EventDispatcher` with `any()` function to check for subscribers (optimization)
         this.typeAdded = new dist_1$1();
         this.entityRegistered = new dist_1$1();
         this.entityUnregistered = new dist_1$1();
@@ -1628,27 +1637,12 @@ var ModelEventDispatchers = /** @class */ (function () {
 }());
 var Model$_allTypesRoot = {};
 var Model = /** @class */ (function () {
-    function Model(options) {
-        if (options === void 0) { options = null; }
+    function Model(createOwnProperties) {
+        if (createOwnProperties === void 0) { createOwnProperties = undefined; }
         Object.defineProperty(this, "_types", { value: {} });
-        Object.defineProperty(this, "_settings", { value: this.convertOptions(options) });
+        Object.defineProperty(this, "_settings", { value: Model$_createSettingsObject(createOwnProperties) });
         Object.defineProperty(this, "_eventDispatchers", { value: new ModelEventDispatchers() });
     }
-    Model.prototype.convertOptions = function (options) {
-        if (options === void 0) { options = null; }
-        // Start with the default settings...
-        var settings = {
-            createOwnProperties: defaultModelSettings.createOwnProperties
-        };
-        if (options) {
-            if (Object.prototype.hasOwnProperty.call(options, 'createOwnProperties')) {
-                if (typeof options.createOwnProperties === "boolean") {
-                    settings.createOwnProperties = options.createOwnProperties;
-                }
-            }
-        }
-        return settings;
-    };
     Object.defineProperty(Model.prototype, "typeAddedEvent", {
         get: function () {
             return this._eventDispatchers.typeAdded.asEvent();
@@ -1713,7 +1707,7 @@ var Model = /** @class */ (function () {
         var obj = Model$_allTypesRoot;
         var steps = name.split(".");
         if (steps.length === 1 && intrinsicJsTypes.indexOf(name) > -1) {
-            return window[name];
+            return obj[name];
         }
         else {
             for (var i = 0; i < steps.length; i++) {
@@ -1733,6 +1727,13 @@ var Model = /** @class */ (function () {
     };
     return Model;
 }());
+function Model$_createSettingsObject(createOwnProperties) {
+    if (createOwnProperties === void 0) { createOwnProperties = ModelSettingsDefaults.createOwnProperties; }
+    var settings = {
+        createOwnProperties: createOwnProperties
+    };
+    return settings;
+}
 
 var Entity = /** @class */ (function () {
     function Entity() {
@@ -1740,42 +1741,49 @@ var Entity = /** @class */ (function () {
     Entity.prototype.init = function (property, value) {
         var properties;
         // Convert property/value pair to a property dictionary
-        if (typeof property == "string")
-            (properties = {})[property] = value;
-        else
+        if (typeof property == "string") {
+            properties = {};
+            properties[property] = value;
+        }
+        else {
             properties = property;
+        }
         // Initialize the specified properties
         for (var name in properties) {
-            var prop = this.meta.type.property(name);
-            if (!prop)
-                throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-            // Set the property
-            prop.value(this, value);
+            if (properties.hasOwnProperty(name)) {
+                var prop = this.meta.type.property(name);
+                if (!prop)
+                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
+                // Set the property
+                prop.value(this, value);
+            }
         }
     };
     Entity.prototype.set = function (property, value) {
         var properties;
         // Convert property/value pair to a property dictionary
-        if (typeof property == "string")
-            (properties = {})[property] = value;
-        else
+        if (typeof property == "string") {
+            properties = {};
+            properties[property] = value;
+        }
+        else {
             properties = property;
+        }
         // Set the specified properties
         for (var name in properties) {
-            var prop = this.meta.type.property(name);
-            if (!prop)
-                throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-            prop.set(this, value, false);
+            if (properties.hasOwnProperty(name)) {
+                var prop = this.meta.type.property(name);
+                if (!prop)
+                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
+                prop.value(this, value);
+            }
         }
     };
     Entity.prototype.get = function (property) {
         return this.meta.type.property(property).value(this);
     };
     Entity.prototype.toString = function (format) {
-        if (format)
-            return format.convert(this);
-        else
-            return Entity.toIdString(this);
+        return Entity.toIdString(this);
     };
     // Gets the typed string id suitable for roundtripping via fromIdString
     Entity.toIdString = function (obj) {

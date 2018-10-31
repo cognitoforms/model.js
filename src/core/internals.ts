@@ -1,6 +1,6 @@
 import { randomText, randomInteger } from "./helpers";
 
-let internalState = {
+let internalState: { [name: string]: any } = {
     secrets: {}
 };
 

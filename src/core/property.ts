@@ -36,7 +36,7 @@ class PropertyEventDispatchers {
 
 type PropertyGetMethod = (property: Property, entity: Entity, additionalArgs: any) => any;
 
-type PropertySetMethod = (property: Property, entity: Entity, val: any, additionalArgs: any, skipTypeCheck: Boolean) => void;
+type PropertySetMethod = (property: Property, entity: Entity, val: any, additionalArgs: any, skipTypeCheck: boolean) => void;
 
 export class Property {
 
@@ -65,7 +65,7 @@ export class Property {
 	readonly _getter: (args?: any) => any;
 	readonly _setter: (value: any, args?: any) => void;
 
-	constructor(containingType: Type, name: string, jstype, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue: any = undefined, origin: string = containingType.originForNewProperties) {
+	constructor(containingType: Type, name: string, jstype: any, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue: any = undefined, origin: string = containingType.originForNewProperties) {
 
 		// Public read-only properties
 		Object.defineProperty(this, "containingType", { enumerable: true, value: containingType });
@@ -108,7 +108,7 @@ export class Property {
 		return this._eventDispatchers.accessed.asEvent();
 	}
 
-	equals(prop) {
+	equals(prop: Property /* | PropertyChain */ ) {
 		if (prop !== undefined && prop !== null) {
 			if (prop instanceof Property) {
 				return this === prop;
@@ -124,17 +124,16 @@ export class Property {
 	toString() {
 		if (this.isStatic) {
 			return this.getPath();
-		}
-		else {
+		} else {
 			return `this<${this.containingType}>.${this.name}`;
 		}
 	}
 
-	isDefinedBy(mtype) {
-		return this.containingType === mtype || mtype.isSubclassOf(this.containingType);
+	isDefinedBy(type: Type) {
+		return this.containingType === type || type.isSubclassOf(this.containingType);
 	}
 
-	get label(): String {
+	get label(): string {
 		return this._label || toTitleCase(this.name.replace(/([^A-Z]+)([A-Z])/g, "$1 $2"));
 	}
 
@@ -165,7 +164,7 @@ export class Property {
 		return this.isStatic ? (this.containingType.fullName + "." + this.name) : this.name;
 	}
 
-	canSetValue(obj, val) {
+	canSetValue(obj: Entity, val: any) {
 		// NOTE: only allow values of the correct data type to be set in the model
 
 		if (val === undefined) {
@@ -217,7 +216,7 @@ export class Property {
 			return valObjectType === this.jstype ||
 
 				// entity array type check
-				(valObjectType === Array && this.isList && val.every(function (child) {
+				(valObjectType === Array && this.isList && val.every(function (child: any) {
 					if (child.constructor && child.constructor.meta) {
 						for (var childType = child.constructor.meta; childType; childType = childType.baseType) {
 							if (childType._jstype === this._jstype) {
@@ -245,7 +244,7 @@ export class Property {
 		}
 	}
 
-	rootedPath(type) {
+	rootedPath(type: Type) {
 		if (this.isDefinedBy(type)) {
 			return this.isStatic ? this.containingType.fullName + "." + this.name : this.name;
 		}
@@ -253,7 +252,7 @@ export class Property {
 
 }
 
-export function Property$_generateShortcuts(property: Property, target: any, recurse: Boolean = true, overwrite: Boolean = null) {
+export function Property$_generateShortcuts(property: Property, target: any, recurse: boolean = true, overwrite: boolean = null) {
 	var shortcutName = "$" + property.name;
 
 	if (!(Object.prototype.hasOwnProperty.call(target, shortcutName)) || overwrite) {
@@ -307,7 +306,7 @@ export function Property$_generateOwnProperty(property: Property, obj: Entity) {
 // TODO: Get rid of `Property$_generateOwnPropertyWithClosure`...
 export function Property$_generateOwnPropertyWithClosure(property: Property, obj: Entity) {
 
-	let val = null;
+	let val: any = null;
 
 	let isInitialized: boolean = false;
 
@@ -389,8 +388,8 @@ function Property$_subListEvents(obj: Entity, property: Property, list: Observab
 			// NOTE: oldValue is not currently implemented for lists
 			var eventArgs: PropertyChangeEventArgs = { property: property, newValue: list, oldValue: undefined };
 
-			eventArgs['changes'] = [{ newItems: args.added, oldItems: args.removed }];
-			eventArgs['collectionChanged'] = true;
+			(eventArgs as any)['changes'] = [{ newItems: args.added, oldItems: args.removed }];
+			(eventArgs as any)['collectionChanged'] = true;
 
 			property._eventDispatchers.changed.dispatch(obj, eventArgs);
 
@@ -450,13 +449,13 @@ function Property$_getter(property: Property, obj: Entity) {
     // Ensure that the property has an initial (possibly default) value
 	Property$_ensureInited(property, obj);
 
-	var eventArgs: PropertyAccessEventArgs = { property: property, value: obj[property.fieldName] };
+	var eventArgs: PropertyAccessEventArgs = { property: property, value: (obj as any)[property.fieldName] };
 
 	// Raise get events
 	property._eventDispatchers.accessed.dispatch(obj, eventArgs);
 
     // Return the property value
-    return obj[property.fieldName];
+    return (obj as any)[property.fieldName];
 }
 
 function Property$_setter(property: Property, obj: Entity, val: any, additionalArgs: any = null, skipTypeCheck: boolean = false) {
@@ -464,7 +463,7 @@ function Property$_setter(property: Property, obj: Entity, val: any, additionalA
     // Ensure that the property has an initial (possibly default) value
 	Property$_ensureInited(property, obj);
 
-    var old = obj[property.fieldName];
+    var old = (obj as any)[property.fieldName];
 
 	if (Property$_shouldSetValue(property, obj, old, val, skipTypeCheck)) {
 		Property$_setValue(property, obj, old, val, additionalArgs);
@@ -507,7 +506,7 @@ function Property$_setValue(property: Property, obj: Entity, old: any, val: any,
     } else {
 
 		// Set the backing field value
-		obj[property.fieldName] = val;
+		(obj as any)[property.fieldName] = val;
 
 		// TODO: Implement pendingInit
 		// obj.meta.pendingInit(property, false);
@@ -519,7 +518,7 @@ function Property$_setValue(property: Property, obj: Entity, old: any, val: any,
 			if (additionalArgs) {
 				for (var arg in additionalArgs) {
 					if (additionalArgs.hasOwnProperty(arg)) {
-						eventArgs[arg] = additionalArgs[arg];
+						(eventArgs as any)[arg] = additionalArgs[arg];
 					}
 				}
 			}

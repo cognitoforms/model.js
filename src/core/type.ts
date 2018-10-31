@@ -185,7 +185,7 @@ export class Type {
 		}
 	}
 
-	changeObjectId(oldId, newId) {
+	changeObjectId(oldId: string, newId: string) {
 		Type$_validateId(this, oldId);
 		Type$_validateId(this, newId);
 
@@ -231,7 +231,7 @@ export class Type {
 		this.model._eventDispatchers.entityUnregistered.dispatch(this.model, { entity: obj });
 	}
 
-	get(id, exactTypeOnly) {
+	get(id: string, exactTypeOnly: boolean = false) {
 		var key = id.toLowerCase();
 		var obj = this._pool[key] || this._legacyPool[key];
 
@@ -303,7 +303,7 @@ export class Type {
 		return property;
 	}
 
-	property(name) {
+	property(name: string) {
 		var prop;
 		for (var t: Type = this; t && !prop; t = t.baseType) {
 			prop = t._properties[name];
@@ -331,11 +331,11 @@ export class Type {
 		return this._derivedTypes;
 	}
 
-	isSubclassOf(mtype) {
+	isSubclassOf(type: Type) {
 		var result = false;
 
-		navigateAttribute(this, 'baseType', function (baseType) {
-			if (baseType === mtype) {
+		navigateAttribute(this, 'baseType', function (baseType: Type) {
+			if (baseType === type) {
 				result = true;
 				return false;
 			}
@@ -365,10 +365,10 @@ let disableConstruction = false;
 function Type$_generateClass(type: Type, fullName: string, baseType: Type = null) {
 
 	// Create namespaces as needed
-	var nameTokens = fullName.split("."),
-		token = nameTokens.shift(),
-		namespaceObj = Model$_allTypesRoot,
-		globalObj = window;
+	let nameTokens: string[] = fullName.split("."),
+		token: string = nameTokens.shift(),
+		namespaceObj: NamespaceOrConstructor = Model$_allTypesRoot,
+		globalObj: any = window;
 
 	while (nameTokens.length > 0) {
 		namespaceObj = ensureNamespace(token, namespaceObj);
@@ -377,22 +377,27 @@ function Type$_generateClass(type: Type, fullName: string, baseType: Type = null
 	}
 
 	// The final name to use is the last token
-	var finalName = token;
+	let finalName = token;
 
-	var jstypeFactory = new Function("construct", "return function " + finalName + " () { construct.apply(this, arguments); }");
+	let jstypeFactory = new Function("construct", "return function " + finalName + " () { construct.apply(this, arguments); }");
 
-	var construct = function construct(idOrProps, props, suppressModelEvent) {
+	function construct() {
 		if (!disableConstruction) {
-			if (idOrProps && idOrProps.constructor === String) {
-				var id = idOrProps;
+			if (arguments.length > 0 && arguments[0] != null && arguments[0].constructor === String) {
+				let id = arguments[0] as string;
+
+				let props = arguments[1];
+
+				// TODO: Is this needed?
+				let suppressModelEvent = arguments[2];
 
 				// When a constructor is called we do not want to silently
 				// return an instance of a sub type, so fetch using exact type.
-				var exactTypeOnly = true;
+				let exactTypeOnly = true;
 
 				// TODO: Indicate that an object is currently being constructed?
 
-				var obj = type.get(id, exactTypeOnly);
+				let obj = type.get(id, exactTypeOnly);
 
 				// If the instance already exists, then initialize properties and return it.
 				if (obj) {
@@ -411,31 +416,35 @@ function Type$_generateClass(type: Type, fullName: string, baseType: Type = null
 				}
 
 				// Raise the initExisting event on this type and all base types
-				for (var t: Type = type; t; t = t.baseType) {
+				for (let t: Type = type; t; t = t.baseType) {
 					t._eventDispatchers.initExisting.dispatch(t, { entity: this });
 				}
-			}
-			else {
+			} else {
+				let props = arguments[0];
+
+				// TODO: Is this needed?
+				let suppressModelEvent = arguments[2];
+
 				// Register the newly constructed new instance. It will
 				// be assigned a sequential client-generated id.
 				type.register(this, null, suppressModelEvent);
 
 				// Set properties passed into constructor.
-				if (idOrProps) {
-					this.set(idOrProps);
+				if (props) {
+					this.set(props);
 				}
 
 				// Raise the initNew event on this type and all base types
-				for (var t: Type = type; t; t = t.baseType) {
+				for (let t: Type = type; t; t = t.baseType) {
 					t._eventDispatchers.initNew.dispatch(t, { entity: this });
 				}
 			}
 		}
-	};
+	}
 
-	var jstype = jstypeFactory(construct);
+	let jstype = jstypeFactory(construct);
 
-	var ctor: NamespaceOrConstructor = (jstype as unknown) as NamespaceOrConstructor;
+	let ctor: NamespaceOrConstructor = (jstype as unknown) as NamespaceOrConstructor;
 
 	// If the namespace already contains a type with this name, prepend a '$' to the name
 	if (!namespaceObj[finalName]) {
@@ -453,7 +462,7 @@ function Type$_generateClass(type: Type, fullName: string, baseType: Type = null
 
 	// Setup inheritance
 
-	var baseJsType = null;
+	let baseJsType = null;
 
 	if (baseJsType) {
 		baseJsType = baseType.jstype;

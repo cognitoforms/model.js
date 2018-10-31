@@ -1,10 +1,10 @@
-export function ensureNamespace(name, parentNamespace) {
+export function ensureNamespace(name: string, parentNamespace: any) {
     var result, nsTokens, target = parentNamespace;
 
     if (target.constructor === String) {
         nsTokens = target.split(".");
         target = window;
-        nsTokens.forEach(function (token) {
+        nsTokens.forEach(function (token: string) {
             target = target[token];
 
             if (target === undefined) {
@@ -24,7 +24,7 @@ export function ensureNamespace(name, parentNamespace) {
     }
 }
 
-export function navigateAttribute(obj, attr: string, callback: Function, thisPtr: any = null) {
+export function navigateAttribute(obj: any, attr: string, callback: Function, thisPtr: any = null) {
     for (var val = obj[attr]; val != null; val = val[attr]) {
         if (callback.call(thisPtr || obj, val) === false) {
             return;
@@ -32,14 +32,14 @@ export function navigateAttribute(obj, attr: string, callback: Function, thisPtr
     }
 }
 
-function isObject(obj) {
+function isObject(obj: any) {
 	return getTypeName(obj) === "object" || (obj && obj instanceof Object);
 }
 
 // If a getter method matching the given property name is found on the target it is invoked and returns the 
 // value, unless the the value is undefined, in which case null is returned instead.  This is done so that 
 // calling code can interpret a return value of undefined to mean that the property it requested does not exist.
-function getValue(target, property) {
+function getValue(target: any, property: string) {
 	var value;
 
 	// the see if there is an explicit getter function for the property
@@ -70,7 +70,7 @@ function getValue(target, property) {
 	return value;
 }
 
-export function evalPath(obj: any, path: string, nullValue = null, undefinedValue = undefined) {
+export function evalPath(obj: any, path: string, nullValue: any = null, undefinedValue: any = undefined) {
     let value = obj;
 
 	let steps = path.split(".");
@@ -92,16 +92,16 @@ export function evalPath(obj: any, path: string, nullValue = null, undefinedValu
 	return value;
 }
 
-var funcRegex = /function\s*([\w_\$]*)/i;
+var fnRegex = /function\s*([\w_\$]*)/i;
 
-export function parseFunctionName(f) {
-    var result = funcRegex.exec(f);
-    return result ? (result[1] || "{anonymous}") : "{anonymous}";
+export function parseFunctionName(fn: Function) {
+    var fnMatch = fnRegex.exec(fn.toString());
+    return fnMatch ? (fnMatch[1] || "{anonymous}") : "{anonymous}";
 }
 
 var typeNameExpr = /\s([a-z|A-Z]+)/;
 
-export function getTypeName(obj) {
+export function getTypeName(obj: any) {
     if (obj === undefined) return "undefined";
     if (obj === null) return "null";
     return Object.prototype.toString.call(obj).match(typeNameExpr)[1].toLowerCase();
@@ -139,11 +139,11 @@ export function randomText(len: number, includeDigits: boolean = false) {
 	return result;
 }
 
-export function toTitleCase(input) {
+export function toTitleCase(input: string) {
 	// https://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript/6475125#6475125
 	var i, j, str, lowers, uppers;
 
-	str = input.replace(/([^\W_]+[^\s-]*) */g, function(txt) {
+	str = input.replace(/([^\W_]+[^\s-]*) */g, function(txt: string) {
 		return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 	});
 

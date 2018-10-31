@@ -1,5 +1,6 @@
 import { ObjectMeta } from "./object-meta";
 import { Model } from "./model";
+import { Format } from "./format";
 
 export class Entity {
 
@@ -12,21 +13,24 @@ export class Entity {
 		let properties: { [name: string]: any };
 
 		// Convert property/value pair to a property dictionary
-		if (typeof property == "string")
-			(properties = {})[property] = value;
-		else
+		if (typeof property == "string") {
+			properties = {};
+			properties[property] = value;
+		} else {
 			properties = property;
+		}
 
 		// Initialize the specified properties
 		for (let name in properties) {
+			if (properties.hasOwnProperty(name)) {
+				let prop = this.meta.type.property(name);
 
-			let prop = this.meta.type.property(name);
+				if (!prop)
+					throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
 
-			if (!prop)
-				throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-
-			// Set the property
-			prop.value(this, value);
+				// Set the property
+				prop.value(this, value);
+			}
 		}
 	}
 
@@ -37,50 +41,54 @@ export class Entity {
 		let properties: { [name: string]: any };
 
 		// Convert property/value pair to a property dictionary
-		if (typeof property == "string")
-			(properties = {})[property] = value;
-		else
+		if (typeof property == "string") {
+			properties = {};
+			properties[property] = value;
+		} else {
 			properties = property;
+		}
 
 		// Set the specified properties
 		for (let name in properties) {
+			if (properties.hasOwnProperty(name)) {
+				let prop = this.meta.type.property(name);
 
-			let prop = this.meta.type.property(name);
+				if (!prop)
+					throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
 
-			if (!prop)
-				throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-
-			prop.set(this, value, false);
+				prop.value(this, value);
+			}
 		}
 	}
 
-	get(property) {
+	get(property: string) {
 		return this.meta.type.property(property).value(this);
 	}
 
-	toString(format) {
+	toString(format: string) {
+		let formatter: Format = null;
 		if (format) {
 			// TODO: Use format to convert entity to string
-			// format = getFormat(this.constructor, format);
+			// formatter = getFormat(this.constructor, format);
 		}
 		else {
 			// TODO: Use format to convert entity to string
-			// format = this.meta.type.get_format();
+			// formatter = this.meta.type.get_format();
 		}
 
-		if (format)
-			return format.convert(this);
+		if (formatter)
+			return formatter.convert(this);
 		else
 			return Entity.toIdString(this);
 	}
 
 	// Gets the typed string id suitable for roundtripping via fromIdString
-	static toIdString(obj) {
+	static toIdString(obj: Entity) {
 		return `${obj.meta.type.fullName}|${obj.meta.id}`;
 	}
 
 	// Gets or loads the entity with the specified typed string id
-	static fromIdString(idString) {
+	static fromIdString(idString: string) {
 		// Typed identifiers take the form "type|id".
 		var type = idString.substring(0, idString.indexOf("|"));
 		var id = idString.substring(type.length + 1);

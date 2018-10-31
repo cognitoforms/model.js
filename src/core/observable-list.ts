@@ -58,7 +58,7 @@ export abstract class ObservableList<ItemType> extends Array<ItemType> {
 	abstract remove(item: ItemType): boolean;
 
 	public static isObservableList<ItemType>(array: Array<ItemType>): boolean {
-		return Object.prototype.hasOwnProperty.call(array, observableListMarkerField) && array[observableListMarkerField] === true;
+		return Object.prototype.hasOwnProperty.call(array, observableListMarkerField) && (array as any)[observableListMarkerField] === true;
 	}
 
 	protected static _markObservable(target: any) {
@@ -123,8 +123,8 @@ class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
 
 		ObservableListImplementation._initFields(array);
 
-		array["add"] = (function (item: ItemType) { ObservableListMethods.add(this, item); });
-		array["remove"] = (function (item: ItemType) { return ObservableListMethods.remove(this, item); });
+		(array as any)["add"] = (function (item: ItemType) { ObservableListMethods.add(this, item); });
+		(array as any)["remove"] = (function (item: ItemType) { return ObservableListMethods.remove(this, item); });
 
 		Object.defineProperty(array, 'changed', {
 			get: function() {
