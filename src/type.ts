@@ -350,6 +350,11 @@ export class Type {
 
 }
 
+export interface TypeConstructor {
+	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
+	newIdPrefix: string;
+}
+
 function Type$_validateId(type: Type, id: string) {
 	if (id === null || id === undefined) {
 		throw new Error(`Id cannot be ${(id === null ? "null" : "undefined")} (entity = ${type.fullName}).`);

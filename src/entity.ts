@@ -104,3 +104,9 @@ export class Entity {
 		);
 	}
 }
+
+export interface EntityConstructor {
+	new(): Entity;
+	toIdString(obj: Entity): string;
+	fromIdString(idString: string): any;
+}

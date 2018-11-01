@@ -61,3 +61,7 @@ export class ObjectMeta {
 		}
 	}
 }
+
+export interface ObjectMetaConstructor {
+	new(type: Type, entity: Entity, id: string, isNew: boolean): ObjectMeta;
+}

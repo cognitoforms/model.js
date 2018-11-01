@@ -1,5 +1,5 @@
 /*!
- * Model.js v0.0.12
+ * Model.js v0.0.13
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -1875,12 +1875,4 @@ var Format = /** @class */ (function () {
     return Format;
 }());
 
-var api = Model;
-// TODO: provide plugin model?
-api.Model = Model;
-api.Type = Type;
-api.Property = Property;
-api.Entity = Entity;
-api.Format = Format;
-
-export default api;
+export { Model, Type, Property, Entity, Format };

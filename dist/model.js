@@ -1,9 +1,9 @@
 /*!
- * Model.js v0.0.12
+ * Model.js v0.0.13
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
-var Model = (function () {
+var Model = (function (exports) {
 	'use strict';
 
 	var Entity = /** @class */ (function () {
@@ -1878,14 +1878,12 @@ var Model = (function () {
 	    return Format;
 	}());
 
-	var api = Model;
-	// TODO: provide plugin model?
-	api.Model = Model;
-	api.Type = Type;
-	api.Property = Property;
-	api.Entity = Entity;
-	api.Format = Format;
+	exports.Model = Model;
+	exports.Type = Type;
+	exports.Property = Property;
+	exports.Entity = Entity;
+	exports.Format = Format;
 
-	return api;
+	return exports;
 
-}());
+}({}));

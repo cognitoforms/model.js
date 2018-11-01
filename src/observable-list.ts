@@ -161,3 +161,9 @@ class ObservableListImplementation<ItemType> extends ObservableList<ItemType> {
 	}
 
 }
+
+export interface ObservableListConstructor {
+	isObservableList<ItemType>(array: Array<ItemType>): boolean;
+	ensureObservable<ItemType>(array: Array<ItemType>): ObservableList<ItemType>;
+	create<ItemType>(items?: ItemType[]): ObservableList<ItemType>;
+}

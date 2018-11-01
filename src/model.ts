@@ -138,6 +138,12 @@ export class Model {
 	}
 }
 
+export interface ModelConstructor {
+	new(createOwnProperties?: boolean): Model;
+	getJsType(name: string, allowUndefined?: boolean): any;
+	Model: ModelConstructor;
+}
+
 function Model$_createSettingsObject(createOwnProperties: boolean = ModelSettingsDefaults.createOwnProperties): ModelSettings {
 	let settings: ModelSettings = {
 		createOwnProperties: createOwnProperties

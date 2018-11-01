@@ -1,13 +1,13 @@
 /*!
- * Model.js v0.0.12
+ * Model.js v0.0.13
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.Model = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.Model = {})));
+}(this, (function (exports) { 'use strict';
 
 	var Entity = /** @class */ (function () {
 	    function Entity() {
@@ -1881,14 +1881,12 @@
 	    return Format;
 	}());
 
-	var api = Model;
-	// TODO: provide plugin model?
-	api.Model = Model;
-	api.Type = Type;
-	api.Property = Property;
-	api.Entity = Entity;
-	api.Format = Format;
+	exports.Model = Model;
+	exports.Type = Type;
+	exports.Property = Property;
+	exports.Entity = Entity;
+	exports.Format = Format;
 
-	return api;
+	Object.defineProperty(exports, '__esModule', { value: true });
 
 })));

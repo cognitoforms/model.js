@@ -3,5 +3,8 @@
         "**/.git": true,
         "**/.DS_Store": true,
         "**/node_modules": true,
+        "out": true,
+        "bin": true,
+        "obj": true,
     },
 }

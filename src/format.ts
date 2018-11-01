@@ -103,3 +103,7 @@ export class Format {
 	}
 
 }
+
+export interface FormatConstructor {
+	new(options: FormatOptions): Format;
+}

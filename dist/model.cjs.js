@@ -1,9 +1,11 @@
 /*!
- * Model.js v0.0.12
+ * Model.js v0.0.13
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
 'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
 
 var Entity = /** @class */ (function () {
     function Entity() {
@@ -1877,12 +1879,8 @@ var Format = /** @class */ (function () {
     return Format;
 }());
 
-var api = Model;
-// TODO: provide plugin model?
-api.Model = Model;
-api.Type = Type;
-api.Property = Property;
-api.Entity = Entity;
-api.Format = Format;
-
-module.exports = api;
+exports.Model = Model;
+exports.Type = Type;
+exports.Property = Property;
+exports.Entity = Entity;
+exports.Format = Format;

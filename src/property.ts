@@ -252,6 +252,10 @@ export class Property {
 
 }
 
+export interface PropertyConstructor {
+	new(containingType: Type, name: string, jstype: any, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue?: any, origin?: string): Property;
+}
+
 export function Property$_generateShortcuts(property: Property, target: any, recurse: boolean = true, overwrite: boolean = null) {
 	var shortcutName = "$" + property.name;
 
