@@ -1,5 +1,5 @@
 /*!
- * Model.js v0.0.11
+ * Model.js v0.0.12
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
@@ -1880,6 +1880,7 @@ var Model = (function () {
 
 	var api = Model;
 	// TODO: provide plugin model?
+	api.Model = Model;
 	api.Type = Type;
 	api.Property = Property;
 	api.Entity = Entity;

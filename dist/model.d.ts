@@ -1,8 +1,9 @@
 declare module 'Model' {
 	import { EventDispatcher, IEvent } from "ste-events";
-	export interface ObjectMeta {
+	export class ObjectMeta {
 	    readonly type: Type;
 	    readonly entity: Entity;
+	    constructor(type: Type, entity: Entity, id: string, isNew: boolean);
 	    id: string;
 	    readonly isNew: boolean;
 	    legacyId: string;
@@ -22,7 +23,7 @@ declare module 'Model' {
 	    nullString?: string;
 	    undefinedString?: string;
 	}
-	export interface Format {
+	export class Format {
 	    specifier: string;
 	    convertFn: FormatConvertFunction;
 	    convertBackFn: FormatConvertBackFunction;
@@ -30,14 +31,15 @@ declare module 'Model' {
 	    description: string;
 	    nullString: string;
 	    undefinedString: string;
+	    constructor(options: FormatOptions);
 	    convert(val: any): string;
 	    convertBack(val: string): any;
 	    toString(): string;
 	}
 	export interface FormatConstructor {
-	    constructor(options: FormatOptions): Format;
+	    new(options: FormatOptions): Format;
 	}
-	export interface Entity {
+	export class Entity {
 	    readonly meta: ObjectMeta;
 	    init(properties: { [name: string]: any; }): void;
 	    init(property: string, value: any): void;
@@ -45,6 +47,8 @@ declare module 'Model' {
 	    set(property: string, value: any): void;
 	    get(property: string): any;
 	    toString(format: string): string;
+	    static toIdString(obj: Entity): string;
+	    static fromIdString(idString: string): any;
 	}
 	export interface EntityConstructor {
 		new(): Entity;
@@ -77,7 +81,7 @@ declare module 'Model' {
 	    newValue: any;
 	    oldValue: any;
 	}
-	export interface Property {
+	export class Property {
 	    readonly containingType: Type;
 	    readonly name: string;
 	    readonly jstype: any;
@@ -86,6 +90,7 @@ declare module 'Model' {
 	    helptext: string;
 	    isPersisted: boolean;
 	    isCalculated: boolean;
+	    constructor(containingType: Type, name: string, jstype: any, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue?: any, origin?: string);
 	    readonly fieldName: string;
 	    readonly changedEvent: IEvent<Entity, PropertyChangeEventArgs>;
 	    readonly accessedEvent: IEvent<Entity, PropertyAccessEventArgs>;
@@ -121,16 +126,18 @@ declare module 'Model' {
 	    isCalculated?: boolean;
 	    defaultValue?: any;
 	}
-	export interface Type {
+	export class Type {
 	    readonly model: Model;
 	    readonly fullName: string;
 	    readonly jstype: any;
 	    readonly baseType: Type;
 	    origin: string;
 	    originForNewProperties: string;
+	    constructor(model: Model, fullName: string, baseType?: Type, origin?: string);
 	    readonly destroyEvent: IEvent<Type, TypeEntityDestroyEventArgs>;
 	    readonly initNewEvent: IEvent<Type, TypeEntityInitNewEventArgs>;
 	    readonly initExistingEvent: IEvent<Type, TypeEntityInitExistingEventArgs>;
+	    static newIdPrefix: string;
 	    newId(): string;
 	    register(obj: Entity, id: string, suppressModelEvent?: boolean): void;
 	    changeObjectId(oldId: string, newId: string): Entity;
@@ -166,7 +173,8 @@ declare module 'Model' {
 	export interface ModelSettings {
 	    createOwnProperties: boolean;
 	}
-	export interface Model {
+	export class Model {
+	    constructor(createOwnProperties?: boolean);
 	    readonly typeAddedEvent: IEvent<Model, ModelTypeAddedEventArgs>;
 	    readonly entityRegisteredEvent: IEvent<Model, ModelEntityRegisteredEventArgs>;
 	    readonly entityUnregisteredEvent: IEvent<Model, ModelEntityUnregisteredEventArgs>;
@@ -174,10 +182,12 @@ declare module 'Model' {
 	    dispose(): void;
 	    readonly types: Array<Type>;
 	    addType(name: string, baseType?: Type, origin?: string): Type;
+		static getJsType(name: string, allowUndefined?: boolean): any;
 	}
 	export interface ModelConstructor {
 	    new(createOwnProperties?: boolean): Model;
 		getJsType(name: string, allowUndefined?: boolean): any;
+		Model: ModelConstructor;
 		Type: TypeConstructor;
 		Property: PropertyConstructor;
 		Entity: EntityConstructor;

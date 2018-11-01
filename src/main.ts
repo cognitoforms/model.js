@@ -8,6 +8,7 @@ var api = Model as any;
 
 // TODO: provide plugin model?
 
+api.Model = Model;
 api.Type = Type;
 api.Property = Property;
 api.Entity = Entity;
