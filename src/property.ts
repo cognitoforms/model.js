@@ -230,7 +230,7 @@ export class Property {
 		}
 	}
 
-	value(obj: Entity, val: any = null, additionalArgs: any = null) {
+	value(obj: Entity = null, val: any = null, additionalArgs: any = null) {
 		var target = (this.isStatic ? this.containingType.jstype : obj);
 
 		if (target === undefined || target === null) {

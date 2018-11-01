@@ -1,6 +1,6 @@
-type FormatConvertFunction = (value: any) => string;
+export type FormatConvertFunction = (value: any) => string;
 
-type FormatConvertBackFunction = (value: string) => string;
+export type FormatConvertBackFunction = (value: string) => string;
 
 export interface FormatOptions {
 	specifier: string;

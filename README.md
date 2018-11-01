@@ -1,4 +1,4 @@
-# ExoModel
+# Model.js
 
 A JavaScript library that facilitate a rich object model.
 

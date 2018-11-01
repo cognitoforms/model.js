@@ -1,8 +1,80 @@
 /*!
- * ExoModel.js v0.0.10
+ * Model.js v0.0.11
  * (c) 2018 Cognito LLC
  * Released under the MIT License.
  */
+'use strict';
+
+var Entity = /** @class */ (function () {
+    function Entity() {
+    }
+    Entity.prototype.init = function (property, value) {
+        var properties;
+        // Convert property/value pair to a property dictionary
+        if (typeof property == "string") {
+            properties = {};
+            properties[property] = value;
+        }
+        else {
+            properties = property;
+        }
+        // Initialize the specified properties
+        for (var name in properties) {
+            if (properties.hasOwnProperty(name)) {
+                var prop = this.meta.type.property(name);
+                if (!prop)
+                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
+                // Set the property
+                prop.value(this, value);
+            }
+        }
+    };
+    Entity.prototype.set = function (property, value) {
+        var properties;
+        // Convert property/value pair to a property dictionary
+        if (typeof property == "string") {
+            properties = {};
+            properties[property] = value;
+        }
+        else {
+            properties = property;
+        }
+        // Set the specified properties
+        for (var name in properties) {
+            if (properties.hasOwnProperty(name)) {
+                var prop = this.meta.type.property(name);
+                if (!prop)
+                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
+                prop.value(this, value);
+            }
+        }
+    };
+    Entity.prototype.get = function (property) {
+        return this.meta.type.property(property).value(this);
+    };
+    Entity.prototype.toString = function (format) {
+        return Entity.toIdString(this);
+    };
+    // Gets the typed string id suitable for roundtripping via fromIdString
+    Entity.toIdString = function (obj) {
+        return obj.meta.type.fullName + "|" + obj.meta.id;
+    };
+    // Gets or loads the entity with the specified typed string id
+    Entity.fromIdString = function (idString) {
+        // Typed identifiers take the form "type|id".
+        var type = idString.substring(0, idString.indexOf("|"));
+        var id = idString.substring(type.length + 1);
+        // Use the left-hand portion of the id string as the object's type.
+        var jstype = Model.getJsType(type);
+        // Retrieve the object with the given id.
+        return jstype.meta.get(id, 
+        // Typed identifiers may or may not be the exact type of the instance.
+        // An id string may be constructed with only knowledge of the base type.
+        false);
+    };
+    return Entity;
+}());
+
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function unwrapExports (x) {
@@ -993,6 +1065,7 @@ var Property = /** @class */ (function () {
         }
     };
     Property.prototype.value = function (obj, val, additionalArgs) {
+        if (obj === void 0) { obj = null; }
         if (val === void 0) { val = null; }
         if (additionalArgs === void 0) { additionalArgs = null; }
         var target = (this.isStatic ? this.containingType.jstype : obj);
@@ -1735,76 +1808,80 @@ function Model$_createSettingsObject(createOwnProperties) {
     return settings;
 }
 
-var Entity = /** @class */ (function () {
-    function Entity() {
+var Format = /** @class */ (function () {
+    function Format(options) {
+        if (!options.hasOwnProperty("specifier") || typeof (options.specifier) !== "string") {
+            throw new Error("Format specifier string must be provided.");
+        }
+        this.specifier = options.specifier;
+        this.convertFn = options.convert;
+        this.convertBackFn = options.convertBack;
+        this.description = options.description;
+        this.nullString = options.nullString || "";
+        this.undefinedString = options.undefinedString || "";
+        this.formatEval = options.formatEval;
     }
-    Entity.prototype.init = function (property, value) {
-        var properties;
-        // Convert property/value pair to a property dictionary
-        if (typeof property == "string") {
-            properties = {};
-            properties[property] = value;
+    Format.prototype.convert = function (val) {
+        if (val === undefined) {
+            return this.undefinedString;
         }
-        else {
-            properties = property;
+        if (val === null) {
+            return this.nullString;
         }
-        // Initialize the specified properties
-        for (var name in properties) {
-            if (properties.hasOwnProperty(name)) {
-                var prop = this.meta.type.property(name);
-                if (!prop)
-                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-                // Set the property
-                prop.value(this, value);
+        // TODO: Implement FormatError
+        // if (val instanceof FormatError) {
+        // 	return val.get_invalidValue();
+        // }
+        if (!this.convertFn) {
+            return val;
+        }
+        return this.convertFn(val);
+    };
+    Format.prototype.convertBack = function (val) {
+        if (val === null || val == this.nullString) {
+            return null;
+        }
+        if (val === undefined || val == this.undefinedString) {
+            return;
+        }
+        if (val.constructor == String) {
+            val = val.trim();
+            if (val.length === 0) {
+                return null;
             }
         }
-    };
-    Entity.prototype.set = function (property, value) {
-        var properties;
-        // Convert property/value pair to a property dictionary
-        if (typeof property == "string") {
-            properties = {};
-            properties[property] = value;
+        if (!this.convertBackFn) {
+            return val;
         }
-        else {
-            properties = property;
+        /*
+        try {
+        */
+        return this.convertBackFn(val);
+        /*
+        } catch (err) {
+            // TODO: Implement FormatError
+            // if (err instanceof FormatError) {
+            // 	return err;
+            // }
+
+            return new FormatError(this._description ?
+                Resource.get("format-with-description").replace('{description}', this._description) :
+                Resource.get("format-without-description"),
+                val);
         }
-        // Set the specified properties
-        for (var name in properties) {
-            if (properties.hasOwnProperty(name)) {
-                var prop = this.meta.type.property(name);
-                if (!prop)
-                    throw new Error("Could not find property \"" + name + "\" on type \"" + this.meta.type.fullName + "\".");
-                prop.value(this, value);
-            }
-        }
+        */
     };
-    Entity.prototype.get = function (property) {
-        return this.meta.type.property(property).value(this);
+    Format.prototype.toString = function () {
+        return this.specifier;
     };
-    Entity.prototype.toString = function (format) {
-        return Entity.toIdString(this);
-    };
-    // Gets the typed string id suitable for roundtripping via fromIdString
-    Entity.toIdString = function (obj) {
-        return obj.meta.type.fullName + "|" + obj.meta.id;
-    };
-    // Gets or loads the entity with the specified typed string id
-    Entity.fromIdString = function (idString) {
-        // Typed identifiers take the form "type|id".
-        var type = idString.substring(0, idString.indexOf("|"));
-        var id = idString.substring(type.length + 1);
-        // Use the left-hand portion of the id string as the object's type.
-        var jstype = Model.getJsType(type);
-        // Retrieve the object with the given id.
-        return jstype.meta.get(id, 
-        // Typed identifiers may or may not be the exact type of the instance.
-        // An id string may be constructed with only knowledge of the base type.
-        false);
-    };
-    return Entity;
+    return Format;
 }());
 
+var api = Model;
 // TODO: provide plugin model?
+api.Type = Type;
+api.Property = Property;
+api.Entity = Entity;
+api.Format = Format;
 
-export { Entity, Property, Type, Model };
+module.exports = api;

@@ -1,14 +1,12 @@
 {
-  "version": "0.0.10",
-  "name": "exomodel",
+  "version": "0.0.11",
+  "name": "model.js",
   "license": "MIT",
-  "main": "dist/exomodel.full.cjs.js",
-  "module": "dist/exomodel.full.esm.js",
-  "browser": {
-    "development": "dist/exomodel.full.umd.js",
-    "production": "dist/exomodel.full.umd.min.js"
-  },
-  "types": "dist/exomodel.d.ts",
+  "main": "dist/model.cjs.js",
+  "module": "dist/model.esm.js",
+  "browser": "dist/model.umd.js",
+  "iife": "dist/model.js",
+  "types": "dist/model.d.ts",
   "private": true,
   "devDependencies": {
     "rollup": "^0.66.6",

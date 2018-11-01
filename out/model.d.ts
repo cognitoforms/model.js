@@ -1,4 +1,67 @@
-declare module 'exomodel/core/helpers' {
+declare module 'Model/object-meta' {
+	import { Type } from 'Model/type';
+	import { Entity } from 'Model/entity';
+	export class ObjectMeta {
+	    readonly type: Type;
+	    readonly entity: Entity;
+	    private _id;
+	    private _isNew;
+	    private _legacyId;
+	    constructor(type: Type, entity: Entity, id: string, isNew: boolean);
+	    id: string;
+	    readonly isNew: boolean;
+	    legacyId: string;
+	    destroy(): void;
+	}
+
+}
+declare module 'Model/format' {
+	export type FormatConvertFunction = (value: any) => string;
+	export type FormatConvertBackFunction = (value: string) => string;
+	export interface FormatOptions {
+	    specifier: string;
+	    convert: FormatConvertFunction;
+	    convertBack?: FormatConvertBackFunction;
+	    formatEval?: (value: string) => string;
+	    description?: string;
+	    nullString?: string;
+	    undefinedString?: string;
+	}
+	export class Format {
+	    specifier: string;
+	    convertFn: FormatConvertFunction;
+	    convertBackFn: FormatConvertBackFunction;
+	    formatEval: (value: string) => string;
+	    description: string;
+	    nullString: string;
+	    undefinedString: string;
+	    constructor(options: FormatOptions);
+	    convert(val: any): string;
+	    convertBack(val: string): any;
+	    toString(): string;
+	}
+
+}
+declare module 'Model/entity' {
+	import { ObjectMeta } from 'Model/object-meta';
+	export class Entity {
+	    readonly meta: ObjectMeta;
+	    init(properties: {
+	        [name: string]: any;
+	    }): void;
+	    init(property: string, value: any): void;
+	    set(properties: {
+	        [name: string]: any;
+	    }): void;
+	    set(property: string, value: any): void;
+	    get(property: string): any;
+	    toString(format: string): string;
+	    static toIdString(obj: Entity): string;
+	    static fromIdString(idString: string): any;
+	}
+
+}
+declare module 'Model/helpers' {
 	export function ensureNamespace(name: string, parentNamespace: any): any;
 	export function navigateAttribute(obj: any, attr: string, callback: Function, thisPtr?: any): void;
 	export function evalPath(obj: any, path: string, nullValue?: any, undefinedValue?: any): any;
@@ -10,12 +73,12 @@ declare module 'exomodel/core/helpers' {
 	export function toTitleCase(input: string): string;
 
 }
-declare module 'exomodel/core/internals' {
+declare module 'Model/internals' {
 	export function createSecret(key: string, len?: number, includeLetters?: boolean, includeDigits?: boolean, prefix?: string): string;
 	export function getSecret(key: string): string;
 
 }
-declare module 'exomodel/core/observable-list' {
+declare module 'Model/observable-list' {
 	import { EventDispatcher, IEvent } from "ste-events";
 	export interface ObservableListChangedArgs<ItemType> {
 	    added: ItemType[];
@@ -62,38 +125,11 @@ declare module 'exomodel/core/observable-list' {
 	export {};
 
 }
-declare module 'exomodel/core/format' {
-	 type FormatConvertFunction = (value: any) => string; type FormatConvertBackFunction = (value: string) => string;
-	export interface FormatOptions {
-	    specifier: string;
-	    convert: FormatConvertFunction;
-	    convertBack?: FormatConvertBackFunction;
-	    formatEval?: (value: string) => string;
-	    description?: string;
-	    nullString?: string;
-	    undefinedString?: string;
-	}
-	export class Format {
-	    specifier: string;
-	    convertFn: FormatConvertFunction;
-	    convertBackFn: FormatConvertBackFunction;
-	    formatEval: (value: string) => string;
-	    description: string;
-	    nullString: string;
-	    undefinedString: string;
-	    constructor(options: FormatOptions);
-	    convert(val: any): string;
-	    convertBack(val: string): any;
-	    toString(): string;
-	}
-	export {};
-
-}
-declare module 'exomodel/core/property' {
-	import { Type } from 'exomodel/core/type';
-	import { Entity } from 'exomodel/core/entity';
+declare module 'Model/property' {
+	import { Type } from 'Model/type';
+	import { Entity } from 'Model/entity';
 	import { EventDispatcher, IEvent } from "ste-events";
-	import { Format } from 'exomodel/core/format';
+	import { Format } from 'Model/format';
 	export interface PropertyEventArgs {
 	    property: Property;
 	}
@@ -137,7 +173,7 @@ declare module 'exomodel/core/property' {
 	    readonly defaultValue: any;
 	    getPath(): string;
 	    canSetValue(obj: Entity, val: any): any;
-	    value(obj: Entity, val?: any, additionalArgs?: any): any;
+	    value(obj?: Entity, val?: any, additionalArgs?: any): any;
 	    rootedPath(type: Type): string;
 	}
 	export function Property$_generateShortcuts(property: Property, target: any, recurse?: boolean, overwrite?: boolean): void;
@@ -148,66 +184,13 @@ declare module 'exomodel/core/property' {
 	export {};
 
 }
-declare module 'exomodel/core/model' {
-	import { Type } from 'exomodel/core/type';
+declare module 'Model/type' {
+	import { Model } from 'Model/model';
+	import { Entity } from 'Model/entity';
+	import { Property } from 'Model/property';
 	import { EventDispatcher, IEvent } from "ste-events";
-	import { Entity } from 'exomodel/core/entity';
-	import { Property } from 'exomodel/core/property';
-	export interface NamespaceOrConstructor {
-	    [name: string]: NamespaceOrConstructor;
-	}
-	export interface ModelTypeAddedEventArgs {
-	    type: Type;
-	}
-	export interface ModelEntityRegisteredEventArgs {
-	    entity: Entity;
-	}
-	export interface ModelEntityUnregisteredEventArgs {
-	    entity: Entity;
-	}
-	export interface ModelPropertyAddedEventArgs {
-	    property: Property;
-	}
-	export interface ModelSettings {
-	    createOwnProperties: boolean;
-	} class ModelEventDispatchers {
-	    readonly typeAdded: EventDispatcher<Model, ModelTypeAddedEventArgs>;
-	    readonly entityRegistered: EventDispatcher<Model, ModelEntityRegisteredEventArgs>;
-	    readonly entityUnregistered: EventDispatcher<Model, ModelEntityUnregisteredEventArgs>;
-	    readonly propertyAdded: EventDispatcher<Model, ModelPropertyAddedEventArgs>;
-	    constructor();
-	}
-	export let Model$_allTypesRoot: NamespaceOrConstructor;
-	export class Model {
-	    readonly _types: {
-	        [name: string]: Type;
-	    };
-	    readonly _settings: ModelSettings;
-	    readonly _eventDispatchers: ModelEventDispatchers;
-	    constructor(createOwnProperties?: boolean);
-	    readonly typeAddedEvent: IEvent<Model, ModelTypeAddedEventArgs>;
-	    readonly entityRegisteredEvent: IEvent<Model, ModelEntityRegisteredEventArgs>;
-	    readonly entityUnregisteredEvent: IEvent<Model, ModelEntityUnregisteredEventArgs>;
-	    readonly propertyAddedEvent: IEvent<Model, ModelPropertyAddedEventArgs>;
-	    dispose(): void;
-	    readonly types: Array<Type>;
-	    addType(name: string, baseType?: Type, origin?: string): Type;
-	    /**
-	     * Retrieves the JavaScript constructor function corresponding to the given full type name.
-	     * @param name The name of the type
-	     */
-	    static getJsType(name: string, allowUndefined?: boolean): any;
-	}
-	export {};
-
-}
-declare module 'exomodel/core/type' {
-	import { Model } from 'exomodel/core/model';
-	import { Entity } from 'exomodel/core/entity';
-	import { Property } from 'exomodel/core/property';
-	import { EventDispatcher, IEvent } from "ste-events";
-	import { ObservableList } from 'exomodel/core/observable-list';
-	import { Format } from 'exomodel/core/format';
+	import { ObservableList } from 'Model/observable-list';
+	import { Format } from 'Model/format';
 	export interface TypeEntityInitNewEventArgs {
 	    entity: Entity;
 	}
@@ -265,46 +248,61 @@ declare module 'exomodel/core/type' {
 	export {};
 
 }
-declare module 'exomodel/core/object-meta' {
-	import { Type } from 'exomodel/core/type';
-	import { Entity } from 'exomodel/core/entity';
-	export class ObjectMeta {
-	    readonly type: Type;
-	    readonly entity: Entity;
-	    private _id;
-	    private _isNew;
-	    private _legacyId;
-	    constructor(type: Type, entity: Entity, id: string, isNew: boolean);
-	    id: string;
-	    readonly isNew: boolean;
-	    legacyId: string;
-	    destroy(): void;
+declare module 'Model/model' {
+	import { Type } from 'Model/type';
+	import { EventDispatcher, IEvent } from "ste-events";
+	import { Entity } from 'Model/entity';
+	import { Property } from 'Model/property';
+	export interface NamespaceOrConstructor {
+	    [name: string]: NamespaceOrConstructor;
 	}
+	export interface ModelTypeAddedEventArgs {
+	    type: Type;
+	}
+	export interface ModelEntityRegisteredEventArgs {
+	    entity: Entity;
+	}
+	export interface ModelEntityUnregisteredEventArgs {
+	    entity: Entity;
+	}
+	export interface ModelPropertyAddedEventArgs {
+	    property: Property;
+	}
+	export interface ModelSettings {
+	    createOwnProperties: boolean;
+	} class ModelEventDispatchers {
+	    readonly typeAdded: EventDispatcher<Model, ModelTypeAddedEventArgs>;
+	    readonly entityRegistered: EventDispatcher<Model, ModelEntityRegisteredEventArgs>;
+	    readonly entityUnregistered: EventDispatcher<Model, ModelEntityUnregisteredEventArgs>;
+	    readonly propertyAdded: EventDispatcher<Model, ModelPropertyAddedEventArgs>;
+	    constructor();
+	}
+	export let Model$_allTypesRoot: NamespaceOrConstructor;
+	export class Model {
+	    readonly _types: {
+	        [name: string]: Type;
+	    };
+	    readonly _settings: ModelSettings;
+	    readonly _eventDispatchers: ModelEventDispatchers;
+	    constructor(createOwnProperties?: boolean);
+	    readonly typeAddedEvent: IEvent<Model, ModelTypeAddedEventArgs>;
+	    readonly entityRegisteredEvent: IEvent<Model, ModelEntityRegisteredEventArgs>;
+	    readonly entityUnregisteredEvent: IEvent<Model, ModelEntityUnregisteredEventArgs>;
+	    readonly propertyAddedEvent: IEvent<Model, ModelPropertyAddedEventArgs>;
+	    dispose(): void;
+	    readonly types: Array<Type>;
+	    addType(name: string, baseType?: Type, origin?: string): Type;
+	    /**
+	     * Retrieves the JavaScript constructor function corresponding to the given full type name.
+	     * @param name The name of the type
+	     */
+	    static getJsType(name: string, allowUndefined?: boolean): any;
+	}
+	export {};
 
 }
-declare module 'exomodel/core/entity' {
-	import { ObjectMeta } from 'exomodel/core/object-meta';
-	export class Entity {
-	    readonly meta: ObjectMeta;
-	    init(properties: {
-	        [name: string]: any;
-	    }): void;
-	    init(property: string, value: any): void;
-	    set(properties: {
-	        [name: string]: any;
-	    }): void;
-	    set(property: string, value: any): void;
-	    get(property: string): any;
-	    toString(format: string): string;
-	    static toIdString(obj: Entity): string;
-	    static fromIdString(idString: string): any;
-	}
-
-}
-declare module 'exomodel/main' {
-	export { Entity } from 'exomodel/core/entity';
-	export { Property } from 'exomodel/core/property';
-	export { Type } from 'exomodel/core/type';
-	export { Model } from 'exomodel/core/model';
+declare module 'Model/main' {
+	 var api: any;
+	export default api;
 
 }

@@ -1,22 +1,15 @@
-/// <reference path="../ref/ste-events.d.ts" />
-declare module 'exomodel' {
+declare module 'Model' {
 	import { EventDispatcher, IEvent } from "ste-events";
-	export interface ObservableListChangedArgs<ItemType> {
-	    added: ItemType[];
-	    addedIndex: number;
-	    removed: ItemType[];
-	    removedIndex: number;
+	export interface ObjectMeta {
+	    readonly type: Type;
+	    readonly entity: Entity;
+	    id: string;
+	    readonly isNew: boolean;
+	    legacyId: string;
+	    destroy(): void;
 	}
-	export interface ObservableList<ItemType> extends Array<ItemType> {
-	    changed: IEvent<Array<ItemType>, ObservableListChangedArgs<ItemType>>;
-	    add(item: ItemType): void;
-	    remove(item: ItemType): boolean;
-	    isObservableList<ItemType>(array: Array<ItemType>): boolean;
-	}
-	export interface ObserverableListConstructor<ItemType> {
-		new(items: Array<ItemType>): ObservableList<ItemType>;
-	    ensureObservable<ItemType>(array: Array<ItemType>): ObservableList<ItemType>;
-	    create<ItemType>(items?: ItemType[]): ObservableList<ItemType>;
+	export interface ObjectMetaConstructor {
+	    new(type: Type, entity: Entity, id: string, isNew: boolean): ObjectMeta;
 	}
 	export type FormatConvertFunction = (value: any) => string;
 	export type FormatConvertBackFunction = (value: string) => string;
@@ -42,7 +35,37 @@ declare module 'exomodel' {
 	    toString(): string;
 	}
 	export interface FormatConstructor {
-	    new(options: FormatOptions): Format;
+	    constructor(options: FormatOptions): Format;
+	}
+	export interface Entity {
+	    readonly meta: ObjectMeta;
+	    init(properties: { [name: string]: any; }): void;
+	    init(property: string, value: any): void;
+	    set(properties: { [name: string]: any; }): void;
+	    set(property: string, value: any): void;
+	    get(property: string): any;
+	    toString(format: string): string;
+	}
+	export interface EntityConstructor {
+		new(): Entity;
+	    toIdString(obj: Entity): string;
+	    fromIdString(idString: string): any;
+	}
+	export interface ObservableListChangedArgs<ItemType> {
+	    added: ItemType[];
+	    addedIndex: number;
+	    removed: ItemType[];
+	    removedIndex: number;
+	}
+	export interface ObservableList<ItemType> extends Array<ItemType> {
+	    changed: IEvent<Array<ItemType>, ObservableListChangedArgs<ItemType>>;
+	    add(item: ItemType): void;
+	    remove(item: ItemType): boolean;
+	}
+	export interface ObservableListConstructor {
+	    isObservableList<ItemType>(array: Array<ItemType>): boolean;
+	    ensureObservable<ItemType>(array: Array<ItemType>): ObservableList<ItemType>;
+	    create<ItemType>(items?: ItemType[]): ObservableList<ItemType>;
 	}
 	export interface PropertyEventArgs {
 	    property: Property;
@@ -75,36 +98,11 @@ declare module 'exomodel' {
 	    readonly defaultValue: any;
 	    getPath(): string;
 	    canSetValue(obj: Entity, val: any): any;
-	    value(obj: Entity, val?: any, additionalArgs?: any): any;
+	    value(obj?: Entity, val?: any, additionalArgs?: any): any;
 	    rootedPath(type: Type): string;
 	}
 	export interface PropertyConstructor {
-		new(containingType: Type, name: string, jstype: any, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue?: any, origin?: string): Property;
-	}
-	export interface ModelTypeAddedEventArgs {
-	    type: Type;
-	}
-	export interface ModelEntityRegisteredEventArgs {
-	    entity: Entity;
-	}
-	export interface ModelEntityUnregisteredEventArgs {
-	    entity: Entity;
-	}
-	export interface ModelPropertyAddedEventArgs {
-	    property: Property;
-	}
-	export interface Model {
-	    readonly typeAddedEvent: IEvent<Model, ModelTypeAddedEventArgs>;
-	    readonly entityRegisteredEvent: IEvent<Model, ModelEntityRegisteredEventArgs>;
-	    readonly entityUnregisteredEvent: IEvent<Model, ModelEntityUnregisteredEventArgs>;
-	    readonly propertyAddedEvent: IEvent<Model, ModelPropertyAddedEventArgs>;
-	    dispose(): void;
-	    readonly types: Array<Type>;
-	    addType(name: string, baseType?: Type, origin?: string): Type;
-	}
-	export interface ModelConstructor {
-	    new(createOwnProperties?: boolean): Model;
-	    getJsType(name: string, allowUndefined?: boolean): any;
+	    new(containingType: Type, name: string, jstype: any, label: string, helptext: string, format: Format, isList: boolean, isStatic: boolean, isPersisted: boolean, isCalculated: boolean, defaultValue?: any, origin?: string): Property;
 	}
 	export interface TypeEntityInitNewEventArgs {
 	    entity: Entity;
@@ -147,38 +145,42 @@ declare module 'exomodel' {
 	    toString(): string;
 	}
 	export interface TypeConstructor {
-		new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
+	    new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 	    newIdPrefix: string;
 	}
-	export interface ObjectMeta {
-	    readonly type: Type;
-	    readonly entity: Entity;
-	    id: string;
-	    readonly isNew: boolean;
-	    legacyId: string;
-	    destroy(): void;
+	export interface NamespaceOrConstructor {
+	    [name: string]: NamespaceOrConstructor;
 	}
-	export interface ObjectMetaConstructor {
-		new(): ObjectMeta;
+	export interface ModelTypeAddedEventArgs {
+	    type: Type;
 	}
-	export interface Entity {
-	    readonly meta: ObjectMeta;
-	    init(properties: { [name: string]: any; }): void;
-	    init(property: string, value: any): void;
-	    set(properties: { [name: string]: any; }): void;
-	    set(property: string, value: any): void;
-	    get(property: string): any;
-	    toString(format: string): string;
+	export interface ModelEntityRegisteredEventArgs {
+	    entity: Entity;
 	}
-	export interface EntityConstructor {
-		new(): Entity;
-	    toIdString(obj: Entity): string;
-	    fromIdString(idString: string): any;
+	export interface ModelEntityUnregisteredEventArgs {
+	    entity: Entity;
 	}
-	export interface ExoModelModule {
-		Model: ModelConstructor;
-		Entity: EntityConstructor;
+	export interface ModelPropertyAddedEventArgs {
+	    property: Property;
+	}
+	export interface ModelSettings {
+	    createOwnProperties: boolean;
+	}
+	export interface Model {
+	    readonly typeAddedEvent: IEvent<Model, ModelTypeAddedEventArgs>;
+	    readonly entityRegisteredEvent: IEvent<Model, ModelEntityRegisteredEventArgs>;
+	    readonly entityUnregisteredEvent: IEvent<Model, ModelEntityUnregisteredEventArgs>;
+	    readonly propertyAddedEvent: IEvent<Model, ModelPropertyAddedEventArgs>;
+	    dispose(): void;
+	    readonly types: Array<Type>;
+	    addType(name: string, baseType?: Type, origin?: string): Type;
+	}
+	export interface ModelConstructor {
+	    new(createOwnProperties?: boolean): Model;
+		getJsType(name: string, allowUndefined?: boolean): any;
 		Type: TypeConstructor;
 		Property: PropertyConstructor;
+		Entity: EntityConstructor;
+		Format: FormatConstructor;
 	}
 }
