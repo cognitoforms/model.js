@@ -2,9 +2,10 @@ import { RangeRule } from "./range-rule";
 import { Property } from "./property";
 import { Entity } from "./entity";
 import { Type } from "./type";
-import { Resource } from "./resource";
+import { getResource } from "./resource";
 
 export class StringLengthRule extends RangeRule {
+
 	constructor(rootType: Type, options: any) {
 		/// <summary>Creates a rule that validates that the length of a string property is within a specific range.</summary>
 		/// <param name="rootType" type="Type">The model type the rule is for.</param>
@@ -25,9 +26,9 @@ export class StringLengthRule extends RangeRule {
 
 		// ensure the error message is specified
 		options.message = options.message ||
-			(options.min && options.max ? Resource.get("string-length-between").replace("{min}", options.min).replace("{max}", options.max) :
-				options.min ? Resource.get("string-length-at-least").replace("{min}", options.min) :
-					Resource.get("string-length-at-most").replace("{max}", options.max));
+			(options.min && options.max ? getResource("string-length-between", rootType.model.$locale).replace("{min}", options.min).replace("{max}", options.max) :
+				options.min ? getResource("string-length-at-least", rootType.model.$locale).replace("{min}", options.min) :
+					getResource("string-length-at-most", rootType.model.$locale).replace("{max}", options.max));
 
 		let min = options.min;
 		delete options.min;
@@ -52,4 +53,5 @@ export class StringLengthRule extends RangeRule {
 	toString(): string {
 		return `${this.property.containingType.fullName}.${this.property.name} in range, min: , max: `;
 	}
+
 }

@@ -1,5 +1,5 @@
 import { ValidationRule, ValidationRuleOptions } from "./validation-rule";
-import { Resource } from "./resource";
+import { getResource } from "./resource";
 import { Type } from "./type";
 import { Entity } from "./entity";
 import { Property } from "./property";
@@ -8,17 +8,19 @@ import { Property } from "./property";
  * A rule that validates that a property has a value
  */
 export class RequiredRule extends ValidationRule {
+
 	/**
 	 * Creates a rule that validates that a property has a value.
 	 * @param rootType The model type the rule is for
 	 * @param options The options for the rule
 	 */
 	constructor(rootType: Type, options: RequiredRuleOptions) {
+
 		// ensure the rule name is specified
 		options.name = options.name || "Required";
 
 		// ensure the error message is specified
-		options.message = options.message || Resource.get("required");
+		options.message = options.message || getResource("required", rootType.model.$locale);
 
 		// create the validation function based on the rule options
 		options.isValid = function(this: Entity, prop: Property, val: any): boolean {
@@ -28,7 +30,7 @@ export class RequiredRule extends ValidationRule {
 			}
 
 			return val !== undefined && val !== null && (val.constructor !== String || val.trim() !== "") && (!(val instanceof Array) || val.length > 0);
-		};
+		}
 
 		// call the base type constructor
 		super(rootType, options);
