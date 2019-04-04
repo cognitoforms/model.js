@@ -9,7 +9,6 @@ import { getResource, defineResources } from "./resource";
 const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
 
 export class Model {
-
 	readonly types: { [name: string]: Type };
 
 	readonly settings: ModelSettings;
@@ -17,7 +16,7 @@ export class Model {
 	readonly fieldNamePrefix: string;
 
 	readonly $namespace: any;
-
+	
 	readonly $locale: string;
 	
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
@@ -29,7 +28,6 @@ export class Model {
 	readonly serializer = new EntitySerializer();
 
 	constructor(options?: ModelOptions & ModelNamespaceOption & ModelLocaleOption, config?: ModelConfiguration) {
-
 		this.types = {};
 		this.settings = new ModelSettings(config);
 
@@ -100,15 +98,14 @@ export class Model {
 	 * @param options The set of model types to add and/or extend.
 	 */
 	extend(options: ModelOptions): void {
-
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.prepare(() => {
-
 			if (options.$namespace) {
 				// TODO: Guard against model being set after instances have been created
 				let $namespace = options.$namespace as object;
 				if (!this.$namespace) {
 					Object.defineProperty(this, "$namespace", { configurable: false, enumerable: true, value: $namespace, writable: false });
+					delete options['$namespace'];
 				}
 				else if ($namespace !== this.$namespace) {
 					// TODO: Raise an error?
@@ -120,15 +117,11 @@ export class Model {
 				// TODO: Detect that the locale has already been set, or types have already been initialized under a different locale
 				let $locale = options.$locale as string;
 				Object.defineProperty(this, "$locale", { configurable: false, enumerable: true, value: $locale, writable: false });
+				delete options['$locale'];
 			}
 
 			// Create New Types
-			for (let [typeName, typeOptions] of Object.entries(options)) {
-				if (typeName === "$namespace" || typeName === "$locale") {
-					// Ignore the $namespace property since it is handled elsewhere
-					continue;
-				}
-
+			for (let [typeName, typeOptions] of Object.entries(options).filter(([typeName]) => !typeName.startsWith('$'))) {
 				let type = this.types[typeName];
 
 				if (!type) {
@@ -144,12 +137,7 @@ export class Model {
 			}
 
 			// Extend Types
-			for (let [typeName, typeOptions] of Object.entries(options)) {
-				if (typeName === "$namespace" || typeName === "$locale") {
-					// Ignore the $namespace property since it is handled elsewhere
-					continue;
-				}
-
+			for (let [typeName, typeOptions] of Object.entries(options).filter(([typeName]) => !typeName.startsWith('$')) {
 				this.types[typeName].extend(typeOptions);
 			}
 		});
@@ -161,10 +149,8 @@ export class Model {
 	 * @param extend The function extending the model
 	 */
 	prepare(extend: () => void): void {
-
 		// Create a model initialization scope
 		if (!this._ready) {
-
 			// Create an array to track model initialization callbacks
 			this._ready = []; 
 
@@ -191,7 +177,6 @@ export class Model {
 	 * @param format The format template or specifier
 	 */
 	getFormat<T>(type: PropertyType, format: string): Format<T> {
-
 		// Return null if a format specifier was not provided
 		if (!format) {
 			return null;
@@ -210,11 +195,11 @@ export class Model {
 
 		// Otherwise, create and cache the format
 		if (isEntityType(type)) {
-			return formats[format] = Format.fromTemplate(type.meta, format);
+			return (formats[format] = Format.fromTemplate(type.meta, format));
 		}
 		else {
 			// otherwise, call the format provider to create a new format
-			return formats[format] = createFormat(type, format, this.$locale);
+			return (formats[format] = createFormat(type, format, this.$locale));
 		}
 	}
 
@@ -272,7 +257,6 @@ export type ModelConfiguration = {
 }
 
 export class ModelSettings {
-
 	// There is a slight speed cost to creating own properties,
 	// which may be noticeable with very large object counts.
 	readonly createOwnProperties: boolean = false;
@@ -281,8 +265,7 @@ export class ModelSettings {
 	readonly useGlobalObject: boolean = false;
 
 	constructor(config?: ModelConfiguration) {
-
-		this.createOwnProperties = config && !!config.createOwnProperties
+		this.createOwnProperties = config && !!config.createOwnProperties;
 		this.useGlobalObject = config && !!config.useGlobalObject;
 	}
 }
