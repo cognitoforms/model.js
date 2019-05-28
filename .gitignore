@@ -4,4 +4,3 @@ dist/src/
 out/**
 obj/**
 bin/**
-src/**/*.js
