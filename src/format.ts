@@ -82,7 +82,7 @@ export abstract class Format<T> {
 		return new CustomFormat<T>(model, options);
 	}
 
-	static fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval: unknown = null): Format<TEntity> {
+	static fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<TEntity> {
 		return new ModelFormat<TEntity>(type, template, formatEval);
 	}
 
@@ -175,12 +175,14 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 	tokens: FormatToken<any>[];
 	template: string;
 	paths: string[];
+	formatEval: (tokenValue: string) => string;
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	constructor(type: Type, specifier: string, formatEval: unknown = null) {
+	constructor(type: Type, specifier: string, formatEval?: (tokenValue: string) => string) {
 		super(type.model, specifier);
 
 		this.type = type;
+		this.formatEval = formatEval;
 
 		// Compile the model format
 		this.compile();
@@ -294,6 +296,10 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 					}
 					value = format.convert(value);
 				}
+
+				if (this.formatEval)
+					value = this.formatEval(value);
+
 				result = result + value;
 			}
 		}

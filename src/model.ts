@@ -308,7 +308,7 @@ export class Model {
 	 * @param type The type the format is for
 	 * @param format The format template or specifier
 	 */
-	getFormat<T>(type: PropertyType, format: string): Format<T> {
+	getFormat<T>(type: PropertyType, format: string, formatEval?: (tokenValue: string) => string): Format<T> {
 		// Return null if a format specifier was not provided
 		if (!format) {
 			return null;
@@ -327,7 +327,7 @@ export class Model {
 
 		// Otherwise, create and cache the format
 		if (isEntityType(type)) {
-			return (formats[format] = Format.fromTemplate(type.meta, format));
+			return (formats[format] = Format.fromTemplate(type.meta, format, formatEval));
 		}
 		else {
 			// otherwise, call the format provider to create a new format

@@ -213,4 +213,21 @@ describe("Entity", () => {
 			expect(movie.Cast.slice()).toEqual([sigourney]);
 		});
 	});
+
+	describe("formatting", () => {
+		it("supports tokens", () => {
+			const movie = new Types.Movie(Alien);
+			expect(movie.toString("[Title]")).toBe("Alien");
+		});
+
+		it("supports tokens with nested paths", () => {
+			const movie = new Types.Movie(Alien);
+			expect(movie.toString("[Title] - [Director.FirstName] [Director.LastName]")).toBe("Alien - Ridley Scott");
+		});
+
+		it("supports token value post processing", () => {
+			const movie = new Types.Movie(Alien);
+			expect(movie.toString("[Title] - [Director.FirstName] [Director.LastName]", v => `'${v}'`)).toBe("'Alien' - 'Ridley' 'Scott'");
+		});
+	});
 });
