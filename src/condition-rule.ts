@@ -28,7 +28,7 @@ export class ConditionRule extends Rule {
 		options.onInit = true;
 
 		// call the base rule constructor
-		super(rootType, name, options);
+		super(rootType, options.name, options);
 	
 		// assertion function
 		this.assert = options.assert;

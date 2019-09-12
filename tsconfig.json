@@ -1,22 +1,45 @@
 {
 	"compilerOptions": {
-		"outDir": "./dist/src/",
+		// Target latest version of ECMAScript.
+		"target": "ES5",
+		// Search under node_modules for non-relative imports.
+		"moduleResolution": "node",
+		// Process & infer types from .js files.
+		"allowJs": false,
+		// "emitDeclarationOnly": true,
+		"outDir": "./out",
 		"declaration": true,
-		"sourceMap": true,
-		"noImplicitAny": true,
-		"module": "commonjs",
-		"target": "es5",
+		"declarationDir": "./out",
+		// Don't emit; allow Babel to transform files.
+		// Disallow features that require cross-file information for emit.
+		// "isolatedModules": true,
+		// Import non-ES modules as default imports.
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"module": "CommonJS",
 		"lib": [
 			"esnext",
 			"es2016",
 			"dom"
-		]
+		],
+		"types": [
+			"jest",
+			"node",
+			"webpack-env"
+		],
+		"baseUrl": ".",
+		"paths": {
+		}
 	},
+	"compileOnSave": false,
+	"include": [
+		"./src/**/*.ts",
+		"./src/**/*.js",
+		"./testing/**/*.ts",
+		"./testing/**/*.js"
+	],
 	"exclude": [
-		"bin",
-		"dist",
 		"node_modules",
-		"obj",
-		"out"
+		"dist"
 	]
 }

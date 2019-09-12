@@ -103,7 +103,7 @@ describe("StringLengthRule", () => {
 						},
 						max: function() {
 							return this.IsFullName ? 19 : 9;
-						},
+						}
 					}
 				}
 			}
@@ -136,5 +136,4 @@ describe("StringLengthRule", () => {
 		p.Name = "Jane Doe";
 		expect(p.meta.conditions.length).toBe(0); // "Jane Doe" is in range for first name
 	});
-
 });

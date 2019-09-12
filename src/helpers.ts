@@ -1,6 +1,8 @@
 import { Event, EventSubscription } from "./events";
 import { FunctorItem, FunctorWith1Arg } from "./functor";
 
+declare var global: any;
+
 export interface ObjectLiteral {
 	[key: string]: ObjectLiteral | any;
 }

@@ -120,7 +120,7 @@ describe("RangeRule", () => {
 					type: Number,
 					range: {
 						min: function() { return 18; },
-						max: function() { return 65; },
+						max: function() { return 65; }
 					}
 				}
 			}
@@ -168,7 +168,7 @@ describe("RangeRule", () => {
 						},
 						max: function() {
 							return this.IsAdult ? this.IsCentenarian ? null : 99 : 17;
-						},
+						}
 					}
 				}
 			}
@@ -214,5 +214,4 @@ describe("RangeRule", () => {
 		p.Age = 17;
 		expect(p.meta.conditions.length).toBe(0); // 17 is in range for non-adult
 	});
-
 });

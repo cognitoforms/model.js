@@ -1,6 +1,9 @@
 .DS_Store
 node_modules
 dist/src/
-out/**
-obj/**
-bin/**
+dist/
+out/
+obj/
+bin/
+*.bak
+*.tgz

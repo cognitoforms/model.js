@@ -164,7 +164,7 @@ export class Property implements PropertyPath {
 			// Constant
 			if (options.constant !== null && options.constant !== undefined) {
 				targetType.model.ready(() => {
-					this.constant = targetType.model.serializer.deserialize(null, options.constant, this);
+					this.constant = targetType.model.serializer.deserialize(null, options.constant, this, null);
 				});
 			}
 

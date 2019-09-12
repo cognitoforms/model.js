@@ -275,5 +275,5 @@ export interface EntityChangeEventArgs {
 	entity: Entity;
 	property: Property;
 	oldValue?: any;
-	newValue: any;
+	newValue?: any;
 }

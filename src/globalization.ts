@@ -743,7 +743,7 @@ export function parseNumber(value: string, style: string = "Number" || "Integer"
 	return result;
 }
 
-function isInteger(obj) {
+function isInteger(obj: any) {
 	return typeof (obj) === "number" && !isNaN(obj) && /^-?[0-9]{1,10}$/.test(obj.toString()) && (obj >= -2147483648 && obj <= 2147483647);
 }
 
