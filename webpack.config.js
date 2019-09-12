@@ -6,7 +6,7 @@ module.exports = {
 	entry: path.resolve(__dirname, 'src'),
 	output: {
 		filename: 'model.js',
-		path: path.resolve(__dirname, 'out'),
+		path: path.resolve(__dirname, 'build'),
 	},
 	resolve: {
 		extensions: ['.ts', '.tsx', '.js', '.json']

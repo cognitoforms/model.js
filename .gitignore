@@ -2,7 +2,10 @@
 node_modules
 dist/src/
 dist/
+@types/
+lib/
 out/
+build/
 obj/
 bin/
 *.bak
