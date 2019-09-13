@@ -1,7 +1,7 @@
 import { isEntityType, Type } from "./type";
 import { Entity, EntityConstructorForType } from "./entity";
 import { Property } from "./property";
-import { ObjectLookup } from "./helpers";
+import { ObjectLookup, flatMap } from "./helpers";
 import { InitializationContext } from "./initilization-context";
 
 export interface PropertySerializationResult {
@@ -125,7 +125,7 @@ export class EntitySerializer {
 	serialize(entity: Entity, serializeNull: boolean = false): object {
 		let result: object = {};
 		const type = entity.meta.type;
-		this.getPropertyInjectors(type).flatMap(i => i.inject(entity))
+		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
 			.concat(type.properties
 				.filter(p => !p.isCalculated && !p.isConstant)
 				.map(prop => {

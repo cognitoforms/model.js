@@ -304,3 +304,13 @@ export function clone<T>(obj: T): T {
 	}
 	return result;
 }
+
+/**
+ * Helper alternative to Array.prototype.flatMap
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flatMap#Alternative
+ * @param input The input array
+ * @param callback A function that returns an array of outputs for each input
+ */
+export function flatMap<Input, Output>(input: Input[], callback: (i: Input) => Output[]): Output[] {
+	return input.reduce((arr, i) => arr.concat(callback(i)), [] as Output[]);
+}
