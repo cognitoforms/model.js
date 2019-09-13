@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "name": "model.js",
+  "name": "@cognitoforms/model.js",
   "license": "MIT",
   "main": "lib/index.js",
   "browser--disabled": "out/model.js",

@@ -2,3 +2,5 @@ dist/
 obj/
 bin/
 .vscode/
+*.bak
+*.tgz
