@@ -1,10 +1,11 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "@cognitoforms/model.js",
   "license": "MIT",
   "main": "lib/index.js",
   "browser--disabled": "out/model.js",
   "types": "@types/index.d.ts",
+  "repository": "github:cognitoforms/model.js",
   "scripts": {
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
