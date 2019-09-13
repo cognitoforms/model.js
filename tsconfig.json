@@ -34,12 +34,15 @@
 	"compileOnSave": false,
 	"include": [
 		"./src/**/*.ts",
-		"./src/**/*.js",
-		"./testing/**/*.ts",
-		"./testing/**/*.js"
+		"./testing/**/*.ts"
 	],
 	"exclude": [
+		"dist",
+		"build",
+		"out",
+		"lib",
+		"@types",
 		"node_modules",
-		"dist"
+		"./src/**/*.unit.ts"
 	]
 }

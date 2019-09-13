@@ -3,10 +3,12 @@ export * from "./model";
 export * from "./type";
 export * from "./property";
 export * from "./property-chain";
+export * from "./property-path";
 export * from "./entity";
 export * from "./object-meta";
 export * from "./format";
 export * from "./initilization-context";
+export * from "./observable-array";
 
 // Conditions, etc.
 export * from "./condition-target";
@@ -23,12 +25,16 @@ export * from "./validation-rule";
 export * from "./allowed-values-rule";
 export * from "./calculated-property-rule";
 
+// Serialization
+export * from "./entity-serializer";
+export * from "./initilization-context";
+
+// Globalization & Localization
+export * from "./globalization";
+export * from "./resource";
+
 // Internal helpers, etc.
 // export * from "./event-scope";
 // export * from "./events";
 // export * from "./functor";
 // export * from "./helpers";
-// export * from "./observable-list";
-// export * from "./signal";
-
-// import "./legacy-api";
