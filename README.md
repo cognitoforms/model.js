@@ -1,6 +1,6 @@
 # Model.js
 
-A JavaScript library that facilitate a rich object model.
+A JavaScript library that facilitates a rich object model.
 
 ## License
 
