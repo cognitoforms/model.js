@@ -6,6 +6,8 @@ module.exports = {
 	entry: path.resolve(__dirname, 'src'),
 	output: {
 		filename: 'model.js',
+		library: "model",
+		libraryTarget: "umd",
 		path: path.resolve(__dirname, 'out'),
 	},
 	resolve: {
