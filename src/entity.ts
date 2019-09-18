@@ -53,7 +53,7 @@ export class Entity {
 				this.init(properties, context);
 
 			// Raise the initNew or initExisting event on this type and all base types
-			context.ready().then(() => {
+			context.ready(() => {
 				for (let t = type; t; t = t.baseType) {
 					if (isNew)
 						(t.initNew as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
@@ -62,12 +62,9 @@ export class Entity {
 				}
 
 				// Set values of new entity for provided properties
-				if (context.isAsync && isNew && properties)
+				if (isNew && properties)
 					this.set(properties);
 			});
-
-			if (!context.isAsync && isNew && properties)
-				this.set(properties);
 		}
 	}
 
@@ -191,11 +188,11 @@ export class Entity {
 		return this.meta.type.getProperty(property).value(this);
 	}
 
-	toString(format?: string, formatEval?: (tokenValue: string) => string): string {
+	toString(format?: string): string {
 		// Get the entity format to use
 		let formatter: Format<Entity> = null;
 		if (format) {
-			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format, formatEval);
+			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format);
 		}
 		else {
 			formatter = this.meta.type.format;
@@ -275,5 +272,5 @@ export interface EntityChangeEventArgs {
 	entity: Entity;
 	property: Property;
 	oldValue?: any;
-	newValue?: any;
+	newValue: any;
 }

@@ -12,15 +12,14 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 		options.name = options.name || "ValidatedProperty";
 
 		// store the property being validated
-		var property = options.property;
+		const property = options.property;
 
 		// ensure the properties and predicates to include the target property
-		if (!options.properties) {
-			options.properties = [property];
-		}
-		else if (options.properties.indexOf(property) < 0) {
+		if (!options.properties)
+			options.properties = [];
+
+		if (!options.properties.includes(property))
 			options.properties.push(property);
-		}
 
 		if (!options.onChangeOf) {
 			options.onChangeOf = [property];

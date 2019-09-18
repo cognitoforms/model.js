@@ -27,13 +27,11 @@ export class InitializationContext {
 		return !this.constructorCall;
 	}
 
-	ready() {
+	ready(callback: () => void) {
 		if (this.tasks.size === 0)
-			return Promise.resolve();
+			callback();
 
-		return new Promise<void>(resolve => {
-			this.waiting.push(resolve);
-		});
+		this.waiting.push(callback);
 	}
 
 	tryResolveValue(instance: Entity, property: Property, value: any) {

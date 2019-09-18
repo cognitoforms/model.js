@@ -15,6 +15,9 @@ import { PropertyPath, PropertyAccessEventArgs, PropertyChangeEventArgs } from "
 import { RangeRule } from "./range-rule";
 import { StringLengthRule } from "./string-length-rule";
 import { ListLengthRule } from "./list-length-rule";
+import { InitializationContext } from "./initilization-context";
+import { ConditionType, ErrorConditionType } from "./condition-type";
+import { flatMap } from "./helpers";
 
 export class Property implements PropertyPath {
 	readonly containingType: Type;
@@ -164,7 +167,8 @@ export class Property implements PropertyPath {
 			// Constant
 			if (options.constant !== null && options.constant !== undefined) {
 				targetType.model.ready(() => {
-					this.constant = targetType.model.serializer.deserialize(null, options.constant, this, null);
+					// Lazily obtain the constant to ensure all types/rules associated with the constant value have been loaded and initialized
+					this.constant = () => targetType.model.serializer.deserialize(null, options.constant, this, new InitializationContext(true));
 				});
 			}
 
@@ -411,17 +415,27 @@ export class Property implements PropertyPath {
 			if (options.error) {
 				(Array.isArray(options.error) ? options.error : [options.error]).forEach(errorOptions => {
 					let errorFn = errorOptions.function;
+					if (errorOptions.resource)
+						errorFn = function() {
+							return errorOptions.function.call(this) ? targetType.model.getResource(errorOptions.resource) : null;						
+						}; 
 					let errorDependsOn = errorOptions.dependsOn;
 
 					if (typeof (errorFn) !== "function") {
 						throw new Error(`Invalid property 'error' function of type '${getTypeName(errorOptions.function)}'.`);
 					}
 
+					let conditionType: ConditionType;
+					if (errorOptions.code)
+						conditionType = ConditionType.get(errorOptions.code) || new ErrorConditionType(errorOptions.code, "error");
+
 					this.containingType.model.ready(() => {
 						(new ValidationRule(this.containingType, {
 							property: this,
+							properties: errorOptions.properties ? flatMap(errorOptions.properties, p => this.containingType.getPaths(p)) : null,
 							onChangeOf: resolveDependsOn(this, "", errorDependsOn),
-							message: errorFn
+							message: errorFn,
+							conditionType: conditionType
 						})).register();
 					});
 				});
@@ -625,6 +639,9 @@ export interface PropertyFormatOptions {
 export interface PropertyErrorFunctionAndOptions {
 	function: (this: Entity) => string;
 	dependsOn: string;
+	resource?: string;
+	code?: string;
+	properties?: string[];
 }
 
 export type PropertyValueFunction<T> = () => T;
@@ -695,7 +712,7 @@ export interface PropertyRule extends Rule {
 
 export interface PropertyRuleOptions extends RuleOptions {
 
-	// the property being validated (either a Property instance or string property name)
+	// the property being validated
 	property: Property;
 
 }
@@ -873,7 +890,7 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 function Property$getInitialValue(property: Property): any {
 	// Constant
 	if (property.isConstant)
-		return property.constant;
+		return typeof property.constant === "function" ? (property.constant = property.constant()) : property.constant;
 
 	var val = property.defaultValue;
 
