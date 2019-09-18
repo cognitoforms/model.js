@@ -188,11 +188,11 @@ export class Entity {
 		return this.meta.type.getProperty(property).value(this);
 	}
 
-	toString(format?: string): string {
+	toString(format?: string, formatEval?: (tokenValue: string) => string): string {
 		// Get the entity format to use
 		let formatter: Format<Entity> = null;
 		if (format) {
-			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format);
+			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format, formatEval);
 		}
 		else {
 			formatter = this.meta.type.format;
