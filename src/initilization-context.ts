@@ -23,10 +23,6 @@ export class InitializationContext {
 		});
 	}
 
-	get isAsync() {
-		return !this.constructorCall;
-	}
-
 	ready(callback: () => void) {
 		if (this.tasks.size === 0)
 			callback();
