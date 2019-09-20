@@ -82,7 +82,7 @@ export class Type {
 		const Ctor = this.jstype as any;
 		const instance = new Ctor(state.Id, state, context) as Entity;
 
-		return context.ready().then(() => instance);
+		return new Promise(resolve => context.ready(() => resolve(instance)));
 	}
 
 	/** Generates a unique id suitable for an instance in the current type hierarchy. */

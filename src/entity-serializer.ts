@@ -118,6 +118,18 @@ export class EntitySerializer {
 		return injectors;
 	}
 
+	serializePropertyValue(entity: Entity, property: Property, value: any, force = false) {
+		let converters = this._propertyConverters.filter(c => c.shouldConvert(entity, property));
+		if (converters) {
+			for (const converter of converters) {
+				const res = converter.serialize(entity, value, property);
+				if (!force || res !== IgnoreProperty)
+					return res;
+			}
+		}
+		return EntitySerializer.defaultPropertyConverter.serialize(entity, value, property);
+	}
+
 	/**
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
@@ -128,13 +140,7 @@ export class EntitySerializer {
 		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
 			.concat(type.properties
 				.filter(p => !p.isCalculated && !p.isConstant)
-				.map(prop => {
-					let value = prop.value(entity);
-					let converter = this._propertyConverters.find(c => c.shouldConvert(entity, prop));
-					if (converter)
-						return converter.serialize(entity, value, prop);
-					return EntitySerializer.defaultPropertyConverter.serialize(entity, value, prop);
-				}))
+				.map(prop => this.serializePropertyValue(entity, prop, prop.value(entity))))
 			.forEach(pair => {
 				if (pair && pair !== IgnoreProperty) {
 					if (result.hasOwnProperty(pair.key))
@@ -152,7 +158,7 @@ export class EntitySerializer {
 		const converter = this._propertyConverters.find(c => c.shouldConvert(instance, property));
 		if (converter)
 			data = converter.deserialize(instance, data, property);
-		
+
 		if (data === IgnoreProperty)
 			return;
 
@@ -188,7 +194,7 @@ export class EntitySerializer {
 			value = data.map(i => this.deserialize(instance, i, property, context));
 
 		// Value
-		else if (property.format && data && typeof(data) === "string" && data.constructor !== property.propertyType)
+		else if (property.format && data && typeof (data) === "string" && data.constructor !== property.propertyType)
 			value = property.format.convertFromString(data);
 		else
 			value = data;

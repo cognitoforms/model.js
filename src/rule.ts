@@ -238,7 +238,7 @@ export class Rule {
 							// Defer change notification until the scope of work has completed
 							EventScope$onExit(() => {
 								rule.returnValues.forEach((returnValue) => {
-									(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue });
+									(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
 								});
 							});
 						}
