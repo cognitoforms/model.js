@@ -4,6 +4,7 @@ import { ConditionType } from "./condition-type";
 import { ConditionTarget } from "./condition-target";
 import { PropertyPath } from "./property-path";
 import { ObservableArray } from "./observable-array";
+import { Property } from "./property";
 
 export class Condition {
 	type: ConditionType;
@@ -30,28 +31,27 @@ export class Condition {
 			for (let p = properties.length - 1; p >= 0; p--) {
 				let path = properties[p];
 
-				// add condition targets to the last property of each path
+				const targetInfos: { entity: Entity, properties: Property[] }[] = [];
+
+				// build list of objects containing ConditionTarget information
+				// we don't want to construct ConditionTargets as we're processing the path because we may not have gathered all targeted properties,
+				// and the constructor triggers change on the entity meta's conditions list, which should be in a correct state before publishing the event
 				path.each(target, (entity, property) => {
 					// see if a target already exists for the current instance
-					let conditionTarget = null;
-					for (let t = targets.length - 1; t >= 0; t--) {
-						if (targets[t].target === entity) {
-							conditionTarget = targets[t];
-							break;
-						}
-					}
+					let targetInfo = targetInfos.find(t => t.entity === entity);
 
 					// create the condition target if it does not already exist
-					if (!conditionTarget) {
-						conditionTarget = new ConditionTarget(this, entity, [property]);
-						targets.push(conditionTarget);
+					if (!targetInfo) {
+						targetInfo = { entity, properties: [property] };
+						targetInfos.push(targetInfo);
 					}
-
 					// otherwise, just ensure it references the current step
-					else if (conditionTarget.properties.indexOf(property) < 0)
-						conditionTarget.properties.push(property);
-				},
-				path.lastProperty);
+					else if (!targetInfo.properties.includes(property))
+						targetInfo.properties.push(property);
+				}, path.lastProperty);
+
+				// construct the ConditionTargets here now that we've gathered all information
+				targets.push(...targetInfos.map(i => new ConditionTarget(this, i.entity, i.properties)));
 			}
 		}
 
