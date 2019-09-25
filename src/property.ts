@@ -111,7 +111,7 @@ export class Property implements PropertyPath {
 				throw new Error(`Invalid dependsOn property for '${rule}' rule on '${property}.`);
 
 			// get the property paths for the specified dependency string
-			return property.containingType.getPaths(dependsOn);
+			return targetType.getPaths(dependsOn);
 		}
 
 		// Use prepare() to defer property path resolution while the model is being extended
@@ -380,8 +380,8 @@ export class Property implements PropertyPath {
 				// Always Required
 				if (typeof (options.required) === "boolean") {
 					if (options.required) {
-						this.containingType.model.ready(() => {
-							let requiredRule = new RequiredRule(this.containingType, { property: this });
+						targetType.model.ready(() => {
+							let requiredRule = new RequiredRule(targetType, { property: this });
 							requiredRule.register();
 						});
 					}
@@ -400,8 +400,8 @@ export class Property implements PropertyPath {
 					else {
 						requiredFn = options.required;
 					}
-					this.containingType.model.ready(() => {
-						(new RequiredRule(this.containingType, {
+					targetType.model.ready(() => {
+						(new RequiredRule(targetType, {
 							property: this,
 							when: requiredFn,
 							message: requiredMessage,
@@ -429,10 +429,10 @@ export class Property implements PropertyPath {
 					if (errorOptions.code)
 						conditionType = ConditionType.get(errorOptions.code) || new ErrorConditionType(errorOptions.code, "error");
 
-					this.containingType.model.ready(() => {
-						(new ValidationRule(this.containingType, {
+					targetType.model.ready(() => {
+						(new ValidationRule(targetType, {
 							property: this,
-							properties: errorOptions.properties ? flatMap(errorOptions.properties, p => this.containingType.getPaths(p)) : null,
+							properties: errorOptions.properties ? flatMap(errorOptions.properties, p => targetType.getPaths(p)) : null,
 							onChangeOf: resolveDependsOn(this, "", errorDependsOn),
 							message: errorFn,
 							conditionType: conditionType
