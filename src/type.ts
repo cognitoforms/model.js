@@ -1,7 +1,7 @@
 import { Model } from "./model";
 import { Entity, EntityConstructorForType, EntityDestroyEventArgs, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityUnregisteredEventArgs, EntityConstructor } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
-import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject } from "./helpers";
+import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
 import { ObservableArray } from "./observable-array";
 import { RuleOptions, Rule } from "./rule";
@@ -384,7 +384,7 @@ export class Type {
 			const isRuleMethod = (value: any): value is RuleOrMethodOptions<Entity> => value.hasOwnProperty("function");
 
 			// Type Members
-			for (let [name, member] of Object.entries(options)) {
+			for (let [name, member] of entries(options)) {
 				if (name.startsWith("$"))
 					continue;
 

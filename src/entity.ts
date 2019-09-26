@@ -4,7 +4,7 @@ import { Type, EntityType, isEntityType } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
-import { ObjectLookup } from "./helpers";
+import { ObjectLookup, entries } from "./helpers";
 
 export class Entity {
 	static ctorDepth: number = 0;
@@ -69,7 +69,7 @@ export class Entity {
 	}
 
 	private static getSortedPropertyData(properties: ObjectLookup<any>) {
-		return Object.entries(properties).sort((a: [string, any], b: [string, any]) => {
+		return entries(properties).sort((a: [string, any], b: [string, any]) => {
 			return Number(b[1] instanceof Entity) - Number(a[1] instanceof Entity);
 		});
 	}
