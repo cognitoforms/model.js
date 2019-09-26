@@ -404,6 +404,8 @@ export function ObservableArray$pop<ItemType>(this: ObservableArrayImplementatio
  * @returns The new length property of the object upon which the method was called.
  */
 export function ObservableArray$push<ItemType>(this: ObservableArrayImplementation<ItemType>, ...items: ItemType[]): number {
+	// BUG: Babel's handling of rest arguments seems to be thrown off by 1 (due to the "this" argument?) - cognitoforms/model.js:#5
+	items = Array.prototype.slice.call(arguments);
 	let originalLength = this.length;
 	let newLength: number = Array.prototype.push.apply(this, arguments);
 	if (newLength > 0) {
@@ -466,6 +468,8 @@ export function ObservableArray$sort<ItemType>(this: ObservableArrayImplementati
  * @returns An array containing the deleted elements. If only one element is removed, an array of one element is returned. If no elements are removed, an empty array is returned.
  */
 export function ObservableArray$splice<ItemType>(this: ObservableArrayImplementation<ItemType>, start: number, deleteCount?: number, ...items: ItemType[]): ItemType[] {
+	// BUG: Babel's handling of rest arguments seems to be thrown off by 1 (due to the "this" argument?) - cognitoforms/model.js:#5
+	items = Array.prototype.slice.call(arguments, 2);
 	let removed: ItemType[] = Array.prototype.splice.apply(this, arguments);
 	if (removed.length > 0 || items.length > 0) {
 		let changeEvents: ArrayChange<ItemType>[] = [];
@@ -488,6 +492,8 @@ export function ObservableArray$splice<ItemType>(this: ObservableArrayImplementa
  * @returns The new length property of the object upon which the method was called.
  */
 export function ObservableArray$unshift<ItemType>(this: ObservableArrayImplementation<ItemType>, ...items: ItemType[]): number {
+	// BUG: Babel's handling of rest arguments seems to be thrown off by 1 (due to the "this" argument?) - cognitoforms/model.js:#5
+	items = Array.prototype.slice.call(arguments);
 	let originalLength = this.length;
 	let newLength: number = Array.prototype.unshift.apply(this, arguments);
 	if (newLength !== originalLength) {
