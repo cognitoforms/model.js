@@ -314,3 +314,17 @@ export function clone<T>(obj: T): T {
 export function flatMap<Input, Output>(input: Input[], callback: (i: Input) => Output[]): Output[] {
 	return input.reduce((arr, i) => arr.concat(callback(i)), [] as Output[]);
 }
+
+/**
+ * Helper alternative to Object.entries
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries#Polyfill
+ * @param input The input array
+ */
+export function entries(obj: any): [string, any][] {
+	var ownProps = Object.keys(obj),
+		i = ownProps.length,
+		resArray = new Array(i); // preallocate the Array
+	while (i--)
+		resArray[i] = [ownProps[i], obj[ownProps[i]]];
+	return resArray;
+}
