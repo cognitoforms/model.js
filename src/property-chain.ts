@@ -280,8 +280,16 @@ export class PropertyChain implements PropertyPath {
 		return this.lastProperty.label;
 	}
 
+	get labelIsFormat(): boolean {
+		return Format.hasTokens(this.label);
+	}
+
 	get helptext(): string {
 		return this.lastProperty.helptext;
+	}
+
+	get helptextIsFormat(): boolean {
+		return Format.hasTokens(this.helptext);
 	}
 
 	get name(): string {

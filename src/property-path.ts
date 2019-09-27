@@ -16,7 +16,9 @@ export interface PropertyPath {
 	readonly lastProperty: Property;
 
 	label: string;
+	readonly labelIsFormat: boolean;
 	helptext: string;
+	readonly helptextIsFormat: boolean;
 	isCalculated: boolean;
     format: Format<any>;
 

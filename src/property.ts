@@ -67,6 +67,14 @@ export class Property implements PropertyPath {
 		return this.constant !== null && this.constant !== undefined;
 	}
 
+	get labelIsFormat(): boolean {
+		return Format.hasTokens(this.label);
+	}
+
+	get helptextIsFormat(): boolean {
+		return Format.hasTokens(this.helptext);
+	}
+
 	get path(): string {
 		return this.name;
 	}
