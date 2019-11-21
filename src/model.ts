@@ -340,7 +340,7 @@ export class Model {
 	 * @param type
 	 */
 	getJsType(type: string): PropertyType {
-		let jstype = valueTypes[type.toLowerCase()];
+		let jstype = type.toLowerCase() === "object" ? Object : valueTypes[type.toLowerCase()];
 		if (!jstype) {
 			let modelType = this.types[type];
 			return modelType ? modelType.jstype : null;

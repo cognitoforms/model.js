@@ -424,14 +424,20 @@ export class Type {
 						// Type & IsList
 						let isList = false;
 						if (typeof (member.type) === "string") {
+							let typeName = member.type;
 							// Type names ending in [] are lists
-							if (member.type.lastIndexOf("[]") === (member.type.length - 2)) {
+							if (typeName.lastIndexOf("[]") === (typeName.length - 2)) {
 								isList = true;
-								member.type = member.type.substr(0, member.type.length - 2);
+								typeName = typeName.substr(0, typeName.length - 2);
 							}
 
 							// Convert type names to javascript types
-							member.type = this.model.getJsType(member.type);
+							member.type = this.model.getJsType(typeName);
+
+							// Warn if the type couldn't be found
+							if (!member.type && window.console && console.warn) {
+								console.warn(`Could not resolve type '${typeName}.`);
+							}
 						}
 
 						// Add Property
@@ -457,7 +463,7 @@ export class Type {
 export type Value = string | number | Date | boolean;
 export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
 export type EntityType = EntityConstructorForType<Entity>;
-export type PropertyType = ValueType | EntityType;
+export type PropertyType = ValueType | EntityType | ObjectConstructor;
 
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
