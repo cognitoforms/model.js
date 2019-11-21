@@ -146,9 +146,6 @@ export class PropertyChain implements PropertyPath {
 	 * @param filter An optional property filter, if specified, only iterates over the results of this property.
 	 */
 	each(obj: Entity, callback: (obj: any, property: Property) => any, filter: Property = null /*, target: IEntity, p: number, lastProp: IProperty */): boolean {
-		/// <summary>
-		/// </summary>
-	
 		if (obj == null) throw new Error("Argument 'obj' cannot be null or undefined.");
 		if (callback == null) throw new Error("Argument 'callback' cannot be null or undefined.");
 		if (typeof (callback) !== "function") throw new Error("Argument 'callback' must be of type function: " + callback + ".");

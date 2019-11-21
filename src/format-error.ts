@@ -19,6 +19,7 @@ export class FormatError {
 	}
 
 	createCondition(target: Entity, prop: Property): Condition {
+		// TODO: Format error doesn't handle tokens?
 		return new Condition(FormatError.ConditionType, this.messageTemplate.replace("{property}", prop.label), target, [prop]);
 	}
 
