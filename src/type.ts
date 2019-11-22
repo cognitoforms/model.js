@@ -379,6 +379,22 @@ export class Type {
 	 * @param options The options specifying how to extend the type
 	 */
 	extend(options: TypeExtensionOptions<Entity>): void {
+		let type = this;
+
+		// Utility function to convert a path string into a resolved array of Property and PropertyChain instances
+		function resolveDependsOn(rule: string, dependsOn: string): PropertyPath[] {
+			// return an empty dependency array if no path was specified
+			if (!dependsOn)
+				return [];
+
+			// throw an exception if dependsOn is not a string
+			if (typeof (dependsOn) !== "string")
+				throw new Error(`Invalid dependsOn property for '${rule}' rule on '${type}.`);
+
+			// get the property paths for the specified dependency string
+			return type.getPaths(dependsOn);
+		}
+
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.model.prepare(() => {
 			const isRuleMethod = (value: any): value is RuleOrMethodOptions<Entity> => value.hasOwnProperty("function");
@@ -407,9 +423,13 @@ export class Type {
 
 				// Rule Method
 				else if (isRuleMethod(member)) {
-
-					// TODO: Add rule/method here
-
+					Type$generateMethod(this, this.jstype.prototype, name, member.function);
+					this.model.ready(() => {
+						new Rule(this, this.fullName + "." + name + "Rule", {
+							execute: (new Function(`return this.${name}();`)) as (this: Entity) => void,
+							onChangeOf: resolveDependsOn("get", member.dependsOn)
+						}).register();
+					});
 				}
 
 				// Property
@@ -521,8 +541,8 @@ export function isEntityType(type: any): type is EntityType {
 	return type.meta && type.meta instanceof Type;
 }
 
-export function Type$generateMethod(type: Type, target: any, name: string, member: Function): void {
-	target[name] = member;
+export function Type$generateMethod(type: Type, target: any, name: string, fn: Function): void {
+	target[name] = fn;
 }
 
 // TODO: Get rid of disableConstruction?
