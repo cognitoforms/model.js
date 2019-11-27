@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.4.0] - 2019-11-27
+### Added
+- If the 'Id' property is changed, then change the object's id and re-pool with the new id
+- Add new `Type.createSync()` method as an equivalent to `Type.create()` that is not asynchronous
+- In `Type.create()`, if the state has an `Id` field then use it to fetch or create an object
+### Fixed
+- Ensure that a property is always either updated or changed for any state data pased to `set()` that matches a property name
+- Use existing state if deserialize returns undefined (i.e. no serializer handled it)
+- Throw an error when attempting to change the id of an object to one that is already pooled
+### Changed
+- If state passed to `set()` is an object with an Id property, then fetch or create an object with that Id
+- Don't remove an old id from the pool when an object's id is changed (identifier should be permanent)
+### Removed
+- Get rid of legacy pool and legacy id (not needed)
+- Get rid of unregister method and events (not used so no scenario exists for testing)
+- Get rid of destroy method and events (not used so no scenario exists for testing)
+
 ## [0.3.5] - 2019-11-22
 ### Added
 - Add support for type-level rule/method
