@@ -1,6 +1,6 @@
 import { Event } from "./events";
 import { Type } from "./type";
-import { Entity, EntityDestroyEventArgs } from "./entity";
+import { Entity } from "./entity";
 import { ConditionTarget } from "./condition-target";
 import { ConditionType, PermissionConditionType } from "./condition-type";
 import { ObservableArray } from "./observable-array";
@@ -12,7 +12,6 @@ export class ObjectMeta {
 	
 	id: string;
 	isNew: boolean;
-	legacyId: string;
 
 	conditions: ObservableArray<ConditionTarget>;
 
@@ -82,15 +81,5 @@ export class ObjectMeta {
 		}
 
 		return true;
-	}
-
-	// TODO: Should this be a method on the entity itself, or a static method on Entity?
-	destroy(): void {
-		this.type.unregister(this.entity);
-
-		// Raise the destroy event on this type and all base types
-		for (var t = this.type; t; t = t.baseType) {
-			(t.destroy as Event<Type, EntityDestroyEventArgs>).publish(t, { entity: this.entity });
-		}
 	}
 }

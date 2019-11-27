@@ -1006,6 +1006,11 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 			Object.defineProperty(obj, property.fieldName, { value: newValue, writable: true });
 		}
 
+		if (property.name === "Id" && newValue && newValue !== obj.meta.id) {
+			// If the 'Id' property is set or changed, then change the object's id and re-pool with the new id
+			obj.meta.type.changeObjectId(obj.meta.id, newValue);
+		}
+
 		Property$pendingInit(obj, property, false);
 
 		// Do not raise change if the property has not been initialized.

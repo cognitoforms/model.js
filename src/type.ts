@@ -1,5 +1,5 @@
 import { Model } from "./model";
-import { Entity, EntityConstructorForType, EntityDestroyEventArgs, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityUnregisteredEventArgs, EntityConstructor } from "./entity";
+import { Entity, EntityConstructorForType, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
 import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
@@ -28,7 +28,6 @@ export class Type {
 
 	private _known: ObservableArray<Entity>;
 	private readonly _pool: { [id: string]: Entity };
-	private readonly _legacyPool: { [id: string]: Entity }
 	private readonly _derivedTypes: Type[];
 
 	readonly _properties: { [name: string]: Property };
@@ -38,7 +37,6 @@ export class Type {
 
 	readonly initNew: EventSubscriber<Type, EntityInitNewEventArgs>;
 	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
-	readonly destroy: EventSubscriber<Type, EntityDestroyEventArgs>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
 	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<Entity>) {
@@ -48,7 +46,6 @@ export class Type {
 		this.baseType = baseType;
 		this._lastId = 0;
 		this._pool = {};
-		this._legacyPool = {};
 		this._properties = {};
 		this._formats = {};
 		this._derivedTypes = [];
@@ -56,7 +53,6 @@ export class Type {
 
 		this.initNew = new Event<Type, EntityInitNewEventArgs>();
 		this.initExisting = new Event<Type, EntityInitExistingEventArgs>();
-		this.destroy = new Event<Type, EntityDestroyEventArgs>();
 		// this.conditionsChanged = new Event<Type, ConditionTargetsChangedEventArgs>();
 
 		// Set Format
@@ -75,13 +71,41 @@ export class Type {
 			this.extend(options);
 	}
 
+	createSync(state: any, valueResolver?: InitializationValueResolver): Entity {
+		// Attempt to fetch an existing instance if the state contains an Id property
+		if (state && state.Id && typeof state.Id === "string" && state.Id.length > 0) {
+			const instance = this.get(state.Id);
+			if (instance) {
+				// Assign state to the existing object
+				instance.set(state);
+				return instance;
+			}
+			// Construct an instance using the known id
+			return new this.jstype(state.Id, state);
+		}
+		// Construct a new instance without a known id
+		return new this.jstype(state);
+	}
+
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
+		// Attempt to fetch an existing instance if the state contains an Id property
+		let id: string = null;
+		let instance: Entity;
+		if (state && state.Id && typeof state.Id === "string" && state.Id.length > 0) {
+			id = state.Id;
+			instance = this.get(id);
+			if (instance) {
+				// Assign state to the existing object
+				instance.set(state);
+				return new Promise(resolve => resolve(instance));
+			}
+		}
 		const context = new InitializationContext(false, valueResolver);
 		// Cast the jstype to any so we can call the internal constructor signature that takes a context
 		// We don't want to put the context on the public constructor interface
 		const Ctor = this.jstype as any;
-		const instance = new Ctor(state.Id, state, context) as Entity;
-
+		// Construct an instance using the known id if it is present
+		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
 		return new Promise(resolve => context.ready(() => resolve(instance)));
 	}
 
@@ -151,42 +175,25 @@ export class Type {
 		var oldKey = oldId.toLowerCase();
 		var newKey = newId.toLowerCase();
 
+		if (this._pool[newKey]) {
+			throw new Error(`Entity '${this.fullName}|${newKey}' is already registered.`);
+		}
+
 		var obj = this._pool[oldKey];
 
-		if (obj) {
-			obj.meta.legacyId = oldId;
-
-			for (var t: Type = this; t; t = t.baseType) {
-				t._pool[newKey] = obj;
-
-				delete t._pool[oldKey];
-
-				t._legacyPool[oldKey] = obj;
-			}
-
-			obj.meta.id = newId;
-
-			return obj;
+		if (!obj) {
+			// TODO: Throw error or warn when attempting to change an object Id that is unknown?
+			return;
 		}
-	}
 
-	unregister(obj: Entity): void {
 		for (var t: Type = this; t; t = t.baseType) {
-			delete t._pool[obj.meta.id.toLowerCase()];
-
-			if (obj.meta.legacyId) {
-				delete t._legacyPool[obj.meta.legacyId.toLowerCase()];
-			}
-
-			if (t._known) {
-				let objIndex = t._known.indexOf(obj);
-				if (objIndex >= 0) {
-					t._known.splice(objIndex, 1);
-				}
-			}
+			t._pool[newKey] = obj;
 		}
 
-		(this.model.entityUnregistered as Event<Model, EntityUnregisteredEventArgs>).publish(this.model, { entity: obj });
+		obj.meta.id = newId;
+		obj.meta.isNew = false;
+
+		return obj;
 	}
 
 	get(id: string, exactTypeOnly: boolean = false): Entity {
@@ -195,7 +202,7 @@ export class Type {
 		}
 
 		var key = id.toLowerCase();
-		var obj = this._pool[key] || this._legacyPool[key];
+		var obj = this._pool[key];
 
 		// If exactTypeOnly is specified, don't return sub-types.
 		if (obj && exactTypeOnly === true && obj.meta.type !== this) {
@@ -207,7 +214,7 @@ export class Type {
 
 	// Gets an array of all objects of this type that have been registered.
 	// The returned array is observable and collection changed events will be raised
-	// when new objects are registered or unregistered.
+	// when new objects are registered.
 	// The array is in no particular order.
 	known(): Entity[] {
 		var known = this._known;

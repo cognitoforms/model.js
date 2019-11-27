@@ -152,25 +152,46 @@ export class Entity {
 
 							// Modifying/replacing existing list item
 							if (idx < currentValue.length) {
+								// If the item is an object that has an Id property, then retrieve or create an object with that Id
+								if (!(s instanceof ChildEntity) && typeof s === "object" && s.Id && typeof s.Id === "string" && s.Id.length > 0)
+									s = ChildEntity.meta.createSync(s);
 								if (s instanceof ChildEntity)
 									state.splice(idx, 1, s);
 								else
 									currentValue[idx].set(s);
 							}
 							// Add a list item
+							else if (s instanceof ChildEntity)
+								currentValue.push(s);
 							else
-								currentValue.push(s instanceof ChildEntity ? s : new ChildEntity(s.Id, s));
+								currentValue.push(ChildEntity.meta.createSync(s));
 						});
 					}
 					else if (state instanceof ChildEntity)
 						value = state;
-					else if (state instanceof Object) {
-						state = this.serializer.deserialize(this, state, prop, null, false);
-						// Update the entity's state
-						if (currentValue)
+					else if (state == null)
+						value = null;
+					else {
+						// Attempt to deserialize the state
+						let newState = this.serializer.deserialize(this, state, prop, null, false);
+						if (typeof newState !== "undefined")
+							state = newState;
+						// Got null, so assign null to the property
+						if (state == null)
+							value = null;
+						// Got a valid instance, so use it
+						else if (state instanceof ChildEntity)
+							value = state;
+						// Got something other than an object, so just use it and expect to get a down-stream error
+						else if (typeof state !== "object")
+							value = state;
+						// Got an object, so attempt to fetch or create and assign the state
+						else if (state.Id && typeof state.Id === "string" && state.Id.length > 0)
+							value = ChildEntity.meta.createSync(state);
+						else if (currentValue)
 							currentValue.set(state);
 						else
-							value = new ChildEntity(state.Id, state);
+							value = new ChildEntity(state);
 					}
 				}
 				else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
@@ -239,19 +260,11 @@ export interface EntityRegisteredEventArgs {
 	entity: Entity;
 }
 
-export interface EntityUnregisteredEventArgs {
-	entity: Entity;
-}
-
 export interface EntityInitNewEventArgs {
 	entity: Entity;
 }
 
 export interface EntityInitExistingEventArgs {
-	entity: Entity;
-}
-
-export interface EntityDestroyEventArgs {
 	entity: Entity;
 }
 

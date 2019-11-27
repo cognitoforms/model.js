@@ -1,6 +1,6 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, randomText, ObjectLookup } from "./helpers";
-import { EntityRegisteredEventArgs, EntityUnregisteredEventArgs, Entity } from "./entity";
+import { EntityRegisteredEventArgs, Entity } from "./entity";
 import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
@@ -22,7 +22,6 @@ export class Model {
 	readonly $culture: CultureInfo;
 
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
-	readonly entityUnregistered: EventSubscriber<Model, EntityUnregisteredEventArgs>;
 
 	private _ready: (() => void)[];
 	private readonly _formats: { [name: string]: { [name: string]: Format<ValueType> } };
@@ -34,7 +33,6 @@ export class Model {
 		this.settings = new ModelSettings(config);
 		this.fieldNamePrefix = "_fN" + randomText(3, false, true);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
-		this.entityUnregistered = new Event<Model, EntityUnregisteredEventArgs>();
 		this._formats = {};
 
 		if (options) {
