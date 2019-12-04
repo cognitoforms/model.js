@@ -23,6 +23,7 @@ export class Property implements PropertyPath {
 	readonly containingType: Type;
 	readonly name: string;
 	readonly propertyType: PropertyType;
+	readonly isIdentifier: boolean;
 	readonly isList: boolean;
 
 	constant: any;
@@ -42,10 +43,11 @@ export class Property implements PropertyPath {
 	readonly changed: EventSubscriber<Entity, PropertyChangeEventArgs>;
 	readonly accessed: EventSubscriber<Entity, PropertyAccessEventArgs>;
 
-	constructor(containingType: Type, name: string, propertyType: PropertyType, isList: boolean, options?: PropertyOptions) {
+	constructor(containingType: Type, name: string, propertyType: PropertyType, isIdentifier: boolean, isList: boolean, options?: PropertyOptions) {
 		this.containingType = containingType;
 		this.name = name;
 		this.propertyType = propertyType;
+		this.isIdentifier = isIdentifier;
 		this.isList = isList;
 		this.required = false;
 		this.rules = [];
@@ -1006,8 +1008,8 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 			Object.defineProperty(obj, property.fieldName, { value: newValue, writable: true });
 		}
 
-		if (property.name === "Id" && newValue && newValue !== obj.meta.id) {
-			// If the 'Id' property is set or changed, then change the object's id and re-pool with the new id
+		if (property.isIdentifier && newValue && newValue !== obj.meta.id) {
+			// If the identifier property is set or changed, then change the object's id and re-pool with the new id
 			obj.meta.type.changeObjectId(obj.meta.id, newValue);
 		}
 
