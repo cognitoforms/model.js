@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.5.0] - 2019-12-04
+### Changed
+- Add `Property.isIdentifier`, set via `id` boolean option instead of detecting a property named "Id"
+
 ## [0.4.0] - 2019-11-27
 ### Added
 - If the 'Id' property is changed, then change the object's id and re-pool with the new id
