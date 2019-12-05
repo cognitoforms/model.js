@@ -471,7 +471,7 @@ export class Type {
 							}
 						}
 
-						const isIdentifier = member.id === true;
+						const isIdentifier = member.identifier === true;
 
 						// Add Property
 						let property = new Property(this, name, member.type, isIdentifier, isList, member);
