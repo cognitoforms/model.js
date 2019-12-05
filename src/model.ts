@@ -275,14 +275,14 @@ export class Model {
 		// Create a model initialization scope
 		if (!this._ready) {
 			// Create an array to track model initialization callbacks
-			this._ready = [];
+			Object.defineProperty(this, "_ready", { enumerable: false, configurable: true, writable: true, value: [] });
 
 			// Extend the model
 			extend();
 
 			// Complete pending model initialization steps
 			this._ready.forEach(init => init());
-			this._ready = null;
+			delete this._ready;
 		}
 
 		// Leverage the current model initialization scope
