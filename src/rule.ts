@@ -281,14 +281,14 @@ export interface RuleRegisteredEventArgs {
 	rule: Rule;
 }
 
-function pendingInvocation(target: Type | ObjectMeta, rule: Rule, value: boolean = null): boolean | void {
+function pendingInvocation(target: ObjectMeta, rule: Rule, value: boolean = null): boolean | void {
 	let pendingInvocation: Rule[];
 
-	if (Object.prototype.hasOwnProperty.call(target, "_pendingInvocation")) {
-		pendingInvocation = (target as any)._pendingInvocation;
+	if (Object.prototype.hasOwnProperty.call(target, "__pendingInvocation__")) {
+		pendingInvocation = target.__pendingInvocation__;
 	}
 	else {
-		Object.defineProperty(target, "_pendingInvocation", { enumerable: false, value: (pendingInvocation = []), writable: true });
+		Object.defineProperty(target, "__pendingInvocation__", { enumerable: false, value: (pendingInvocation = []), writable: true });
 	}
 
 	var indexOfRule = pendingInvocation.indexOf(rule);

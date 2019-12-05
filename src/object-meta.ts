@@ -1,15 +1,17 @@
-import { Event } from "./events";
 import { Type } from "./type";
 import { Entity } from "./entity";
 import { ConditionTarget } from "./condition-target";
 import { ConditionType, PermissionConditionType } from "./condition-type";
 import { ObservableArray } from "./observable-array";
 import { FormatError } from "./format-error";
+import { Rule } from "./rule";
 
 export class ObjectMeta {
 	readonly type: Type;
 	readonly entity: Entity;
-	
+
+	readonly __pendingInvocation__: Rule[];
+
 	id: string;
 	isNew: boolean;
 
