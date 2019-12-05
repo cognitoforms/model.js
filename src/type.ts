@@ -27,7 +27,7 @@ export class Type {
 	// other data, calculated in some way, or cannot simply be changed
 	private _lastId: number;
 
-	private _known: ObservableArray<Entity>;
+	private readonly __known__: ObservableArray<Entity>;
 	private readonly __pool__: { [id: string]: Entity };
 
 	readonly _properties: { [name: string]: Property };
@@ -156,8 +156,8 @@ export class Type {
 
 			t.__pool__[key] = obj;
 
-			if (t._known) {
-				t._known.push(obj);
+			if (t.__known__) {
+				t.__known__.push(obj);
 			}
 		}
 
@@ -222,7 +222,7 @@ export class Type {
 	// when new objects are registered.
 	// The array is in no particular order.
 	known(): Entity[] {
-		var known = this._known;
+		var known = this.__known__;
 		if (!known) {
 			var list: Entity[] = [];
 
@@ -232,7 +232,9 @@ export class Type {
 				}
 			}
 
-			known = this._known = ObservableArray.ensureObservable(list);
+			known = ObservableArray.ensureObservable(list);
+
+			Object.defineProperty(this, "__known__", { enumerable: false, configurable: false, writable: false, value: known });
 		}
 
 		return known;
