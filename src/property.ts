@@ -61,10 +61,6 @@ export class Property implements PropertyPath {
 			this.extend(options);
 	}
 
-	get fieldName(): string {
-		return this.containingType.model.fieldNamePrefix + "_" + this.name;
-	}
-
 	get isConstant(): boolean {
 		return this.constant !== null && this.constant !== undefined;
 	}
@@ -583,7 +579,7 @@ export class Property implements PropertyPath {
 
 	isInited(obj: Entity): boolean {
 		// If the backing field has been created, the property is initialized
-		return obj.hasOwnProperty(this.fieldName);
+		return obj.__fields__.hasOwnProperty(this.name);
 	}
 }
 
@@ -874,7 +870,7 @@ export function Property$pendingInit(obj: Entity | EntityConstructorForType<Enti
 		}
 	}
 	else {
-		let currentValue = (obj as any)[prop.fieldName];
+		let currentValue = obj.__fields__[prop.name];
 		return currentValue === undefined || pendingInit[prop.name] === true;
 	}
 }
@@ -918,7 +914,7 @@ function Property$getInitialValue(property: Property): any {
 export function Property$init(property: Property, obj: Entity, val: any): void {
 	Property$pendingInit(obj, property, false);
 
-	Object.defineProperty(obj, property.fieldName, { value: val, writable: true });
+	Object.defineProperty(obj.__fields__, property.name, { value: val, writable: true });
 
 	if (Array.isArray(val)) {
 		Property$subArrayEvents(obj, property, ObservableArray.ensureObservable(val));
@@ -931,7 +927,7 @@ export function Property$init(property: Property, obj: Entity, val: any): void {
 function Property$ensureInited(property: Property, obj: Entity): void {
 	// Determine if the property has been initialized with a value
 	// and initialize the property if necessary
-	if (!obj.hasOwnProperty(property.fieldName)) {
+	if (!obj.__fields__.hasOwnProperty(property.name)) {
 		// Mark the property as pending initialization
 		Property$pendingInit(obj, property, true);
 
@@ -947,18 +943,18 @@ function Property$getter(property: Property, obj: Entity): any {
 	Property$ensureInited(property, obj);
 
 	// Raise access events
-	(property.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(obj, { entity: obj, property, value: (obj as any)[property.fieldName] });
+	(property.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(obj, { entity: obj, property, value: obj.__fields__[property.name] });
 	(obj.accessed as Event<Entity, EntityAccessEventArgs>).publish(obj, { entity: obj, property });
 
 	// Return the property value
-	return (obj as any)[property.fieldName];
+	return obj.__fields__[property.name];
 }
 
 export function Property$setter(property: Property, obj: Entity, val: any, additionalArgs: any = null): void {
 	// Ensure that the property has an initial (possibly default) value
 	Property$ensureInited(property, obj);
 
-	var old = (obj as any)[property.fieldName];
+	var old = obj.__fields__[property.name];
 
 	if (Property$shouldSetValue(property, obj, old, val)) {
 		Property$setValue(property, obj, old, val, additionalArgs);
@@ -1001,11 +997,11 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		let oldValue = currentValue;
 
 		// Set or create the backing field value
-		if (obj.hasOwnProperty(property.fieldName)) {
-			(obj as any)[property.fieldName] = newValue;
+		if (Object.prototype.hasOwnProperty.call(obj.__fields__, property.name)) {
+			obj.__fields__[property.name] = newValue;
 		}
 		else {
-			Object.defineProperty(obj, property.fieldName, { value: newValue, writable: true });
+			Object.defineProperty(obj.__fields__, property.name, { value: newValue, writable: true });
 		}
 
 		if (property.isIdentifier && newValue && newValue !== obj.meta.id) {

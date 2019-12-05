@@ -189,9 +189,9 @@ export class PropertyChain implements PropertyPath {
 			if (canSkipRemainingProps) {
 				break;
 			}
-	
+
 			// move to next property in the chain
-			target = (target as any)[prop.fieldName];
+			target = target.__fields__[prop.name];
 	
 			// break early if the target is undefined
 			if (target === undefined || target === null) {

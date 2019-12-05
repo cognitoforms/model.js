@@ -14,8 +14,6 @@ export class Model {
 
 	readonly settings: ModelSettings;
 
-	readonly fieldNamePrefix: string;
-
 	readonly $namespace: any;
 	readonly $locale: string;
 	readonly $resources: LocalizedResourcesMap;
@@ -31,7 +29,6 @@ export class Model {
 	constructor(options?: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions, config?: ModelConfiguration) {
 		this.types = {};
 		this.settings = new ModelSettings(config);
-		this.fieldNamePrefix = "_fN" + randomText(3, false, true);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
 		this._formats = {};
 

@@ -11,6 +11,8 @@ export class Entity {
 
 	readonly meta: ObjectMeta;
 
+	readonly __fields__: { [name: string]: any };
+
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
 
@@ -40,6 +42,8 @@ export class Entity {
 			}
 
 			this.meta = new ObjectMeta(type, this, id, isNew);
+
+			Object.defineProperty(this, "__fields__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 			// Register the newly constructed instance
 			type.register(this);
