@@ -310,9 +310,15 @@ export class Model {
 		}
 
 		// Get the format cache for the type
-		let formats = isEntityType(type) ?
-			type.meta._formats :
-			(this._formats[type.toString()] = (this._formats[type.toString()] || {}));
+		let formats: { [name: string]: Format<any> };
+		if (isEntityType(type)) {
+			formats = type.meta._formats;
+		}
+		else {
+			formats = this._formats[type.name];
+			if (!formats)
+				formats = this._formats[type.name] = {};
+		}
 
 		// First see if the requested format is cached
 		let f = formats[format];
