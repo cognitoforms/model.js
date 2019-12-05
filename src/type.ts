@@ -45,12 +45,13 @@ export class Type {
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
 		this.baseType = baseType;
 		this.derivedTypes = [];
-		this._lastId = 0;
 		this._properties = {};
 		this._formats = {};
 		this.chains = {};
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
+
+		Object.defineProperty(this, "_lastId", { enumerable: false, configurable: false, writable: true, value: 0 });
 
 		if (baseType) {
 			baseType.derivedTypes.push(this);
@@ -125,7 +126,7 @@ export class Type {
 
 		// Update the last id for each type in the heirarchy.
 		for (let type: Type = this; type; type = type.baseType) {
-			(type as any)._lastId = nextId;
+			type._lastId = nextId;
 		}
 
 		// Return the new id.
