@@ -21,6 +21,7 @@ export class Type {
 	readonly fullName: string;
 	readonly jstype: EntityType;
 	readonly baseType: Type;
+	private readonly derivedTypes: Type[];
 
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
@@ -28,7 +29,6 @@ export class Type {
 
 	private _known: ObservableArray<Entity>;
 	private readonly _pool: { [id: string]: Entity };
-	private readonly _derivedTypes: Type[];
 
 	readonly _properties: { [name: string]: Property };
 	readonly chains: { [path: string]: PropertyChain };
@@ -44,12 +44,16 @@ export class Type {
 		this.fullName = fullName;
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
 		this.baseType = baseType;
+		this.derivedTypes = [];
 		this._lastId = 0;
 		this._pool = {};
 		this._properties = {};
 		this._formats = {};
-		this._derivedTypes = [];
 		this.chains = {};
+
+		if (baseType) {
+			baseType.derivedTypes.push(this);
+		}
 
 		this.initNew = new Event<Type, EntityInitNewEventArgs>();
 		this.initExisting = new Event<Type, EntityInitExistingEventArgs>();
@@ -354,10 +358,6 @@ export class Type {
 		// TODO: Track rules on the type?
 
 		return rule;
-	}
-
-	get derivedTypes(): Type[] {
-		return this._derivedTypes;
 	}
 
 	hasModelProperty(prop: Property): boolean {
