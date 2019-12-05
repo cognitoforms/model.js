@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType } from "./type";
+import { Type, EntityType, isEntityType, getIdFromState } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
@@ -158,7 +158,7 @@ export class Entity {
 							// Modifying/replacing existing list item
 							if (idx < currentValue.length) {
 								// If the item is an object that has an Id property, then retrieve or create an object with that Id
-								if (!(s instanceof ChildEntity) && typeof s === "object" && s.Id && typeof s.Id === "string" && s.Id.length > 0)
+								if (!(s instanceof ChildEntity) && typeof s === "object" && getIdFromState(ChildEntity.meta, s))
 									s = ChildEntity.meta.createSync(s);
 								if (s instanceof ChildEntity)
 									state.splice(idx, 1, s);
@@ -191,7 +191,7 @@ export class Entity {
 						else if (typeof state !== "object")
 							value = state;
 						// Got an object, so attempt to fetch or create and assign the state
-						else if (state.Id && typeof state.Id === "string" && state.Id.length > 0)
+						else if (getIdFromState(ChildEntity.meta, state))
 							value = ChildEntity.meta.createSync(state);
 						else if (currentValue)
 							currentValue.set(state);

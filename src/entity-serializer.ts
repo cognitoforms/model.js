@@ -166,10 +166,15 @@ export class EntitySerializer {
 
 		const resolveEntity = (type: EntityConstructorForType<Entity>, state: any) => {
 			let entity: Entity;
-			if (state.Id)
-				entity = type.meta.get(state.Id);
-			if (!entity)
-				entity = new (type as any)(state.Id, state, context);
+			let id: any = type.meta.identifier ? state[type.meta.identifier.name] : null;
+			if (id)
+				entity = type.meta.get(id);
+			if (!entity) {
+				if (id)
+					entity = new (type as any)(id, state, context);
+				else
+					entity = new (type as any)(state, context);
+			}
 			return entity;
 		};
 

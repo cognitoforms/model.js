@@ -23,6 +23,8 @@ export class Type {
 	readonly baseType: Type;
 	readonly derivedTypes: Type[];
 
+	identifier: Property;
+
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
 	private _lastId: number;
@@ -45,6 +47,7 @@ export class Type {
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
 		this.baseType = baseType;
 		this.derivedTypes = [];
+		this.identifier = null;
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
 		Object.defineProperty(this, "__properties__", { enumerable: false, configurable: false, writable: false, value: {} });
@@ -79,15 +82,16 @@ export class Type {
 
 	createSync(state: any): Entity {
 		// Attempt to fetch an existing instance if the state contains an Id property
-		if (state && state.Id && typeof state.Id === "string" && state.Id.length > 0) {
-			const instance = this.get(state.Id);
+		const id = getIdFromState(this, state);
+		if (id) {
+			const instance = this.get(id);
 			if (instance) {
 				// Assign state to the existing object
 				instance.set(state);
 				return instance;
 			}
 			// Construct an instance using the known id
-			return new this.jstype(state.Id, state);
+			return new this.jstype(id, state);
 		}
 		// Construct a new instance without a known id
 		return new this.jstype(state);
@@ -476,6 +480,10 @@ export class Type {
 						// Add Property
 						let property = new Property(this, name, member.type, isIdentifier, isList, member);
 
+						if (isIdentifier) {
+							this.identifier = property;
+						}
+
 						this.__properties__[name] = property;
 
 						Property$generateShortcuts(property, this.jstype);
@@ -552,6 +560,14 @@ export function isValueArray(value: any): value is Value[] {
 
 export function isEntityType(type: any): type is EntityType {
 	return type.meta && type.meta instanceof Type;
+}
+
+export function getIdFromState(type: Type, state: any): string {
+	if (type.identifier && typeof state === "object") {
+		const id: any = state[type.identifier.name];
+		if (id && typeof id === "string" && id.length > 0)
+			return id;
+	}
 }
 
 export function Type$generateMethod(type: Type, target: any, name: string, fn: Function): void {
