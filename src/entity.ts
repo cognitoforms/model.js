@@ -12,6 +12,7 @@ export class Entity {
 	readonly meta: ObjectMeta;
 
 	readonly __fields__: { [name: string]: any };
+	readonly __pendingInit__: { [name: string]: boolean };
 
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;

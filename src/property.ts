@@ -851,14 +851,14 @@ export function Property$generateOwnPropertyWithClosure(property: Property, obj:
 	});
 }
 
-export function Property$pendingInit(obj: Entity | EntityConstructorForType<Entity>, prop: Property, value: boolean = null): boolean | void {
+export function Property$pendingInit(obj: Entity, prop: Property, value: boolean = null): boolean | void {
 	let pendingInit: ObjectLookup<boolean>;
 
-	if (Object.prototype.hasOwnProperty.call(obj, "_pendingInit")) {
-		pendingInit = (obj as any)._pendingInit;
+	if (Object.prototype.hasOwnProperty.call(obj, "__pendingInit__")) {
+		pendingInit = (obj as any).__pendingInit__;
 	}
 	else {
-		Object.defineProperty(obj, "_pendingInit", { enumerable: false, value: (pendingInit = {}), writable: true });
+		Object.defineProperty(obj, "__pendingInit__", { enumerable: false, value: (pendingInit = {}), writable: true });
 	}
 
 	if (arguments.length > 2) {
