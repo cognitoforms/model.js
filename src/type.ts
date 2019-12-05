@@ -77,7 +77,7 @@ export class Type {
 			this.extend(options);
 	}
 
-	createSync(state: any, valueResolver?: InitializationValueResolver): Entity {
+	createSync(state: any): Entity {
 		// Attempt to fetch an existing instance if the state contains an Id property
 		if (state && state.Id && typeof state.Id === "string" && state.Id.length > 0) {
 			const instance = this.get(state.Id);
