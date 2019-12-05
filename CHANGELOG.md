@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [0.6.0] - 2019-12-04
+## [0.6.0] - 2019-12-05
 ### Changed
 - Rename `id` in property options to `identifier`
 - Get rid of `Property.fieldName` and `Model.fieldNamePrefix` and use `Entity.__fields__` and `Property.name` instead
