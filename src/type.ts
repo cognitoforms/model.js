@@ -31,7 +31,7 @@ export class Type {
 	private readonly __pool__: { [id: string]: Entity };
 
 	readonly _properties: { [name: string]: Property };
-	readonly chains: { [path: string]: PropertyChain };
+	private readonly _chains: { [path: string]: PropertyChain };
 
 	readonly _formats: { [name: string]: Format<any> };
 
@@ -46,12 +46,12 @@ export class Type {
 		this.baseType = baseType;
 		this.derivedTypes = [];
 		this._properties = {};
-		this.chains = {};
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 		Object.defineProperty(this, "_lastId", { enumerable: false, configurable: false, writable: true, value: 0 });
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
+		Object.defineProperty(this, "_chains", { enumerable: false, configurable: false, writable: true, value: {} });
 
 		if (baseType) {
 			baseType.derivedTypes.push(this);
@@ -260,11 +260,11 @@ export class Type {
 
 		// Get cached property chain
 		if (!property)
-			property = this.chains[path];
+			property = this._chains[path];
 
 		// Create and cache property chain
 		if (!property) {
-			property = this.chains[path] = new PropertyChain(this, path);
+			property = this._chains[path] = new PropertyChain(this, path);
 		}
 
 		// Return the property path
