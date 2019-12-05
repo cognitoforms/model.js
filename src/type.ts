@@ -21,7 +21,7 @@ export class Type {
 	readonly fullName: string;
 	readonly jstype: EntityType;
 	readonly baseType: Type;
-	private readonly derivedTypes: Type[];
+	readonly derivedTypes: Type[];
 
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
