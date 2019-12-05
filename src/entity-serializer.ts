@@ -169,12 +169,8 @@ export class EntitySerializer {
 			let id: any = type.meta.identifier ? state[type.meta.identifier.name] : null;
 			if (id)
 				entity = type.meta.get(id);
-			if (!entity) {
-				if (id)
-					entity = new (type as any)(id, state, context);
-				else
-					entity = new (type as any)(state, context);
-			}
+			if (!entity)
+				entity = new (type as any)(id, state, context);
 			return entity;
 		};
 
