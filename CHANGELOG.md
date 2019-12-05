@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.6.0] - 2019-12-04
+### Changed
+- Rename `id` in property options to `identifier`
+- Get rid of `Property.fieldName` and `Model.fieldNamePrefix` and use `Entity.__fields__` and `Property.name` instead
+- Various changes to private backing fields: `Entity.__pendingInit__`, `ObjectMeta.__pendingInvocation__`, `Type.__pool__`, `Type.__known__`, `Type._lastId`, `Type.__properties__`, `Type._formats`, `Type._chains`, `Model._formats`, `Model._ready`
+### Fixed
+- Fix special-casing of "Id" property and look at `Type.identifier` instead
+- Update `derivedTypes` when a type is created from a base type
+- Cache value type formats using the constructor name (ex: "String") instead of its string representation
+
 ## [0.5.0] - 2019-12-04
 ### Changed
 - Add `Property.isIdentifier`, set via `id` boolean option instead of detecting a property named "Id"
