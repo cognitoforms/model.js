@@ -29,8 +29,8 @@ export class Type {
 
 	private readonly __known__: ObservableArray<Entity>;
 	private readonly __pool__: { [id: string]: Entity };
+	private readonly __properties__: { [name: string]: Property };
 
-	readonly _properties: { [name: string]: Property };
 	private readonly _chains: { [path: string]: PropertyChain };
 
 	readonly _formats: { [name: string]: Format<any> };
@@ -45,9 +45,9 @@ export class Type {
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
 		this.baseType = baseType;
 		this.derivedTypes = [];
-		this._properties = {};
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
+		Object.defineProperty(this, "__properties__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 		Object.defineProperty(this, "_lastId", { enumerable: false, configurable: false, writable: true, value: 0 });
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
@@ -163,9 +163,9 @@ export class Type {
 		}
 
 		if (this.model.settings.createOwnProperties === true) {
-			for (let prop in this._properties) {
-				if (Object.prototype.hasOwnProperty.call(this._properties, prop)) {
-					let property = this._properties[prop];
+			for (let prop in this.__properties__) {
+				if (Object.prototype.hasOwnProperty.call(this.__properties__, prop)) {
+					let property = this.__properties__[prop];
 					Property$generateOwnProperty(property, obj);
 				}
 			}
@@ -244,7 +244,7 @@ export class Type {
 	getProperty(name: string): Property {
 		var prop;
 		for (var t: Type = this; t && !prop; t = t.baseType) {
-			prop = t._properties[name];
+			prop = t.__properties__[name];
 
 			if (prop) {
 				return prop;
@@ -335,9 +335,9 @@ export class Type {
 	get properties(): Property[] {
 		let propertiesArray: Property[] = [];
 		for (var type: Type = this; type != null; type = type.baseType) {
-			for (var propertyName in type._properties) {
-				if (type._properties.hasOwnProperty(propertyName)) {
-					propertiesArray.push(type._properties[propertyName]);
+			for (var propertyName in type.__properties__) {
+				if (type.__properties__.hasOwnProperty(propertyName)) {
+					propertiesArray.push(type.__properties__[propertyName]);
 				}
 			}
 		}
@@ -476,7 +476,7 @@ export class Type {
 						// Add Property
 						let property = new Property(this, name, member.type, isIdentifier, isList, member);
 
-						this._properties[name] = property;
+						this.__properties__[name] = property;
 
 						Property$generateShortcuts(property, this.jstype);
 
