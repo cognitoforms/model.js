@@ -1,5 +1,5 @@
 import { Event, EventSubscriber } from "./events";
-import { replaceTokens, randomText, ObjectLookup } from "./helpers";
+import { replaceTokens, ObjectLookup } from "./helpers";
 import { EntityRegisteredEventArgs, Entity } from "./entity";
 import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
 import { Format, createFormat } from "./format";
