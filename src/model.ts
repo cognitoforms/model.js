@@ -30,7 +30,8 @@ export class Model {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
-		this._formats = {};
+
+		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
 
 		if (options) {
 			this.extend(options);

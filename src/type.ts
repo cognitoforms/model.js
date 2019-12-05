@@ -46,12 +46,12 @@ export class Type {
 		this.baseType = baseType;
 		this.derivedTypes = [];
 		this._properties = {};
-		this._formats = {};
 		this.chains = {};
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 		Object.defineProperty(this, "_lastId", { enumerable: false, configurable: false, writable: true, value: 0 });
+		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
 
 		if (baseType) {
 			baseType.derivedTypes.push(this);
