@@ -28,7 +28,7 @@ export class Type {
 	private _lastId: number;
 
 	private _known: ObservableArray<Entity>;
-	private readonly _pool: { [id: string]: Entity };
+	private readonly __pool__: { [id: string]: Entity };
 
 	readonly _properties: { [name: string]: Property };
 	readonly chains: { [path: string]: PropertyChain };
@@ -46,10 +46,11 @@ export class Type {
 		this.baseType = baseType;
 		this.derivedTypes = [];
 		this._lastId = 0;
-		this._pool = {};
 		this._properties = {};
 		this._formats = {};
 		this.chains = {};
+
+		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 		if (baseType) {
 			baseType.derivedTypes.push(this);
@@ -149,11 +150,11 @@ export class Type {
 		var key = obj.meta.id.toLowerCase();
 
 		for (var t: Type = this; t; t = t.baseType) {
-			if (t._pool.hasOwnProperty(key)) {
+			if (t.__pool__.hasOwnProperty(key)) {
 				throw new Error(`Object "${this.fullName}|${obj.meta.id}" has already been registered.`);
 			}
 
-			t._pool[key] = obj;
+			t.__pool__[key] = obj;
 
 			if (t._known) {
 				t._known.push(obj);
@@ -179,11 +180,11 @@ export class Type {
 		var oldKey = oldId.toLowerCase();
 		var newKey = newId.toLowerCase();
 
-		if (this._pool[newKey]) {
+		if (this.__pool__[newKey]) {
 			throw new Error(`Entity '${this.fullName}|${newKey}' is already registered.`);
 		}
 
-		var obj = this._pool[oldKey];
+		var obj = this.__pool__[oldKey];
 
 		if (!obj) {
 			// TODO: Throw error or warn when attempting to change an object Id that is unknown?
@@ -191,7 +192,7 @@ export class Type {
 		}
 
 		for (var t: Type = this; t; t = t.baseType) {
-			t._pool[newKey] = obj;
+			t.__pool__[newKey] = obj;
 		}
 
 		obj.meta.id = newId;
@@ -206,7 +207,7 @@ export class Type {
 		}
 
 		var key = id.toLowerCase();
-		var obj = this._pool[key];
+		var obj = this.__pool__[key];
 
 		// If exactTypeOnly is specified, don't return sub-types.
 		if (obj && exactTypeOnly === true && obj.meta.type !== this) {
@@ -225,9 +226,9 @@ export class Type {
 		if (!known) {
 			var list: Entity[] = [];
 
-			for (var id in this._pool) {
-				if (Object.prototype.hasOwnProperty.call(this._pool, id)) {
-					list.push(this._pool[id]);
+			for (var id in this.__pool__) {
+				if (Object.prototype.hasOwnProperty.call(this.__pool__, id)) {
+					list.push(this.__pool__[id]);
 				}
 			}
 
