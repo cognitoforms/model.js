@@ -4,7 +4,7 @@ import { EntityRegisteredEventArgs, Entity } from "./entity";
 import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
-import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource } from "./resource";
+import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
 import { CultureInfo, formatNumber, parseNumber, formatDate, parseDate, expandDateFormat, getNumberStyle } from "./globalization";
 
 const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
@@ -98,6 +98,10 @@ export class Model {
 		if (params)
 			return replaceTokens(resource, params);
 		return resource;
+	}
+
+	resourceExists(name: string) {
+		return resourceExists(name, this.$resources, this.$locale);
 	}
 
 	/**
