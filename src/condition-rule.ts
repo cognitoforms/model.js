@@ -18,6 +18,8 @@ export class ConditionRule extends Rule {
 	// The condition type to raise when asserted
 	conditionType: ConditionType;
 
+	preExecute?: (this: ConditionRule, entity: Entity) => void;
+
 	/**
 	 * Creates a rule that asserts a condition based on a predicate
 	 * @param rootType The model type the rule is for
@@ -32,6 +34,9 @@ export class ConditionRule extends Rule {
 	
 		// assertion function
 		this.assert = options.assert;
+
+		// pre-execute
+		this.preExecute = options.preExecute;
 
 		// message
 		this.message = options.message;
@@ -50,6 +55,10 @@ export class ConditionRule extends Rule {
 	execute(entity: Entity): void {
 		let assert: boolean;
 		let message: string;
+
+		if(this.preExecute) {
+			this.preExecute(entity);
+		}
 
 		if (this.assert) {
 			// If an assert function is defined, then use it to determine whether to attach a condition
@@ -95,4 +104,5 @@ export interface ConditionRuleOptions extends RuleOptions {
 	// the optional array of condition type sets to associate the condition with
 	sets?: ConditionTypeSet[];
 
+	preExecute?: (this: ConditionRule, entity: Entity) => void;
 }
