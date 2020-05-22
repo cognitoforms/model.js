@@ -29,7 +29,7 @@ export class RangeRule extends ValidationRule {
 				
 			if (options.min && options.min instanceof Function) {
 				try {
-					range["min"] = Standardize.standardize(options.min.call(this), format);					
+					range.min = Standardize.standardize(options.min.call(this), format);					
 				}
 				catch (e) {
 					// Silently ignore min errors
@@ -38,7 +38,7 @@ export class RangeRule extends ValidationRule {
 	
 			if (options.max && options.max instanceof Function) {
 				try {
-					range["max"] = Standardize.standardize(options.max.call(this), format);
+					range.max = Standardize.standardize(options.max.call(this), format);
 				}
 				catch (e) {
 					// Silently ignore max errors
