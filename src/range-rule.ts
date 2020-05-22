@@ -25,7 +25,25 @@ export class RangeRule extends ValidationRule {
 				return null;
 			}	
 			
-			const range = RangeRule.getRange(this, options);
+			var range: { min?: any; max?: any } = {};
+				
+			if (options.min && options.min instanceof Function) {
+				try {
+					range.min = RangeRule.standardize(options.min.call(this), format);					
+				}
+				catch (e) {
+					// Silently ignore min errors
+				}
+			}
+
+			if (options.max && options.max instanceof Function) {
+				try {
+					range.max = RangeRule.standardize(options.max.call(this), format);
+				}
+				catch (e) {
+					// Silently ignore max errors
+				}
+			}
 
 			if ((range.min == null || val >= range.min) && (range.max == null || val <= range.max)) {				
 				// Value is within range
@@ -47,46 +65,14 @@ export class RangeRule extends ValidationRule {
 			else
 				return rootType.model.getResource("range-at-most").replace("{max}", Property$format(options.property, range.max) || range.max);
 		};
-		
-		options.preExecute = (entity) => {			
-			this["range"] = RangeRule.getRange(entity, options);
-		}
 
 		// call the base type constructor
 		super(rootType, options);
-
-		Object.defineProperty(this, "range", { value: null, writable: true });
 	}
 
 	// get the string representation of the rule
 	toString(): string {
 		return `${this.property.containingType.fullName}.${this.property.name} in range, min: , max: `;
-	}
-
-	private static getRange(entity: Entity, options: RangeRuleOptions) : Range
-	{
-		let format = options.property.format;		
-		let range: Range = { };
-				
-		if (options.min && options.min instanceof Function) {
-			try {
-				range["min"] = RangeRule.standardize(options.min.call(entity), format);					
-			}
-			catch (e) {
-				// Silently ignore min errors
-			}
-		}
-
-		if (options.max && options.max instanceof Function) {
-			try {
-				range["max"] = RangeRule.standardize(options.max.call(entity), format);
-			}
-			catch (e) {
-				// Silently ignore max errors
-			}
-		}
-
-		return range;
 	}
 
 	// January 1st, 1970 at 12AM
@@ -114,12 +100,11 @@ export class RangeRule extends ValidationRule {
 	}
 
 	// Set the date of the dateTime to the supplied standardized date
-	private static _standardizeDate(dateTime: Date, standard: Date): Date {
-		let _dateTime = new Date(dateTime);
-		_dateTime.setMonth(standard.getMonth());
-		_dateTime.setDate(standard.getDate());
-		_dateTime.setFullYear(standard.getFullYear());
-		return _dateTime ;
+	private static _standardizeDate(dateTime: Date, standard: Date): Date {			
+		dateTime.setMonth(standard.getMonth());
+		dateTime.setDate(standard.getDate());
+		dateTime.setFullYear(standard.getFullYear());
+		return dateTime;
 	}
 
 	// Set the time of the dateTime to 12AM	
@@ -131,10 +116,4 @@ export class RangeRule extends ValidationRule {
 export interface RangeRuleOptions extends ValidationRuleOptions {
 	min?: (this: Entity) => any;
 	max?: (this: Entity) => any;
-}
-
-interface Range
-{
-	min?: any;
-	max?: any;
 }
