@@ -414,21 +414,21 @@ export class ModelSettings {
 	}
 }
 
-export class Standardize {
+export class Normalize {
 	// January 1st, 1970 at 12AM
 	private static JAN_01_1970 = new Date(18000000);
 
-	// Standardize the provided value based on the format specifier
+	// Normalize the provided value based on the format specifier
 	// so that it can be used appropriately for comparisons
-	static standardize(val: any, format: Format<any>) : any {
+	static normalize(val: any, format: Format<any>) : any {
 		if (!val && val !== false)
 			return val;
 
 		if (val.constructor.name === "Date") {
 			if (format.specifier === "t")
-				val = Standardize.date(val);
+				val = Normalize.date(val);
 			else if (format.specifier === "d")
-				val = Standardize.time(val);
+				val = Normalize.time(val);
 		}
 
 		return val;
@@ -436,10 +436,10 @@ export class Standardize {
 
 	// Set the date of the dateTime to January 1st, 1970
 	private static date(dateTime: Date): Date {
-		return Standardize._date(dateTime, Standardize.JAN_01_1970);
+		return Normalize._date(dateTime, Normalize.JAN_01_1970);
 	}
 
-	// Set the date of the dateTime to the supplied standardized date
+	// Set the date of the dateTime to the supplied normalized date
 	private static _date(dateTime: Date, standard: Date): Date {
 		const _dateTime = new Date(dateTime);
 		_dateTime.setMonth(standard.getMonth());
@@ -450,6 +450,6 @@ export class Standardize {
 
 	// Set the time of the dateTime to 12AM
 	private static time(dateTime: Date): Date {
-		return Standardize._date(Standardize.JAN_01_1970, dateTime);
+		return Normalize._date(Normalize.JAN_01_1970, dateTime);
 	}
 };
