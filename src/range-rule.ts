@@ -2,7 +2,7 @@ import { ValidationRule, ValidationRuleOptions } from "./validation-rule";
 import { Property$format } from "./property";
 import { Entity } from "./entity";
 import { Type } from "./type";
-import { Normalize } from "./model";
+import { normalize } from "./model";
 
 /**
  * A rule that validates that a property value is within a specific range
@@ -19,7 +19,7 @@ export class RangeRule extends ValidationRule {
 
 		options.message = function(this: Entity): string {			
 			let format = options.property.format;		
-			var val = Normalize.normalize(options.property.value(this), format);
+			var val = normalize(options.property.value(this), format);
 
 			if (val == null) {
 				return null;
@@ -29,7 +29,7 @@ export class RangeRule extends ValidationRule {
 				
 			if (options.min && options.min instanceof Function) {
 				try {
-					range.min = Normalize.normalize(options.min.call(this), format);					
+					range.min = normalize(options.min.call(this), format);					
 				}
 				catch (e) {
 					// Silently ignore min errors
@@ -38,7 +38,7 @@ export class RangeRule extends ValidationRule {
 	
 			if (options.max && options.max instanceof Function) {
 				try {
-					range.max = Normalize.normalize(options.max.call(this), format);
+					range.max = normalize(options.max.call(this), format);
 				}
 				catch (e) {
 					// Silently ignore max errors
