@@ -414,28 +414,17 @@ export class ModelSettings {
 	}
 }
 
-export class Normalize {
+class Normalize {
 	// January 1st, 1970 at 12AM
 	private static JAN_01_1970 = new Date(18000000);
 
-	// Normalize the provided value based on the format specifier
-	// so that it can be used appropriately for comparisons
-	static normalize(val: any, format: Format<any>) : any {
-		if (!val && val !== false)
-			return val;
-
-		if (val.constructor.name === "Date") {
-			if (format.specifier === "t")
-				val = Normalize.date(val);
-			else if (format.specifier === "d")
-				val = Normalize.time(val);
-		}
-
-		return val;
+	// Set the time of the dateTime to 12AM
+	static time(dateTime: Date): Date {
+		return Normalize._date(Normalize.JAN_01_1970, dateTime);
 	}
 
 	// Set the date of the dateTime to January 1st, 1970
-	private static date(dateTime: Date): Date {
+	static date(dateTime: Date): Date {
 		return Normalize._date(dateTime, Normalize.JAN_01_1970);
 	}
 
@@ -447,9 +436,20 @@ export class Normalize {
 		_dateTime.setFullYear(standard.getFullYear());
 		return _dateTime ;
 	}
+};
+	
+// Normalize the provided value based on the format specifier
+// so that it can be used appropriately for comparisons
+export function normalize(val: any, format: Format<any>) : any {
+	if (!val && val !== false)
+		return val;
 
-	// Set the time of the dateTime to 12AM
-	private static time(dateTime: Date): Date {
-		return Normalize._date(Normalize.JAN_01_1970, dateTime);
+	if (val.constructor.name === "Date") {
+		if (format.specifier === "t")
+			val = Normalize.date(val);
+		else if (format.specifier === "d")
+			val = Normalize.time(val);
 	}
+
+	return val;
 };
