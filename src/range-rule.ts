@@ -2,6 +2,7 @@ import { ValidationRule, ValidationRuleOptions } from "./validation-rule";
 import { Property$format } from "./property";
 import { Entity } from "./entity";
 import { Type } from "./type";
+import { normalize } from "./model";
 
 /**
  * A rule that validates that a property value is within a specific range
@@ -16,34 +17,35 @@ export class RangeRule extends ValidationRule {
 		// ensure the rule name is specified
 		options.name = options.name || "Range";
 
-		options.message = function(this: Entity): string {
-			var range: { min?: any; max?: any } = {};
+		options.message = function(this: Entity): string {			
+			let format = options.property.format;		
+			var val = normalize(options.property.value(this), format);
 
+			if (val == null) {
+				return null;
+			}	
+			
+			var range: { min?: any; max?: any } = {};
+				
 			if (options.min && options.min instanceof Function) {
 				try {
-					range.min = options.min.call(this);
+					range.min = normalize(options.min.call(this), format);					
 				}
 				catch (e) {
 					// Silently ignore min errors
 				}
 			}
-
+	
 			if (options.max && options.max instanceof Function) {
 				try {
-					range.max = options.max.call(this);
+					range.max = normalize(options.max.call(this), format);
 				}
 				catch (e) {
 					// Silently ignore max errors
 				}
 			}
 
-			var val = options.property.value(this);
-
-			if (val == null) {
-				return null;
-			}
-
-			if ((range.min == null || val >= range.min) && (range.max == null || val <= range.max)) {
+			if ((range.min == null || val >= range.min) && (range.max == null || val <= range.max)) {				
 				// Value is within range
 				return null;
 			}

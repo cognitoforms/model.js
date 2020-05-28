@@ -413,3 +413,35 @@ export class ModelSettings {
 		this.useGlobalObject = config && !!config.useGlobalObject;
 	}
 }
+
+// January 1st, 1970 at 12AM
+const JAN_01_1970 = new Date(18000000);
+
+// Set the date of the dateTime to the supplied normalized date
+function normalizeDateTime(dateTime: Date, standard: Date): Date {
+	const _dateTime = new Date(dateTime);
+	_dateTime.setMonth(standard.getMonth());
+	_dateTime.setDate(standard.getDate());
+	_dateTime.setFullYear(standard.getFullYear());
+	return _dateTime ;
+}
+	
+// Normalize the provided value based on the format specifier
+// so that it can be used appropriately for comparisons
+export function normalize(val: any, format: Format<any>) : any {
+	if (!val && val !== false)
+		return val;
+
+	if (val.constructor.name === "Date") {
+		if (format.specifier === "t") {
+			// Set the date of the dateTime to January 1st, 1970
+			val = normalizeDateTime(val, JAN_01_1970);
+		}
+		else if (format.specifier === "d") {
+			// Set the time of the dateTime to 12AM
+			val = normalizeDateTime(JAN_01_1970, val);
+		}
+	}
+
+	return val;
+};
