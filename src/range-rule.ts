@@ -50,17 +50,20 @@ export class RangeRule extends ValidationRule {
 				return null;
 			}
 
-			if (range.min !== undefined && range.max !== undefined)
+			const hasMin = range.min || range.min === 0;
+			const hasMax = range.max || range.max === 0;
+
+			if (hasMin && hasMax)
 				return rootType.model.getResource("range-between").replace("{min}", Property$format(options.property, range.min) || range.min).replace("{max}", Property$format(options.property, range.max) || range.max);
 
 			if (options.property.propertyType === Date) {
-				if (range.min != null)
+				if (hasMin)
 					return rootType.model.getResource("range-on-or-after").replace("{min}", Property$format(options.property, range.min) || range.min);
 				else
 					return rootType.model.getResource("range-on-or-before").replace("{max}", Property$format(options.property, range.max) || range.max);
 			}
 
-			if (range.min != null)
+			if (hasMin)
 				return rootType.model.getResource("range-at-least").replace("{min}", Property$format(options.property, range.min) || range.min);
 			else
 				return rootType.model.getResource("range-at-most").replace("{max}", Property$format(options.property, range.max) || range.max);
