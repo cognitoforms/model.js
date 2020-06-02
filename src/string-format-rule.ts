@@ -17,14 +17,9 @@ export class StringFormatRule extends ValidationRule {
 			// ensure the rule name is specified
 			options.name = options.name || "StringFormat";
 
-			// ensure the error message is a valid resource
-			if (typeof options.message === "string" && /^{[^{}]+}$/.test(options.message)) {
-				if (rootType.model.getResource(options.message)) {
-					options.message = rootType.model.getResource(options.message);
-				}
-				else {
-					delete options.message;
-				}
+			// see if the error message is a valid resource: {resource-name}
+			if (typeof options.message === "string" && rootType.model.resourceExists(options.message)) {
+				options.message = rootType.model.getResource(options.message);
 			}
 
 			// get the default validation message if not specified

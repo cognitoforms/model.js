@@ -14,7 +14,11 @@ export type LocalizedResourcesMap = ObjectLookup<LocalizedResources>;
 /**
  * The dictionary of localized resource messages
  */
-export const Resources: LocalizedResourcesMap = { };
+export const Resources: LocalizedResourcesMap = {};
+
+function mapContainsResource(resources: LocalizedResourcesMap, locale: string, name: string) {
+	return hasOwnProperty(resources, locale) && hasOwnProperty(resources[locale], name);
+}
 
 /**
  * The default locale, can be changed via `setDefaultLocale(locale)`.
@@ -32,7 +36,7 @@ export function setDefaultLocale(locale: string): void {
 /**
  * Globally defined resources
  */
-const globalResources: LocalizedResourcesMap = { };
+const globalResources: LocalizedResourcesMap = {};
 
 /**
  * Globally define localized resource messages for the given locale
@@ -74,12 +78,19 @@ export function getResource(name: string, arg2?: LocalizedResourcesMap | string,
 
 	let res: string;
 
-	if (customResources && hasOwnProperty(customResources, locale) && hasOwnProperty(customResources[locale], name))
+	if (customResources && mapContainsResource(customResources, locale, name))
 		res = customResources[locale][name];
-	else if (hasOwnProperty(globalResources, locale) && hasOwnProperty(globalResources[locale], name))
+	else if (mapContainsResource(globalResources, locale, name))
 		res = globalResources[locale][name];
 	else
 		throw new Error("Resource '" + name + "' is not defined for locale '" + locale + "'.");
 
 	return res;
+}
+
+export function resourceExists(name: string, customResources?: LocalizedResourcesMap, locale?: string) {
+	if (!locale)
+		locale = defaultLocale || "en";
+
+	return mapContainsResource(globalResources, locale, name) || (customResources && mapContainsResource(customResources, locale, name));
 }
