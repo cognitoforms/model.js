@@ -45,6 +45,7 @@ export class Entity {
 			this.meta = new ObjectMeta(type, this, id, isNew);
 
 			Object.defineProperty(this, "__fields__", { enumerable: false, configurable: false, writable: false, value: {} });
+			Object.defineProperty(this, "__pendingInit__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 			// Register the newly constructed instance
 			type.register(this);
