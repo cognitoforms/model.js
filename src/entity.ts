@@ -50,7 +50,7 @@ export class Entity {
 			// Register the newly constructed instance
 			type.register(this);
 
-			let isNested = !!context;
+			const isNested = !!context;
 			if (!context)
 				context = new InitializationContext(true);
 
