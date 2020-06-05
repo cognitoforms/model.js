@@ -54,7 +54,8 @@ export class Entity {
 				context = new InitializationContext(true);
 
 			// Initialize existing entity with provided property values
-			if (properties && (!isNew || isNested))
+			const shouldInit = !isNew || isNested;
+			if (shouldInit && properties)
 				this.init(properties, context);
 
 			// Raise the initNew or initExisting event on this type and all base types
@@ -67,7 +68,7 @@ export class Entity {
 				}
 
 				// Set values of new entity for provided properties
-				if (isNew && properties)
+				if (!shouldInit && properties)
 					this.set(properties);
 			});
 		}
