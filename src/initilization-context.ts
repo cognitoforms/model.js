@@ -36,4 +36,8 @@ export class InitializationContext {
 			this.wait(task);
 		return task;
 	}
+
+	get isConstructorCall() {
+		return this.constructorCall;
+	}
 }

@@ -30,17 +30,22 @@ export class Entity {
 			this.accessed = new Event<Entity, EntityAccessEventArgs>();
 			this.changed = new Event<Entity, EntityChangeEventArgs>();
 
-			var isNew: boolean;
+			let isNew: boolean;
 
 			if (typeof id === "string")
 				type.assertValidId(id);
 			else {
 				// Was id provided as undefined, or not provided at all?
-				if (arguments.length === 2)
+				if (id !== null && typeof id === "object")
 					properties = id;
 				id = type.newId();
 				isNew = true;
 			}
+			
+			// If context was provided, it should be the last argument
+			context = arguments[arguments.length - 1];
+			if (!(context instanceof InitializationContext))
+				context = null;
 
 			this.meta = new ObjectMeta(type, this, id, isNew);
 
@@ -55,21 +60,21 @@ export class Entity {
 				context = new InitializationContext(true);
 
 			// Initialize existing entity with provided property values
-			const shouldInit = !isNew || isNested;
-			if (shouldInit && properties)
+			const shouldInit = !context.isConstructorCall && isNested;
+			if ((!isNew || shouldInit) && properties)
 				this.init(properties, context);
 
 			// Raise the initNew or initExisting event on this type and all base types
 			context.ready(() => {
 				for (let t = type; t; t = t.baseType) {
 					if (isNew)
-						(t.initNew as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
+						(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
 					else
 						(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
 				}
 
 				// Set values of new entity for provided properties
-				if (!shouldInit && properties)
+				if (isNew && !shouldInit && properties)
 					this.set(properties);
 			});
 		}
