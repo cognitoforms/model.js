@@ -2,7 +2,6 @@ import { ConditionRule, ConditionRuleOptions } from "./condition-rule";
 import { PropertyRule, Property, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
 import { Type } from "./type";
-import { Format } from "./format";
 
 export class ValidationRule extends ConditionRule implements PropertyRule {
 	property: Property;
@@ -57,10 +56,18 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 					// Create a function to apply the format to the property label when generating the message
 					options.message = function () {
-						let message = messageFunction.call(this);
-						if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-							message = message.replace("{property}", format.convert(this));
+						let message = "";
+
+						try {
+							message = messageFunction.call(this);
+							if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
+								message = message.replace("{property}", format.convert(this));
+							}
 						}
+						catch (e) {
+							console.warn(e);
+						}
+
 						return message;
 					};
 				}
@@ -83,9 +90,15 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 				// Create a function to apply the format to the property label when generating the message
 				options.message = function () {
-					let message = messageFunction.call(this);
-					if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-						message = message.replace("{property}", property.label);
+					let message = "";
+					try {
+						message = messageFunction.call(this);
+						if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
+							message = message.replace("{property}", property.label);
+						}
+					}
+					catch (e) {
+						console.warn(e);
 					}
 					return message;
 				};
@@ -94,7 +107,15 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 		if (options.isValid) {
 			options.assert = function(this: Entity): boolean {
-				var isValid = options.isValid.call(this, options.property as Property, options.property.value(this));
+				let isValid;
+
+				try {
+					isValid = options.isValid.call(this, options.property as Property, options.property.value(this));
+				}
+				catch (e) {
+					console.warn(e);
+				}
+
 				return isValid === undefined ? isValid : !isValid;
 			};
 		}
