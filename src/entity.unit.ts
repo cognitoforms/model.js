@@ -9,10 +9,18 @@ function resetModel() {
 	return new Model({
 		$namespace: Types as any,
 		Person: {
+			Id: {
+				identifier: true,
+				type: String
+			},
 			FirstName: String,
 			LastName: String
 		},
 		Movie: {
+			Id: {
+				identifier: true,
+				type: String
+			},
 			Title: String,
 			Director: "Person",
 			ReleaseDate: Date,
@@ -77,19 +85,19 @@ describe("Entity", () => {
 
 	describe("events", () => {
 		describe("property change is not raised when initializing existing entity", () => {
-			test("value property", () => {
+			test("value property", async () => {
 				const changed = jest.fn();
 				Types.Person.meta.getProperty("FirstName").changed.subscribe(changed);
 				Types.Person.meta.getProperty("LastName").changed.subscribe(changed);
-				new Types.Person("1", Alien.Director);
+				await Types.Person.meta.create({ Id: "1", ...Alien.Director });
 
 				expect(changed).not.toBeCalled();
 			});
 
-			test("value list property", () => {
+			test("value list property", async () => {
 				const changed = jest.fn();
 				Types.Movie.meta.getProperty("Genres").changed.subscribe(changed);
-				new Types.Movie("1", Alien);
+				await Types.Movie.meta.create({ Id: "1", ...Alien });
 
 				expect(changed).not.toBeCalled();
 			});
@@ -146,10 +154,11 @@ describe("Entity", () => {
 				expect(movie.serialize()).toEqual(Alien);
 			});
 
-			it("does not overwrite provided state of existing entity", () => {
-				const movie = new Types.Movie("1", Alien);
+			it("does not overwrite provided state of existing entity", async () => {
+				const state = { Id: "1", ...Alien };
+				const movie = await Types.Movie.meta.create(state);
 
-				expect(movie.serialize()).toEqual(Alien);
+				expect(movie.serialize()).toEqual(state);
 			});
 		});
 
@@ -177,11 +186,11 @@ describe("Entity", () => {
 				expect(movie.serialize()).toEqual(Alien);
 			});
 
-			it("does not overwrite initial state of existing entity", () => {
-				const movie = new Types.Movie("1", Alien);
+			it("does not overwrite initial state of existing entity", async () => {
+				const state = { Id: "1", ...Alien };
+				const movie = await Types.Movie.meta.create(state);
 
-				const state = movie.serialize();
-				expect(state).toEqual(Alien);
+				expect(movie.serialize()).toEqual(state);
 			});
 		});
 	});

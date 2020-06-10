@@ -30,7 +30,7 @@ export class Entity {
 			this.accessed = new Event<Entity, EntityAccessEventArgs>();
 			this.changed = new Event<Entity, EntityChangeEventArgs>();
 
-			let isNew: boolean;
+			let isNew = false;
 
 			if (typeof id === "string")
 				type.assertValidId(id);
@@ -39,7 +39,7 @@ export class Entity {
 				if (id !== null && typeof id === "object")
 					properties = id;
 				id = type.newId();
-				isNew = true;
+				isNew = context ? context.isNewDocument : true;
 			}
 			
 			// If context was provided, it should be the last argument
@@ -55,13 +55,11 @@ export class Entity {
 			// Register the newly constructed instance
 			type.register(this);
 
-			const isNested = !!context;
 			if (!context)
-				context = new InitializationContext(true);
+				context = new InitializationContext(isNew);
 
 			// Initialize existing entity with provided property values
-			const shouldInit = !context.isConstructorCall && isNested;
-			if ((!isNew || shouldInit) && properties)
+			if (!isNew && properties)
 				this.init(properties, context);
 
 			// Raise the initNew or initExisting event on this type and all base types
@@ -74,7 +72,7 @@ export class Entity {
 				}
 
 				// Set values of new entity for provided properties
-				if (isNew && !shouldInit && properties)
+				if (isNew && properties)
 					this.set(properties);
 			});
 		}
@@ -255,16 +253,12 @@ export class Entity {
 
 export interface EntityConstructor {
 	new(): Entity;
-	new(id: string, properties?: ObjectLookup<any>): Entity; // Construct existing instance with state
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
-	new(id?: string | ObjectLookup<any>, properties?: ObjectLookup<any>): Entity;
 }
 
 export interface EntityConstructorForType<TEntity extends Entity> extends EntityConstructor {
 	new(): TEntity;
-	new(id: string, properties?: ObjectLookup<any>): TEntity; // Construct existing instance with state
 	new(properties?: ObjectLookup<any>): TEntity; // Construct new instance with state
-	new(id?: string | ObjectLookup<any>, properties?: ObjectLookup<any>): TEntity;
 	meta: Type;
 }
 
