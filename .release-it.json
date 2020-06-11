@@ -7,5 +7,10 @@
   },
   "hooks": {
     "before:npm:release": "npm run build"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "infile": "CHANGELOG.md"
+    }
   }
 }
