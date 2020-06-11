@@ -4,13 +4,13 @@ import { Property } from "./property";
 export type InitializationValueResolver = (instance: Entity, property: Property, value: any) => Promise<any>;
 
 export class InitializationContext {
-	private constructorCall = false;
+	private newDocument = false;
 	private valueResolver: InitializationValueResolver;
 	private tasks = new Set<Promise<any>>();
 	private waiting: (() => void)[] = [];
 
-	constructor(constructorCall: boolean, valueResolver?: InitializationValueResolver) {
-		this.constructorCall = constructorCall;
+	constructor(newDocument: boolean, valueResolver?: InitializationValueResolver) {
+		this.newDocument = newDocument;
 		this.valueResolver = valueResolver;
 	}
 
@@ -35,5 +35,9 @@ export class InitializationContext {
 		if (task)
 			this.wait(task);
 		return task;
+	}
+
+	get isNewDocument() {
+		return this.newDocument;
 	}
 }

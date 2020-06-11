@@ -23,7 +23,7 @@ export class Type {
 	readonly baseType: Type;
 	readonly derivedTypes: Type[];
 
-	identifier: Property;
+	private _identifier: Property;
 
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
@@ -47,7 +47,7 @@ export class Type {
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
 		this.baseType = baseType;
 		this.derivedTypes = [];
-		this.identifier = null;
+		this._identifier = null;
 
 		Object.defineProperty(this, "__pool__", { enumerable: false, configurable: false, writable: false, value: {} });
 		Object.defineProperty(this, "__properties__", { enumerable: false, configurable: false, writable: false, value: {} });
@@ -80,6 +80,16 @@ export class Type {
 			this.extend(options);
 	}
 
+	get identifier() {
+		if (this._identifier)
+			return this._identifier;
+		return this.baseType ? this.baseType.identifier : null;
+	}
+
+	set identifier(val) {
+		this._identifier = val;
+	}
+
 	createSync(state: any): Entity {
 		// Attempt to fetch an existing instance if the state contains an Id property
 		const id = getIdFromState(this, state);
@@ -90,8 +100,9 @@ export class Type {
 				instance.set(state);
 				return instance;
 			}
+			const Ctor = this.jstype as any;
 			// Construct an instance using the known id
-			return new this.jstype(id, state);
+			return new Ctor(id, state);
 		}
 		// Construct a new instance without a known id
 		return new this.jstype(state);
@@ -99,18 +110,15 @@ export class Type {
 
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
 		// Attempt to fetch an existing instance if the state contains an Id property
-		let id: string = null;
-		let instance: Entity;
-		if (state && state.Id && typeof state.Id === "string" && state.Id.length > 0) {
-			id = state.Id;
-			instance = this.get(id);
-			if (instance) {
-				// Assign state to the existing object
-				instance.set(state);
-				return new Promise(resolve => resolve(instance));
-			}
+		const id = getIdFromState(this, state);
+		let instance = id && this.get(id);
+		if (instance) {
+			// Assign state to the existing object
+			instance.set(state);
+			return new Promise(resolve => resolve(instance));
 		}
-		const context = new InitializationContext(false, valueResolver);
+		const isNew = !id;
+		const context = new InitializationContext(isNew, valueResolver);
 		// Cast the jstype to any so we can call the internal constructor signature that takes a context
 		// We don't want to put the context on the public constructor interface
 		const Ctor = this.jstype as any;
@@ -562,7 +570,7 @@ export function isEntityType(type: any): type is EntityType {
 	return type.meta && type.meta instanceof Type;
 }
 
-export function getIdFromState(type: Type, state: any): string {
+export function getIdFromState(type: Type, state: any): string | undefined {
 	if (type.identifier && typeof state === "object") {
 		const id: any = state[type.identifier.name];
 		if (id && typeof id === "string" && id.length > 0)

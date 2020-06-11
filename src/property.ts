@@ -1,9 +1,9 @@
 import { Event, EventSubscriber, EventPublisher } from "./events";
-import { Entity, EntityConstructorForType, EntityChangeEventArgs, EntityAccessEventArgs } from "./entity";
+import { Entity, EntityChangeEventArgs, EntityAccessEventArgs } from "./entity";
 import { Format } from "./format";
 import { Type, PropertyType, isEntityType, Value, isValue, isValueArray } from "./type";
 import { PropertyChain } from "./property-chain";
-import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType } from "./helpers";
+import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType, flatMap } from "./helpers";
 import { ObservableArray, updateArray } from "./observable-array";
 import { Rule, RuleOptions } from "./rule";
 import { CalculatedPropertyRule } from "./calculated-property-rule";
@@ -17,7 +17,6 @@ import { StringLengthRule } from "./string-length-rule";
 import { ListLengthRule } from "./list-length-rule";
 import { InitializationContext } from "./initilization-context";
 import { ConditionType, ErrorConditionType } from "./condition-type";
-import { flatMap } from "./helpers";
 
 export class Property implements PropertyPath {
 	readonly containingType: Type;

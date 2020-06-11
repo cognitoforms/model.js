@@ -30,38 +30,40 @@ export class Entity {
 			this.accessed = new Event<Entity, EntityAccessEventArgs>();
 			this.changed = new Event<Entity, EntityChangeEventArgs>();
 
-			var isNew: boolean;
+			let isNew = false;
 
 			if (typeof id === "string")
 				type.assertValidId(id);
 			else {
 				// Was id provided as undefined, or not provided at all?
-				if (arguments.length === 2)
+				if (id !== null && typeof id === "object")
 					properties = id;
 				id = type.newId();
-				isNew = true;
+				isNew = context ? context.isNewDocument : true;
 			}
+
+			// If context was provided, it should be the last argument
+			context = arguments[arguments.length - 1];
+			if (!(context instanceof InitializationContext))
+				context = new InitializationContext(isNew);
 
 			this.meta = new ObjectMeta(type, this, id, isNew);
 
 			Object.defineProperty(this, "__fields__", { enumerable: false, configurable: false, writable: false, value: {} });
+			Object.defineProperty(this, "__pendingInit__", { enumerable: false, configurable: false, writable: false, value: {} });
 
 			// Register the newly constructed instance
 			type.register(this);
 
-			let isNested = !!context;
-			if (!context)
-				context = new InitializationContext(true);
-
 			// Initialize existing entity with provided property values
-			if (properties && (!isNew || isNested))
+			if (!isNew && properties)
 				this.init(properties, context);
 
 			// Raise the initNew or initExisting event on this type and all base types
 			context.ready(() => {
 				for (let t = type; t; t = t.baseType) {
 					if (isNew)
-						(t.initNew as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
+						(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
 					else
 						(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
 				}
@@ -248,16 +250,12 @@ export class Entity {
 
 export interface EntityConstructor {
 	new(): Entity;
-	new(id: string, properties?: ObjectLookup<any>): Entity; // Construct existing instance with state
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
-	new(id?: string | ObjectLookup<any>, properties?: ObjectLookup<any>): Entity;
 }
 
 export interface EntityConstructorForType<TEntity extends Entity> extends EntityConstructor {
 	new(): TEntity;
-	new(id: string, properties?: ObjectLookup<any>): TEntity; // Construct existing instance with state
 	new(properties?: ObjectLookup<any>): TEntity; // Construct new instance with state
-	new(id?: string | ObjectLookup<any>, properties?: ObjectLookup<any>): TEntity;
 	meta: Type;
 }
 

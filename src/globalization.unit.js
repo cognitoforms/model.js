@@ -62,13 +62,13 @@ describe("globalize", function () {
 
 	describe("parseNumber", () => {
 		test("parseNumber('#.##')", () => {
-			expect(parseNumber("3.14", CultureInfo.CurrentCulture)).toBe(3.14);
+			expect(parseNumber("3.14", "Number", CultureInfo.CurrentCulture)).toBe(3.14);
 		});
 		test("parseNumber('#.#')", () => {
-			expect(parseNumber("3.1", CultureInfo.CurrentCulture)).toBe(3.1);
+			expect(parseNumber("3.1", "Number", CultureInfo.CurrentCulture)).toBe(3.1);
 		});
 		test("parseNumber('#')", () => {
-			expect(parseNumber("3", CultureInfo.CurrentCulture)).toBe(3);
+			expect(parseNumber("3", "Number", CultureInfo.CurrentCulture)).toBe(3);
 		});
 	});
 });
