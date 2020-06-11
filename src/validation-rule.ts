@@ -1,7 +1,7 @@
 import { ConditionRule, ConditionRuleOptions } from "./condition-rule";
 import { PropertyRule, Property, PropertyRuleOptions, getLabelSourceType, getLabelFormat, evaluateLabel } from "./property";
 import { Entity } from "./entity";
-import { Type, isEntityType } from "./type";
+import { Type } from "./type";
 
 export class ValidationRule extends ConditionRule implements PropertyRule {
 	property: Property;
