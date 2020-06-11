@@ -41,7 +41,7 @@ export class Entity {
 				id = type.newId();
 				isNew = context ? context.isNewDocument : true;
 			}
-			
+
 			// If context was provided, it should be the last argument
 			context = arguments[arguments.length - 1];
 			if (!(context instanceof InitializationContext))

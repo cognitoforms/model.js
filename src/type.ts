@@ -117,7 +117,8 @@ export class Type {
 			instance.set(state);
 			return new Promise(resolve => resolve(instance));
 		}
-		const context = new InitializationContext(!id, valueResolver);
+		const isNew = !id;
+		const context = new InitializationContext(isNew, valueResolver);
 		// Cast the jstype to any so we can call the internal constructor signature that takes a context
 		// We don't want to put the context on the public constructor interface
 		const Ctor = this.jstype as any;
@@ -569,7 +570,7 @@ export function isEntityType(type: any): type is EntityType {
 	return type.meta && type.meta instanceof Type;
 }
 
-export function getIdFromState(type: Type, state: any): string {
+export function getIdFromState(type: Type, state: any): string | undefined {
 	if (type.identifier && typeof state === "object") {
 		const id: any = state[type.identifier.name];
 		if (id && typeof id === "string" && id.length > 0)
