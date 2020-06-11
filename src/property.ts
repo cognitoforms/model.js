@@ -738,6 +738,48 @@ export interface PropertyRuleOptions extends RuleOptions {
 
 }
 
+/**
+ * Gets a format object for the given property's label, if it is dynamic (i.e. contains format tokens)
+ */
+export function getLabelFormat(property: PropertyPath): Format<Entity> | undefined {
+	if (property.label && property.labelIsFormat) {
+		const labelSourceType = getLabelSourceType(property);
+		return labelSourceType.model.getFormat<Entity>(labelSourceType.jstype, property.label);
+	}
+}
+
+/**
+ * Gets the model type of the source object that should be used to evaluate the
+ * property's label, if it is dynamic (i.e. contains format tokens)
+ */
+export function getLabelSourceType(property: PropertyPath): Type {
+	// If a label source is specified, then determine it's model type
+	if (property.labelSource) {
+		const labelSourceType = property.labelSource.propertyType;
+		if (isEntityType(labelSourceType))
+			return labelSourceType.meta;
+	}
+
+	return property.containingType;
+}
+
+/**
+ * Evaluates the given property's label, using the given entity as context if the label is dynamic (i.e. contains format tokens)
+ */
+export function evaluateLabel(property: PropertyPath, entity: Entity): string {
+	if (property.labelIsFormat) {
+		let labelFormat = getLabelFormat(property);
+		let labelFormatInstance = entity;
+		if (property.labelSource) {
+			labelFormatInstance = property.labelSource.value(entity);
+		}
+		return labelFormat.convert(labelFormatInstance);
+	}
+	else {
+		return property.label;
+	}
+}
+
 export function Property$format(prop: Property, val: any): string {
 	if (prop.format) {
 		return prop.format.convert(val);

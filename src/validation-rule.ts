@@ -1,5 +1,5 @@
 import { ConditionRule, ConditionRuleOptions } from "./condition-rule";
-import { PropertyRule, Property, PropertyRuleOptions } from "./property";
+import { PropertyRule, Property, PropertyRuleOptions, getLabelSourceType, getLabelFormat, evaluateLabel } from "./property";
 import { Entity } from "./entity";
 import { Type, isEntityType } from "./type";
 
@@ -36,17 +36,8 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 		if (options.message && (typeof options.message === "function" || (typeof options.message === "string" && options.message.indexOf("{property}") >= 0))) {
 			// Property label with dynamic format tokens
 			if (property.labelIsFormat) {
-				let labelSourceType = rootType;
-
-				// If a label source is specified, then determine it's model type
-				if (property.labelSource) {
-					const labelSourcePropertyType = property.labelSource.propertyType;
-					if (isEntityType(labelSourcePropertyType))
-						labelSourceType = labelSourcePropertyType.meta;
-				}
-
-				// convert the property label into a model format
-				let labelFormat = rootType.model.getFormat(labelSourceType.jstype, property.label);
+				let labelSourceType = getLabelSourceType(property);
+				let labelFormat = getLabelFormat(property);
 
 				// ensure tokens included in the format trigger rule execution
 				labelFormat.paths.forEach(p => {
@@ -74,11 +65,7 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 						try {
 							message = messageFunction.call(this);
 							if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-								let labelFormatInstance = this;
-								if (property.labelSource) {
-									labelFormatInstance = property.labelSource.value(this);
-								}
-								message = message.replace("{property}", labelFormat.convert(labelFormatInstance));
+								message = message.replace("{property}", evaluateLabel(property, this));
 							}
 						}
 						catch (e) {
@@ -93,11 +80,7 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 					// Create a function to apply the format to the property label when generating the message
 					options.message = function () {
-						let labelFormatInstance = this;
-						if (property.labelSource) {
-							labelFormatInstance = property.labelSource.value(this);
-						}
-						return messageTemplate.replace("{property}", labelFormat.convert(labelFormatInstance));
+						return messageTemplate.replace("{property}", evaluateLabel(property, this));
 					};
 				}
 			}
