@@ -45,7 +45,7 @@ export class Entity {
 			// If context was provided, it should be the last argument
 			context = arguments[arguments.length - 1];
 			if (!(context instanceof InitializationContext))
-				context = null;
+				context = new InitializationContext(isNew);
 
 			this.meta = new ObjectMeta(type, this, id, isNew);
 
@@ -54,9 +54,6 @@ export class Entity {
 
 			// Register the newly constructed instance
 			type.register(this);
-
-			if (!context)
-				context = new InitializationContext(isNew);
 
 			// Initialize existing entity with provided property values
 			if (!isNew && properties)
