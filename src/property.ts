@@ -768,7 +768,7 @@ export function getLabelSourceType(property: PropertyPath): Type {
  */
 export function evaluateLabel(property: PropertyPath, entity: Entity): string {
 	if (property.labelIsFormat) {
-		let labelFormat = getLabelFormat(property);
+		const labelFormat = getLabelFormat(property);
 		let labelFormatInstance = entity;
 		if (property.labelSource) {
 			labelFormatInstance = property.labelSource.value(entity);

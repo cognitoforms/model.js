@@ -36,8 +36,8 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 		if (options.message && (typeof options.message === "function" || (typeof options.message === "string" && options.message.indexOf("{property}") >= 0))) {
 			// Property label with dynamic format tokens
 			if (property.labelIsFormat) {
-				let labelSourceType = getLabelSourceType(property);
-				let labelFormat = getLabelFormat(property);
+				const labelSourceType = getLabelSourceType(property);
+				const labelFormat = getLabelFormat(property);
 
 				// ensure tokens included in the format trigger rule execution
 				labelFormat.paths.forEach(p => {
