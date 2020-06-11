@@ -1,7 +1,7 @@
 import { ConditionRule, ConditionRuleOptions } from "./condition-rule";
 import { PropertyRule, Property, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
-import { Type } from "./type";
+import { Type, isEntityType } from "./type";
 
 export class ValidationRule extends ConditionRule implements PropertyRule {
 	property: Property;
@@ -36,17 +36,30 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 		if (options.message && (typeof options.message === "function" || (typeof options.message === "string" && options.message.indexOf("{property}") >= 0))) {
 			// Property label with dynamic format tokens
 			if (property.labelIsFormat) {
+				let labelSourceType = rootType;
+
+				// If a label source is specified, then determine it's model type
+				if (property.labelSource) {
+					const labelSourcePropertyType = property.labelSource.propertyType;
+					if (isEntityType(labelSourcePropertyType))
+						labelSourceType = labelSourcePropertyType.meta;
+				}
+
 				// convert the property label into a model format
-				let format = rootType.model.getFormat(rootType.jstype, property.label);
+				let labelFormat = rootType.model.getFormat(labelSourceType.jstype, property.label);
 
 				// ensure tokens included in the format trigger rule execution
-				format.paths.forEach(p => {
-					rootType.getPaths(p).forEach(prop => {
-						if (!options.onChangeOf) {
-							options.onChangeOf = [prop];
+				labelFormat.paths.forEach(p => {
+					labelSourceType.getPaths(p).forEach(prop => {
+						let labelTokenProp = prop;
+						if (property.labelSource) {
+							labelTokenProp = rootType.getPath(property.labelSource.path + "." + prop.path);
 						}
-						else if (options.onChangeOf.indexOf(prop) < 0) {
-							options.onChangeOf.push(prop);
+						if (!options.onChangeOf) {
+							options.onChangeOf = [labelTokenProp];
+						}
+						else if (options.onChangeOf.indexOf(labelTokenProp) < 0) {
+							options.onChangeOf.push(labelTokenProp);
 						}
 					});
 				});
@@ -61,7 +74,11 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 						try {
 							message = messageFunction.call(this);
 							if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-								message = message.replace("{property}", format.convert(this));
+								let labelFormatInstance = this;
+								if (property.labelSource) {
+									labelFormatInstance = property.labelSource.value(this);
+								}
+								message = message.replace("{property}", labelFormat.convert(labelFormatInstance));
 							}
 						}
 						catch (e) {
@@ -76,7 +93,11 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 					// Create a function to apply the format to the property label when generating the message
 					options.message = function () {
-						return messageTemplate.replace("{property}", format.convert(this));
+						let labelFormatInstance = this;
+						if (property.labelSource) {
+							labelFormatInstance = property.labelSource.value(this);
+						}
+						return messageTemplate.replace("{property}", labelFormat.convert(labelFormatInstance));
 					};
 				}
 			}

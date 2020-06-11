@@ -27,6 +27,7 @@ export class Property implements PropertyPath {
 
 	constant: any;
 	label: string;
+	labelSource: PropertyPath;
 	helptext: string;
 	isCalculated: boolean;
 	format: Format<any>;
@@ -128,6 +129,16 @@ export class Property implements PropertyPath {
 				this.label = options.label;
 			else if (!this.label)
 				this.label = this.name.replace(/(^[a-z]+|[A-Z]{2,}(?=[A-Z][a-z]|$)|[A-Z][a-z]*)/g, " $1").trim();
+
+			// Label Source
+			if (options.labelSource) {
+				if (typeof (options.labelSource) !== "string")
+					throw new Error(`Invalid labelSource property for '${this}.`);
+
+				targetType.model.ready(() => {
+					this.labelSource = targetType.getPath(options.labelSource);
+				});
+			}
 
 			// Helptext
 			this.helptext = options.helptext;
@@ -592,6 +603,11 @@ export interface PropertyOptions {
 	*  The property name will be used as the label when not specified.
 	*/
 	label?: string;
+
+	/**
+	 * The optional path to use for the source of the property's label, if it contains format tokens
+	 */
+	labelSource?: string;
 
 	/** The optional helptext for the property */
 	helptext?: string;
