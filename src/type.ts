@@ -111,19 +111,20 @@ export class Type {
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
 		// Attempt to fetch an existing instance if the state contains an Id property
 		const id = getIdFromState(this, state);
+		const isNew = !id;
+		const context = new InitializationContext(isNew, valueResolver);
 		let instance = id && this.get(id);
 		if (instance) {
 			// Assign state to the existing object
-			instance.set(state);
-			return new Promise(resolve => resolve(instance));
+			instance.withContext(context, () => instance.set(state));
 		}
-		const isNew = !id;
-		const context = new InitializationContext(isNew, valueResolver);
-		// Cast the jstype to any so we can call the internal constructor signature that takes a context
-		// We don't want to put the context on the public constructor interface
-		const Ctor = this.jstype as any;
-		// Construct an instance using the known id if it is present
-		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+		else {
+			// Cast the jstype to any so we can call the internal constructor signature that takes a context
+			// We don't want to put the context on the public constructor interface
+			const Ctor = this.jstype as any;
+			// Construct an instance using the known id if it is present
+			instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+		}
 		return new Promise(resolve => context.ready(() => resolve(instance)));
 	}
 
