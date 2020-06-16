@@ -160,14 +160,11 @@ export class Entity {
 		for (let [propName, state] of Entity.getSortedPropertyData(properties)) {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop) {
-				if (this._context) {
-					const valueResolution = this._context.tryResolveValue(this, prop, state);
-					if (valueResolution) {
-						valueResolution.then(asyncState => this.setProp(prop, asyncState));
-						continue;
-					}
-				}
-				this.setProp(prop, state);
+				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
+				if (valueResolution)
+					valueResolution.then(asyncState => this.setProp(prop, asyncState));
+				else
+					this.setProp(prop, state);
 			}
 		}
 	}
