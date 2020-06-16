@@ -129,8 +129,15 @@ export class Entity {
 	}
 
 	withContext(context: InitializationContext, action: (entity: Entity) => void) {
-		this._context = context;
+		// Don't overwrite existing context
+		if (!this._context)
+			this._context = context;
+		// Ensure provided context waits on the existing context to be ready
+		else
+			context.wait(new Promise(resolve => this._context.ready(resolve)));
+
 		action(this);
+
 		if (context !== null) {
 			context.ready(() => {
 				this._context = null;
