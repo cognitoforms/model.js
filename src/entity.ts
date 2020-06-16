@@ -184,21 +184,24 @@ export class Entity {
 						// If the item is an object that has an Id property, then retrieve or create an object with that Id
 						if (!(s instanceof ChildEntity) && typeof s === "object" && getIdFromState(ChildEntity.meta, s)) {
 							const id = getIdFromState(ChildEntity.meta, s);
-							if (id && ChildEntity.meta.get(id))
-								ChildEntity.meta.get(id).withContext(this._context, entity => entity.set(state));
+							if (id && ChildEntity.meta.get(id)) {
+								ChildEntity.meta.get(id).withContext(this._context, entity => entity.set(s));
+								s = null;
+							}
 							else
 								s = new (ChildEntity as any)(id, s, this._context);
 						}
+
 						if (s instanceof ChildEntity)
 							state.splice(idx, 1, s);
-						else
+						else if (s)
 							currentValue[idx].withContext(this._context, entity => entity.set(s));
 					}
 					// Add a list item
 					else if (s instanceof ChildEntity)
 						currentValue.push(s);
 					else
-						currentValue.push(ChildEntity.meta.createSync(s));
+						currentValue.push(new (ChildEntity as any)(s, this._context));
 				});
 			}
 			else if (state instanceof ChildEntity)
