@@ -190,7 +190,7 @@ export class Entity {
 							if (id && ChildEntity.meta.get(id))
 								ChildEntity.meta.get(id).withContext(this._context, entity => entity.set(state));
 							else
-								s = new (ChildEntity as any)(s, this._context);
+								s = new (ChildEntity as any)(id, s, this._context);
 						}
 						if (s instanceof ChildEntity)
 							state.splice(idx, 1, s);
