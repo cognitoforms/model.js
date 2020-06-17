@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType, getIdFromState } from "./type";
+import { Type, EntityType, isEntityType, getIdFromState, Type$createOrUpdate } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
@@ -181,19 +181,12 @@ export class Entity {
 
 					// Modifying/replacing existing list item
 					if (idx < currentValue.length) {
-						// If the item is an object that has an Id property, then retrieve or create an object with that Id
-						if (!(s instanceof ChildEntity) && typeof s === "object" && getIdFromState(ChildEntity.meta, s)) {
-							const id = getIdFromState(ChildEntity.meta, s);
-							if (id && ChildEntity.meta.get(id)) {
-								ChildEntity.meta.get(id).withContext(this._context, entity => entity.set(s));
-								s = null;
-							}
-							else
-								s = new (ChildEntity as any)(id, s, this._context);
+						// If the item is a state object, create/update the entity using the state 
+						if (!(s instanceof ChildEntity) && typeof s === "object") {
+							currentValue.splice(idx, 1, Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
 						}
-
-						if (s instanceof ChildEntity)
-							state.splice(idx, 1, s);
+						else if (s instanceof ChildEntity)
+							currentValue.splice(idx, 1, s);
 						else if (s)
 							currentValue[idx].withContext(this._context, entity => entity.set(s));
 					}
@@ -225,13 +218,8 @@ export class Entity {
 				else if (currentValue)
 					currentValue.withContext(this._context, entity => entity.set(state));
 				// Got an object, so attempt to fetch or create and assign the state
-				else {
-					const id = getIdFromState(ChildEntity.meta, state);
-					if (id && ChildEntity.meta.get(id))
-						ChildEntity.meta.get(id).withContext(this._context, entity => entity.set(state));
-					else
-						value = new (ChildEntity as any)(id, state, this._context);
-				}
+				else
+					value = Type$createOrUpdate(ChildEntity.meta, state, this._context).instance;
 			}
 		}
 		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
