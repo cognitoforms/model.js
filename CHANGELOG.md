@@ -10,7 +10,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Do not choose "between" error message if RangeRule min or max is null
 - Normalize Date and Time values before making RangeRule comparisons
 
-
 ## [0.6.1] - 2019-12-05
 ### Fixed
 - Fix regression in call to entity constructor from deserialize
