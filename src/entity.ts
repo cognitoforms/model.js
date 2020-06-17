@@ -125,7 +125,8 @@ export class Entity {
 
 		value = this.serializer.deserialize(this, state, prop, context);
 
-		Property$init(prop, this, value);
+		if (value !== undefined)
+			Property$init(prop, this, value);
 	}
 
 	withContext(context: InitializationContext, action: (entity: Entity) => void) {
