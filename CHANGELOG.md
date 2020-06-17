@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## Unreleased
+### Added
+- Add option to override source of dynamic property label (#19) (506b29b)
+
 ## [0.6.3] - 2020-06-11
 ### Fixed
 - Inconsistencies with existing vs new entity initialization (#17) (c3942c8)
