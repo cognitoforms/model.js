@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.6.3] - 2020-06-11
+### Fixed
+- Inconsistencies with existing vs new entity initialization (#17) (c3942c8)
+- Catch exceptions in validation rule assert/message functions (#18) (622ac69)
+
 ## [0.6.2] - 2020-06-02
 ### Added
 - Add support for resource names as StringFormatRule message
