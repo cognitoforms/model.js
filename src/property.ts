@@ -27,6 +27,7 @@ export class Property implements PropertyPath {
 
 	constant: any;
 	label: string;
+	labelSource: PropertyPath;
 	helptext: string;
 	isCalculated: boolean;
 	format: Format<any>;
@@ -128,6 +129,16 @@ export class Property implements PropertyPath {
 				this.label = options.label;
 			else if (!this.label)
 				this.label = this.name.replace(/(^[a-z]+|[A-Z]{2,}(?=[A-Z][a-z]|$)|[A-Z][a-z]*)/g, " $1").trim();
+
+			// Label Source
+			if (options.labelSource) {
+				if (typeof (options.labelSource) !== "string")
+					throw new Error(`Invalid labelSource property for '${this}.`);
+
+				targetType.model.ready(() => {
+					this.labelSource = targetType.getPath(options.labelSource);
+				});
+			}
 
 			// Helptext
 			this.helptext = options.helptext;
@@ -593,6 +604,11 @@ export interface PropertyOptions {
 	*/
 	label?: string;
 
+	/**
+	 * The optional path to use for the source of the property's label, if it contains format tokens
+	 */
+	labelSource?: string;
+
 	/** The optional helptext for the property */
 	helptext?: string;
 
@@ -720,6 +736,48 @@ export interface PropertyRuleOptions extends RuleOptions {
 	// the property being validated
 	property: Property;
 
+}
+
+/**
+ * Gets a format object for the given property's label, if it is dynamic (i.e. contains format tokens)
+ */
+export function getLabelFormat(property: PropertyPath): Format<Entity> | undefined {
+	if (property.label && property.labelIsFormat) {
+		const labelSourceType = getLabelSourceType(property);
+		return labelSourceType.model.getFormat<Entity>(labelSourceType.jstype, property.label);
+	}
+}
+
+/**
+ * Gets the model type of the source object that should be used to evaluate the
+ * property's label, if it is dynamic (i.e. contains format tokens)
+ */
+export function getLabelSourceType(property: PropertyPath): Type {
+	// If a label source is specified, then determine it's model type
+	if (property.labelSource) {
+		const labelSourceType = property.labelSource.propertyType;
+		if (isEntityType(labelSourceType))
+			return labelSourceType.meta;
+	}
+
+	return property.containingType;
+}
+
+/**
+ * Evaluates the given property's label, using the given entity as context if the label is dynamic (i.e. contains format tokens)
+ */
+export function evaluateLabel(property: PropertyPath, entity: Entity): string {
+	if (property.labelIsFormat) {
+		const labelFormat = getLabelFormat(property);
+		let labelFormatInstance = entity;
+		if (property.labelSource) {
+			labelFormatInstance = property.labelSource.value(entity);
+		}
+		return labelFormat.convert(labelFormatInstance);
+	}
+	else {
+		return property.label;
+	}
 }
 
 export function Property$format(prop: Property, val: any): string {

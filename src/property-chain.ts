@@ -7,7 +7,7 @@ import { Format } from "./format";
 
 /**
  * Encapsulates the logic required to work with a chain of properties and
- * a root object, allowing interaction with the chain as if it were a 
+ * a root object, allowing interaction with the chain as if it were a
  * single property of the root object.
  */
 export class PropertyChain implements PropertyPath {
@@ -275,6 +275,10 @@ export class PropertyChain implements PropertyPath {
 
 	get label(): string {
 		return this.lastProperty.label;
+	}
+
+	get labelSource(): PropertyPath {
+		return this.lastProperty.labelSource;
 	}
 
 	get labelIsFormat(): boolean {
