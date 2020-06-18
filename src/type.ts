@@ -110,20 +110,7 @@ export class Type {
 
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
 		// Attempt to fetch an existing instance if the state contains an Id property
-		const id = getIdFromState(this, state);
-		let instance = id && this.get(id);
-		if (instance) {
-			// Assign state to the existing object
-			instance.set(state);
-			return new Promise(resolve => resolve(instance));
-		}
-		const isNew = !id;
-		const context = new InitializationContext(isNew, valueResolver);
-		// Cast the jstype to any so we can call the internal constructor signature that takes a context
-		// We don't want to put the context on the public constructor interface
-		const Ctor = this.jstype as any;
-		// Construct an instance using the known id if it is present
-		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+		const { context, instance } = Type$createOrUpdate(this, state, valueResolver);
 		return new Promise(resolve => context.ready(() => resolve(instance)));
 	}
 
@@ -507,6 +494,30 @@ export class Type {
 			}
 		});
 	}
+}
+
+export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: InitializationValueResolver | InitializationContext) {
+	const id = getIdFromState(type, state);
+	const isNew = !id;
+	let context: InitializationContext;
+	if (contextOrResolver instanceof InitializationContext)
+		context = contextOrResolver;
+	else
+		context = new InitializationContext(isNew, contextOrResolver);
+
+	let instance = id && type.get(id);
+	if (instance) {
+		// Assign state to the existing object
+		instance.withContext(context, () => instance.set(state));
+	}
+	else {
+		// Cast the jstype to any so we can call the internal constructor signature that takes a context
+		// We don't want to put the context on the public constructor interface
+		const Ctor = type.jstype as any;
+		// Construct an instance using the known id if it is present
+		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+	}
+	return { context, instance };
 }
 
 export type Value = string | number | Date | boolean;

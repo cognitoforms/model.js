@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType, getIdFromState } from "./type";
+import { Type, EntityType, isEntityType, getIdFromState, Type$createOrUpdate } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
@@ -16,6 +16,7 @@ export class Entity {
 
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
+	private _context: InitializationContext = null;
 
 	constructor(); // Prototype assignment *** used internally
 	constructor(type: Type, id: string, properties?: ObjectLookup<any>, context?: InitializationContext); // Construct existing instance with state
@@ -91,13 +92,10 @@ export class Entity {
 		let properties: ObjectLookup<any>;
 
 		// Convert property/value pair to a property dictionary
-		if (typeof property === "string") {
-			properties = {};
-			properties[property] = value;
-		}
-		else {
+		if (typeof property === "string")
+			properties = { [property]: value };
+		else
 			properties = property;
-		}
 
 		const initializedProps = new Set<Property>();
 		// Initialize the specified properties
@@ -127,7 +125,25 @@ export class Entity {
 
 		value = this.serializer.deserialize(this, state, prop, context);
 
-		Property$init(prop, this, value);
+		if (value !== undefined)
+			Property$init(prop, this, value);
+	}
+
+	withContext(context: InitializationContext, action: (entity: Entity) => void) {
+		// Don't overwrite existing context
+		if (!this._context)
+			this._context = context;
+		// Ensure provided context waits on the existing context to be ready
+		else
+			context.wait(new Promise(resolve => this._context.ready(resolve)));
+
+		action(this);
+
+		if (context !== null) {
+			context.ready(() => {
+				this._context = null;
+			});
+		}
 	}
 
 	set(properties: ObjectLookup<any>): void;
@@ -136,80 +152,84 @@ export class Entity {
 		let properties: ObjectLookup<any>;
 
 		// Convert property/value pair to a property dictionary
-		if (typeof property === "string") {
-			properties = {};
-			properties[property] = value;
-		}
-		else {
+		if (typeof property === "string")
+			properties = { [property]: value };
+		else
 			properties = property;
-		}
 
 		// Set the specified properties
 		for (let [propName, state] of Entity.getSortedPropertyData(properties)) {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop) {
-				let value;
-				const currentValue = prop.value(this);
-				if (isEntityType(prop.propertyType)) {
-					const ChildEntity = prop.propertyType;
-					if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
-						state.forEach((s, idx) => {
-							if (!(s instanceof ChildEntity))
-								s = this.serializer.deserialize(this, s, prop, null, false);
-
-							// Modifying/replacing existing list item
-							if (idx < currentValue.length) {
-								// If the item is an object that has an Id property, then retrieve or create an object with that Id
-								if (!(s instanceof ChildEntity) && typeof s === "object" && getIdFromState(ChildEntity.meta, s))
-									s = ChildEntity.meta.createSync(s);
-								if (s instanceof ChildEntity)
-									state.splice(idx, 1, s);
-								else
-									currentValue[idx].set(s);
-							}
-							// Add a list item
-							else if (s instanceof ChildEntity)
-								currentValue.push(s);
-							else
-								currentValue.push(ChildEntity.meta.createSync(s));
-						});
-					}
-					else if (state instanceof ChildEntity)
-						value = state;
-					else if (state == null)
-						value = null;
-					else {
-						// Attempt to deserialize the state
-						let newState = this.serializer.deserialize(this, state, prop, null, false);
-						if (typeof newState !== "undefined")
-							state = newState;
-						// Got null, so assign null to the property
-						if (state == null)
-							value = null;
-						// Got a valid instance, so use it
-						else if (state instanceof ChildEntity)
-							value = state;
-						// Got something other than an object, so just use it and expect to get a down-stream error
-						else if (typeof state !== "object")
-							value = state;
-						// Got an object, so attempt to fetch or create and assign the state
-						else if (getIdFromState(ChildEntity.meta, state))
-							value = ChildEntity.meta.createSync(state);
-						else if (currentValue)
-							currentValue.set(state);
-						else
-							value = new ChildEntity(state);
-					}
-				}
-				else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
-					currentValue.splice(0, currentValue.length, ...state.map(s => this.serializer.deserialize(this, s, prop, null)));
+				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
+				if (valueResolution)
+					valueResolution.then(asyncState => this.setProp(prop, asyncState));
 				else
-					value = this.serializer.deserialize(this, state, prop, null);
-
-				if (value !== undefined)
-					Property$setter(prop, this, value);
+					this.setProp(prop, state);
 			}
 		}
+	}
+
+	private setProp(prop: Property, state: any) {
+		let value;
+		const currentValue = prop.value(this);
+		if (isEntityType(prop.propertyType)) {
+			const ChildEntity = prop.propertyType;
+			if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
+				state.forEach((s, idx) => {
+					if (!(s instanceof ChildEntity))
+						s = this.serializer.deserialize(this, s, prop, this._context, false);
+
+					// Modifying/replacing existing list item
+					if (idx < currentValue.length) {
+						// If the item is a state object, create/update the entity using the state 
+						if (!(s instanceof ChildEntity) && typeof s === "object") {
+							currentValue.splice(idx, 1, Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
+						}
+						else if (s instanceof ChildEntity)
+							currentValue.splice(idx, 1, s);
+						else
+							console.warn("Provided state,", s, ", is not valid for type " + ChildEntity.meta.fullName + "[].");
+					}
+					// Add a list item
+					else if (s instanceof ChildEntity)
+						currentValue.push(s);
+					else
+						currentValue.push(Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
+				});
+			}
+			else if (state instanceof ChildEntity)
+				value = state;
+			else if (state == null)
+				value = null;
+			else {
+				// Attempt to deserialize the state
+				let newState = this.serializer.deserialize(this, state, prop, this._context, false);
+				if (typeof newState !== "undefined")
+					state = newState;
+				// Got null, so assign null to the property
+				if (state == null)
+					value = null;
+				// Got a valid instance, so use it
+				else if (state instanceof ChildEntity)
+					value = state;
+				// Got something other than an object, so just use it and expect to get a down-stream error
+				else if (typeof state !== "object")
+					value = state;
+				else if (currentValue && !getIdFromState(ChildEntity.meta, state))
+					currentValue.withContext(this._context, entity => entity.set(state));
+				// Got an object, so attempt to fetch or create and assign the state
+				else
+					value = Type$createOrUpdate(ChildEntity.meta, state, this._context).instance;
+			}
+		}
+		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
+			currentValue.splice(0, currentValue.length, ...state.map(s => this.serializer.deserialize(this, s, prop, this._context)));
+		else
+			value = this.serializer.deserialize(this, state, prop, this._context);
+
+		if (value !== undefined)
+			Property$setter(prop, this, value);
 	}
 
 	get(property: string): any {
