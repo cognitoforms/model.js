@@ -18,8 +18,12 @@ export class InitializationContext {
 		this.tasks.add(task);
 		task.then(() => {
 			this.tasks.delete(task);
-			if (this.tasks.size === 0)
-				this.waiting.forEach(done => done());
+			// allow additional tasks to be queued as a result of this one
+			Promise.resolve().then(() => {
+				if (this.tasks.size === 0)
+					while (this.waiting.length > 0)
+						this.waiting.shift()();
+			});
 		});
 	}
 

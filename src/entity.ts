@@ -71,7 +71,7 @@ export class Entity {
 
 				// Set values of new entity for provided properties
 				if (isNew && properties)
-					this.set(properties);
+					this.withContext(context, () => this.set(properties));
 			});
 		}
 	}
@@ -134,7 +134,7 @@ export class Entity {
 		if (!this._context)
 			this._context = context;
 		// Ensure provided context waits on the existing context to be ready
-		else
+		else if (this._context !== context)
 			context.wait(new Promise(resolve => this._context.ready(resolve)));
 
 		action(this);
