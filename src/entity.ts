@@ -188,14 +188,14 @@ export class Entity {
 						}
 						else if (s instanceof ChildEntity)
 							currentValue.splice(idx, 1, s);
-						else if (s)
-							currentValue[idx].withContext(this._context, entity => entity.set(s));
+						else
+							console.warn("Provided state,", s, ", is not valid for type " + ChildEntity.meta.fullName + "[].");
 					}
 					// Add a list item
 					else if (s instanceof ChildEntity)
 						currentValue.push(s);
 					else
-						currentValue.push(new (ChildEntity as any)(s, this._context));
+						currentValue.push(Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
 				});
 			}
 			else if (state instanceof ChildEntity)
@@ -216,7 +216,7 @@ export class Entity {
 				// Got something other than an object, so just use it and expect to get a down-stream error
 				else if (typeof state !== "object")
 					value = state;
-				else if (currentValue)
+				else if (currentValue && !getIdFromState(ChildEntity.meta, state))
 					currentValue.withContext(this._context, entity => entity.set(state));
 				// Got an object, so attempt to fetch or create and assign the state
 				else
