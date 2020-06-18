@@ -9,8 +9,8 @@
     "before:npm:release": "npm run build"
   },
   "plugins": {
-    "@release-it/conventional-changelog": {
-      "infile": "CHANGELOG.md"
+    "@release-it/keep-a-changelog": {
+      "filename": "CHANGELOG.md"
     }
   }
 }

@@ -1,5 +1,5 @@
 import { ConditionRule, ConditionRuleOptions } from "./condition-rule";
-import { PropertyRule, Property, PropertyRuleOptions } from "./property";
+import { PropertyRule, Property, PropertyRuleOptions, getLabelSourceType, getLabelFormat, evaluateLabel } from "./property";
 import { Entity } from "./entity";
 import { Type } from "./type";
 
@@ -36,17 +36,21 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 		if (options.message && (typeof options.message === "function" || (typeof options.message === "string" && options.message.indexOf("{property}") >= 0))) {
 			// Property label with dynamic format tokens
 			if (property.labelIsFormat) {
-				// convert the property label into a model format
-				let format = rootType.model.getFormat(rootType.jstype, property.label);
+				const labelSourceType = getLabelSourceType(property);
+				const labelFormat = getLabelFormat(property);
 
 				// ensure tokens included in the format trigger rule execution
-				format.paths.forEach(p => {
-					rootType.getPaths(p).forEach(prop => {
-						if (!options.onChangeOf) {
-							options.onChangeOf = [prop];
+				labelFormat.paths.forEach(p => {
+					labelSourceType.getPaths(p).forEach(prop => {
+						let labelTokenProp = prop;
+						if (property.labelSource) {
+							labelTokenProp = rootType.getPath(property.labelSource.path + "." + prop.path);
 						}
-						else if (options.onChangeOf.indexOf(prop) < 0) {
-							options.onChangeOf.push(prop);
+						if (!options.onChangeOf) {
+							options.onChangeOf = [labelTokenProp];
+						}
+						else if (options.onChangeOf.indexOf(labelTokenProp) < 0) {
+							options.onChangeOf.push(labelTokenProp);
 						}
 					});
 				});
@@ -61,7 +65,7 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 						try {
 							message = messageFunction.call(this);
 							if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-								message = message.replace("{property}", format.convert(this));
+								message = message.replace("{property}", evaluateLabel(property, this));
 							}
 						}
 						catch (e) {
@@ -76,7 +80,7 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 					// Create a function to apply the format to the property label when generating the message
 					options.message = function () {
-						return messageTemplate.replace("{property}", format.convert(this));
+						return messageTemplate.replace("{property}", evaluateLabel(property, this));
 					};
 				}
 			}
