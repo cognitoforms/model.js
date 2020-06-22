@@ -32,8 +32,8 @@ export class InitializationContext {
 	ready(callback: () => void) {
 		if (this.tasks.size === 0)
 			callback();
-
-		this.waiting.push(callback);
+		else
+			this.waiting.push(callback);
 	}
 
 	tryResolveValue(instance: Entity, property: Property, value: any) {
