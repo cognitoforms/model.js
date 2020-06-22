@@ -46,4 +46,8 @@ export class InitializationContext {
 	get isNewDocument() {
 		return this.newDocument;
 	}
+
+	get readyPromise() {
+		return new Promise(resolve => this.ready(resolve));
+	}
 }
