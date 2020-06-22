@@ -21,8 +21,10 @@ export class InitializationContext {
 			// allow additional tasks to be queued as a result of this one
 			Promise.resolve().then(() => {
 				if (this.tasks.size === 0)
-					while (this.waiting.length > 0)
-						this.waiting.shift()();
+					while (this.waiting.length > 0) {
+						const done = this.waiting.shift();
+						done();
+					}
 			});
 		});
 	}
