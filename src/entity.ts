@@ -130,6 +130,7 @@ export class Entity {
 	}
 
 	withContext(context: InitializationContext, action: (entity: Entity) => void) {
+		const hadContext = !!this._context;
 		// Don't overwrite existing context
 		if (!this._context)
 			this._context = context;
@@ -139,7 +140,7 @@ export class Entity {
 
 		action(this);
 
-		if (context !== null) {
+		if (context !== null && !hadContext) {
 			context.ready(() => {
 				this._context = null;
 			});
