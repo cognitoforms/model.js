@@ -71,7 +71,7 @@ export class Entity {
 
 				// Set values of new entity for provided properties
 				if (isNew && properties)
-					this.set(properties);
+					this.withContext(context, () => this.set(properties));
 			});
 		}
 	}
@@ -130,16 +130,17 @@ export class Entity {
 	}
 
 	withContext(context: InitializationContext, action: (entity: Entity) => void) {
+		const hadContext = !!this._context;
 		// Don't overwrite existing context
 		if (!this._context)
 			this._context = context;
 		// Ensure provided context waits on the existing context to be ready
-		else
-			context.wait(new Promise(resolve => this._context.ready(resolve)));
+		else if (this._context !== context)
+			context.wait(this._context.readyPromise);
 
 		action(this);
 
-		if (context !== null) {
+		if (context !== null && !hadContext) {
 			context.ready(() => {
 				this._context = null;
 			});

@@ -18,16 +18,22 @@ export class InitializationContext {
 		this.tasks.add(task);
 		task.then(() => {
 			this.tasks.delete(task);
-			if (this.tasks.size === 0)
-				this.waiting.forEach(done => done());
+			// allow additional tasks to be queued as a result of this one
+			Promise.resolve().then(() => {
+				if (this.tasks.size === 0)
+					while (this.waiting.length > 0) {
+						const done = this.waiting.shift();
+						done();
+					}
+			});
 		});
 	}
 
 	ready(callback: () => void) {
 		if (this.tasks.size === 0)
 			callback();
-
-		this.waiting.push(callback);
+		else
+			this.waiting.push(callback);
 	}
 
 	tryResolveValue(instance: Entity, property: Property, value: any) {
@@ -39,5 +45,9 @@ export class InitializationContext {
 
 	get isNewDocument() {
 		return this.newDocument;
+	}
+
+	get readyPromise() {
+		return new Promise(resolve => this.ready(resolve));
 	}
 }
