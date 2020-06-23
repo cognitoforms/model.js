@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Added
+- Asynchronous value resolution when calling Type.create for preexisting entity
+### Fixed
+- Bug with nested async value resolutions during createOrUpdate (#21)
+- Problems with modifying/replacing list item logic when calling Entity.set()
+
 ## [0.7.0] - 2020-06-17
 ### Added
 - Add option to override source of dynamic property label (#19) (506b29b)
