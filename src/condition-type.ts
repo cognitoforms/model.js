@@ -3,6 +3,8 @@ import { ConditionTypeSet } from "./condition-type-set";
 import { ObservableArray } from "./observable-array";
 import { Entity } from "./entity";
 import { PropertyPath } from "./property-path";
+import { Rule } from "./rule";
+import { FormatError } from "./format-error";
 
 const allConditionTypes: { [id: string]: ConditionType } = {};
 
@@ -12,6 +14,7 @@ export class ConditionType {
 	readonly message: string;
 	readonly conditions: ObservableArray<Condition>;
 	readonly sets: ObservableArray<ConditionTypeSet>;
+	source: Rule | FormatError;
 
 	/**
 	* Creates a unique type of model condition.
@@ -20,7 +23,7 @@ export class ConditionType {
 	* @param message The default message to use when the condition is present.
 	* @param sets One or more sets the condition type belongs to.
 	*/
-	constructor(code: string, category: string, message: string, sets?: ConditionTypeSet[]) {
+	constructor(code: string, category: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[]) {
 		// Ensure unique condition type codes
 		if (allConditionTypes[code])
 			throw new Error("A condition type with the code \"" + code + "\" has already been created.");
@@ -31,6 +34,7 @@ export class ConditionType {
 		// this.rules = [];
 		this.conditions = ObservableArray.create<Condition>();
 		this.sets = ObservableArray.ensureObservable(sets || []);
+		this.source = source;
 
 		// Register with the static dictionary of all condition types
 		allConditionTypes[code] = this;
@@ -54,7 +58,7 @@ export class ConditionType {
 
 			// create a new condition if one does not exist
 			if (!conditionTarget) {
-				return new Condition(this, message, target, properties);
+				return new Condition(this, message, target, this.source, properties);
 			}
 
 			// replace the condition if the message has changed
@@ -63,7 +67,7 @@ export class ConditionType {
 				conditionTarget.condition.destroy();
 
 				// create a new condition with the updated message
-				return new Condition(this, message, target, properties);
+				return new Condition(this, message, target, this.source, properties);
 			}
 
 			// otherwise, just return the existing condition
@@ -104,30 +108,30 @@ export class ConditionType {
 }
 
 export class ErrorConditionType extends ConditionType {
-	constructor(code: string, message: string, sets?: ConditionTypeSet[]) {
-		super(code, "Error", message, sets);
+	constructor(code: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[]) {
+		super(code, "Error", message, source, sets);
 	}
 }
 
 export interface ErrorConditionTypeConstructor {
-	new(code: string, message: string, sets?: ConditionTypeSet[]): ErrorConditionType;
+	new(code: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[]): ErrorConditionType;
 }
 
 export class WarningConditionType extends ConditionType {
-	constructor(code: string, message: string, sets?: ConditionTypeSet[]) {
-		super(code, "Warning", message, sets);
+	constructor(code: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[]) {
+		super(code, "Warning", message, source, sets);
 	}
 }
 
 export interface WarningConditionTypeConstructor {
-	new(code: string, message: string, sets?: ConditionTypeSet[]): WarningConditionType;
+	new(code: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[]): WarningConditionType;
 }
 
 export class PermissionConditionType extends ConditionType {
 	isAllowed: boolean;
 
-	constructor(code: string, message: string, sets?: ConditionTypeSet[], isAllowed: boolean = true) {
-		super(code, "Warning", message, sets);
+	constructor(code: string, message: string, source: Rule | FormatError, sets?: ConditionTypeSet[], isAllowed: boolean = true) {
+		super(code, "Warning", message, source, sets);
 
 		this.isAllowed = !(isAllowed === false);
 	}

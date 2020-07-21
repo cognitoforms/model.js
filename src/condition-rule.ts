@@ -40,7 +40,7 @@ export class ConditionRule extends Rule {
 		this.conditionType = options.conditionType ? (typeof options.conditionType === "string" ? 
 			ConditionType.get(options.conditionType) : 
 			options.conditionType) :
-			Rule$ensureConditionType(options.name, rootType, options.category || "ErrorConditionType");
+			Rule$ensureConditionType(this, options.name, rootType, options.category || "ErrorConditionType");		
 
 		// properties
 		this.properties = options.properties;

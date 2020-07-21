@@ -5,12 +5,14 @@ import { ConditionTarget } from "./condition-target";
 import { PropertyPath } from "./property-path";
 import { ObservableArray } from "./observable-array";
 import { Property } from "./property";
+import { Rule } from "./rule";
 
 export class Condition {
 	type: ConditionType;
 	message: string;
 	origin: string;
 	targets: ObservableArray<ConditionTarget>;
+	source: Rule | FormatError;
 
 	/**
 		* Creates a condition of a specific type associated with one or more entities in a model.
@@ -19,7 +21,7 @@ export class Condition {
 		* @param target The root target entity the condition is associated with.
 		* @param properties The set of property paths specifying which properties and entities the condition should be attached to.
 		*/
-	constructor(type: ConditionType, message: string, target: Entity, properties: PropertyPath[] = []) {
+	constructor(type: ConditionType, message: string, target: Entity, source: Rule | FormatError, properties: PropertyPath[] = []) {
 		this.type = type;
 		this.message = message || (type ? type.message : undefined);
 

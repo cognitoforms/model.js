@@ -344,7 +344,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 	});
 };
 
-export function Rule$ensureConditionType<DesiredConditionType = ErrorConditionType | WarningConditionType>(ruleName: string, typeOrProp: Type | Property, category: string = "Error"): ErrorConditionType | WarningConditionType {
+export function Rule$ensureConditionType<DesiredConditionType = ErrorConditionType | WarningConditionType>(rule: Rule, ruleName: string, typeOrProp: Type | Property, category: string = "Error"): ErrorConditionType | WarningConditionType {
 	var generatedCode =
 		typeOrProp instanceof Property ? `${typeOrProp.containingType.fullName}.${typeOrProp.name}.${ruleName}` :
 			typeOrProp instanceof Type ? `${typeOrProp}.${ruleName}` : 
@@ -368,5 +368,5 @@ export function Rule$ensureConditionType<DesiredConditionType = ErrorConditionTy
 	}
 
 	// return a new client condition type of the specified category
-	return new DesiredConditionType(generatedCode + counter, `Generated condition type for ${ruleName} rule.`);
+	return new DesiredConditionType(generatedCode + counter, `Generated condition type for ${ruleName} rule.`, rule);
 }

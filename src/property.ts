@@ -443,7 +443,7 @@ export class Property implements PropertyPath {
 
 					let conditionType: ConditionType;
 					if (errorOptions.code)
-						conditionType = ConditionType.get(errorOptions.code) || new ErrorConditionType(errorOptions.code, "error");
+						conditionType = ConditionType.get(errorOptions.code) || new ErrorConditionType(errorOptions.code, "error", null);
 
 					targetType.model.ready(() => {
 						(new ValidationRule(targetType, {
