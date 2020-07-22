@@ -514,6 +514,9 @@ function padYear(year: number): string {
  * @param cultureInfo The culture
  */
 export function formatDate(date: Date, format: string, cultureInfo: CultureInfo): string {
+	if (!date)
+		return null;
+		
 	var dtf = cultureInfo.dateTimeFormat;
 	var convert = dtf.Calendar.convert;
 	if (!format || !format.length || (format === "i")) {
@@ -937,6 +940,9 @@ function expandNumber(number: number, precision: number, groupSizes: number[], s
  * @param cultureInfo The culture
  */
 export function formatNumber(number: number, format: string, cultureInfo: CultureInfo): string {
+	if (isNaN(number))
+		return null;
+		
 	if (!format || (format.length === 0) || (format === "i")) {
 		if (cultureInfo && (cultureInfo.name.length > 0)) {
 			return number.toLocaleString();
