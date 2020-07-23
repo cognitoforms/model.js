@@ -58,7 +58,7 @@ export class ConditionType {
 
 			// create a new condition if one does not exist
 			if (!conditionTarget) {
-				return new Condition(this, message, target, this.source, properties);
+				return new Condition(this, message, target, properties);
 			}
 
 			// replace the condition if the message has changed
@@ -67,7 +67,7 @@ export class ConditionType {
 				conditionTarget.condition.destroy();
 
 				// create a new condition with the updated message
-				return new Condition(this, message, target, this.source, properties);
+				return new Condition(this, message, target, properties);
 			}
 
 			// otherwise, just return the existing condition
