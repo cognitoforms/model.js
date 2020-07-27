@@ -566,15 +566,7 @@ function observableSplice(arr: any[], events: any[], index: number, removeCount:
 	let arr2 = arr as any;
 
 	if (removeCount) {
-		if (removeCount > 1 && arr2.removeRange) {
-			removedItems = arr2.removeRange(index, removeCount);
-		}
-		else if (removeCount === 1 && arr2.remove) {
-			removedItems = [arr2.removeAt(index)];
-		}
-		else {
-			removedItems = arr.splice(index, removeCount);
-		}
+		removedItems = arr.splice(index, removeCount);
 	
 		if (events) {
 			events.push({
