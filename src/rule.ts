@@ -368,5 +368,5 @@ export function Rule$ensureConditionType(rule: Rule, ruleName: string, typeOrPro
 	}
 
 	// return a new client condition type of the specified category
-	return new DesiredConditionType(generatedCode + counter, `Generated condition type for ${ruleName} rule.`, rule);
+	return new DesiredConditionType(generatedCode + counter, `Generated condition type for ${ruleName} rule.`);
 }

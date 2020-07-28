@@ -16,6 +16,7 @@ export * from "./condition-type-set";
 export * from "./condition-type";
 export * from "./condition";
 export * from "./format-error";
+export * from "./string-format-rule";
 
 // Rules engine and various rule types
 export * from "./rule";
@@ -24,6 +25,7 @@ export * from "./condition-rule";
 export * from "./validation-rule";
 export * from "./allowed-values-rule";
 export * from "./calculated-property-rule";
+export * from "./required-rule";
 
 // Serialization
 export * from "./entity-serializer";
