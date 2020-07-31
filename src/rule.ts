@@ -344,7 +344,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 	});
 };
 
-export function Rule$ensureConditionType(rule: Rule, ruleName: string, typeOrProp: Type | Property, category: string): ErrorConditionType | WarningConditionType {
+export function Rule$ensureConditionType(ruleName: string, typeOrProp: Type | Property, category: string): ErrorConditionType | WarningConditionType {
 	var generatedCode =
 		typeOrProp instanceof Property ? `${typeOrProp.containingType.fullName}.${typeOrProp.name}.${ruleName}` :
 			typeOrProp instanceof Type ? `${typeOrProp}.${ruleName}` : 
