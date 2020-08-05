@@ -14,7 +14,17 @@ function resetModel() {
 				type: String
 			},
 			FirstName: String,
-			LastName: String
+			LastName: String,
+			FullName: {
+				type: String,
+				get() {
+					return `${this.FirstName} ${this.LastName}`;
+				}
+			},
+			Species: {
+				constant: "Homo sapiens",
+				type: String
+			}
 		},
 		Movie: {
 			Id: {
@@ -73,6 +83,16 @@ describe("Entity", () => {
 
 			expect(movie.serialize()).toEqual(Alien);
 		});
+
+		it("cannot initialize calculated properties", () => {
+			const person = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" });
+			expect(person.FullName).toBe("John Doe");
+		});
+
+		it("cannot initialize constant properties", () => {
+			const person = new Types.Person({ Species: "Homo erectus" });
+			expect(person.Species).toBe("Homo sapiens");
+		});
 	});
 
 	describe("set", () => {
@@ -80,6 +100,18 @@ describe("Entity", () => {
 			const movie = new Types.Movie();
 			movie.set(Alien);
 			expect(movie.serialize()).toEqual(Alien);
+		});
+
+		it("cannot be used to set calculated properties", () => {
+			const person = new Types.Person({ FirstName: "John", LastName: "Doe" });
+			person.set({ FullName: "Full Name" });
+			expect(person.FullName).toBe("John Doe");
+		});
+
+		it("cannot be used to set constant properties", () => {
+			const person = new Types.Person();
+			person.set({ Species: "Homo erectus" });
+			expect(person.Species).toBe("Homo sapiens");
 		});
 	});
 
