@@ -40,7 +40,7 @@ export class ConditionRule extends Rule {
 		this.conditionType = options.conditionType ? (typeof options.conditionType === "string" ? 
 			ConditionType.get(options.conditionType) : 
 			options.conditionType) :
-			Rule$ensureConditionType(options.name, rootType, options.category || "ErrorConditionType");
+			Rule$ensureConditionType(options.name, rootType, options.category || "Error");
 
 		// properties
 		this.properties = options.properties;
@@ -63,7 +63,9 @@ export class ConditionRule extends Rule {
 
 		// create or remove the condition if necessary
 		if (typeof assert !== "undefined") {
-			this.conditionType.when(assert, entity, this.properties, message);
+			// pass through "this" so it can add the source when the rule is constructed
+			// Add the source to the condition instead of the condition type
+			this.conditionType.when(this, assert, entity, message);
 		}
 	}
 

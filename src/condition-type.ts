@@ -2,7 +2,9 @@ import { Condition } from "./condition";
 import { ConditionTypeSet } from "./condition-type-set";
 import { ObservableArray } from "./observable-array";
 import { Entity } from "./entity";
-import { PropertyPath } from "./property-path";
+import { Rule } from "./rule";
+import { FormatError } from "./format-error";
+import { ConditionRule } from "./condition-rule";
 
 const allConditionTypes: { [id: string]: ConditionType } = {};
 
@@ -12,6 +14,7 @@ export class ConditionType {
 	readonly message: string;
 	readonly conditions: ObservableArray<Condition>;
 	readonly sets: ObservableArray<ConditionTypeSet>;
+	source: Rule | FormatError;
 
 	/**
 	* Creates a unique type of model condition.
@@ -43,7 +46,7 @@ export class ConditionType {
 	* @param properties The properties to attach the condition to
 	* @param message The condition message (or a function to generate the message)
 	*/
-	when(condition: boolean, target: Entity, properties: PropertyPath[], message: string | ((target: Entity) => string)): Condition | void {
+	when(source: ConditionRule, condition: boolean, target: Entity, message: string | ((target: Entity) => string)): Condition | void {
 		// get the current condition if it exists
 		var conditionTarget = target.meta.getCondition(this);
 
@@ -54,7 +57,7 @@ export class ConditionType {
 
 			// create a new condition if one does not exist
 			if (!conditionTarget) {
-				return new Condition(this, message, target, properties);
+				return new Condition(this, message, target, source, source.properties);
 			}
 
 			// replace the condition if the message has changed
@@ -63,7 +66,7 @@ export class ConditionType {
 				conditionTarget.condition.destroy();
 
 				// create a new condition with the updated message
-				return new Condition(this, message, target, properties);
+				return new Condition(this, message, target, source, source.properties);
 			}
 
 			// otherwise, just return the existing condition

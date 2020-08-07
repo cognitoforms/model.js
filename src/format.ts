@@ -146,7 +146,7 @@ export class CustomFormat<T> extends Format<T> {
 				return err;
 			}
 
-			let formatError = new FormatError(this.description ?
+			let formatError = new FormatError(this, this.description ?
 				this.model.getResource("format-with-description").replace("{description}", this.description) :
 				this.model.getResource("format-without-description"),
 			text);
