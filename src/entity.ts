@@ -166,11 +166,8 @@ export class Entity {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop && !prop.isCalculated && !prop.isConstant) {
 				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
-				if (valueResolution) {
-					valueResolution.then(asyncState => {
-						this.setProp(prop, asyncState);
-					});
-				}
+				if (valueResolution)
+					valueResolution.then(asyncState => this.setProp(prop, asyncState));
 				else
 					this.setProp(prop, state);
 			}
