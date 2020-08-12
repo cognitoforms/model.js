@@ -71,7 +71,7 @@ export class Entity {
 
 				// Set values of new entity for provided properties
 				if (isNew && properties)
-					this.withContext(context, () => this.set(properties));
+					this.updateWithContext(context, properties);
 			});
 		}
 	}
@@ -129,8 +129,11 @@ export class Entity {
 			Property$init(prop, this, value);
 	}
 
-	withContext(context: InitializationContext, action: (entity: Entity) => void) {
+	updateWithContext(context: InitializationContext, state: ObjectLookup<any>) {
 		const hadContext = !!this._context;
+		// Do not allow reentrant updates of the same entity for a given context
+		if (this._context === context)
+			return;
 		// Don't overwrite existing context
 		if (!this._context)
 			this._context = context;
@@ -138,7 +141,7 @@ export class Entity {
 		else if (this._context !== context)
 			context.wait(this._context.readyPromise);
 
-		action(this);
+		this.set(state);
 
 		if (context !== null && !hadContext) {
 			context.ready(() => {
@@ -163,8 +166,11 @@ export class Entity {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop && !prop.isCalculated && !prop.isConstant) {
 				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
-				if (valueResolution)
-					valueResolution.then(asyncState => this.setProp(prop, asyncState));
+				if (valueResolution) {
+					valueResolution.then(asyncState => {
+						this.setProp(prop, asyncState);
+					});
+				}
 				else
 					this.setProp(prop, state);
 			}
@@ -185,7 +191,13 @@ export class Entity {
 					if (idx < currentValue.length) {
 						// If the item is a state object, create/update the entity using the state 
 						if (!(s instanceof ChildEntity) && typeof s === "object") {
-							currentValue.splice(idx, 1, Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
+							const listItem = currentValue[idx] as Entity;
+							// If the entity is a non-pooled type, update in place
+							// If the entity id matches the id in the state, update in place
+							if (!ChildEntity.meta.identifier || getIdFromState(ChildEntity.meta, s) === listItem.meta.id)
+								listItem.updateWithContext(this._context, s);
+							else
+								currentValue.splice(idx, 1, Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
 						}
 						else if (s instanceof ChildEntity)
 							currentValue.splice(idx, 1, s);
@@ -218,7 +230,7 @@ export class Entity {
 				else if (typeof state !== "object")
 					value = state;
 				else if (currentValue && !getIdFromState(ChildEntity.meta, state))
-					currentValue.withContext(this._context, entity => entity.set(state));
+					currentValue.updateInContext(this._context, state);
 				// Got an object, so attempt to fetch or create and assign the state
 				else
 					value = Type$createOrUpdate(ChildEntity.meta, state, this._context).instance;
