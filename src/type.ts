@@ -508,7 +508,7 @@ export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: I
 	let instance = id && type.get(id);
 	if (instance) {
 		// Assign state to the existing object
-		instance.withContext(context, () => instance.set(state));
+		instance.updateWithContext(context, state);
 	}
 	else {
 		// Cast the jstype to any so we can call the internal constructor signature that takes a context

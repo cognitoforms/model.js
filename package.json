@@ -9,8 +9,8 @@
   "scripts": {
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
-    "build:typescript": "rimraf ./@types && rimraf ./lib && tsc",
-    "build:webpack": "rimraf ./out && webpack --mode=production",
+    "build:typescript": "tsc",
+    "build:webpack": "webpack --mode=production",
     "build": "npm run build:typescript && npm run build:webpack",
     "build:watch": "nodemon -e ts --watch src/ -x \"npm run build\"",
     "test": "jest",
