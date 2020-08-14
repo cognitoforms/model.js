@@ -227,7 +227,7 @@ export class Entity {
 				else if (typeof state !== "object")
 					value = state;
 				else if (currentValue && !getIdFromState(ChildEntity.meta, state))
-					currentValue.updateInContext(this._context, state);
+					(currentValue as Entity).updateWithContext(this._context, state);
 				// Got an object, so attempt to fetch or create and assign the state
 				else
 					value = Type$createOrUpdate(ChildEntity.meta, state, this._context).instance;
