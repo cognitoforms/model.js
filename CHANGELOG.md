@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- prevent reentrant calls to Entity.updateWithContext for the same entity with the same context (avoids infinite recursion)
+- short circuit processing of waiting queue on InitializationContext if a waiting callback queues a new task on the context
+### Changed
+- improve logic for updating entity lists to update items in place when possible
+- `Entity.withContext` renamed to `updateWithContext` to serve the specific purpose of calling `set()` instead of a general callback
+
 ## [0.8.0] - 2020-08-07
 ### Changed
 - provide source rule/format when creating conditions
