@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.1] - 2020-08-14
 ### Fixed
 - prevent reentrant calls to Entity.updateWithContext for the same entity with the same context (avoids infinite recursion)
 - short circuit processing of waiting queue on InitializationContext if a waiting callback queues a new task on the context
