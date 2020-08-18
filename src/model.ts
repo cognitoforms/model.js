@@ -429,23 +429,26 @@ function normalizeDateTime(dateTime: Date, standard: Date): Date {
 	_dateTime.setFullYear(standard.getFullYear());
 	return _dateTime ;
 }
-	
+
 // Normalize the provided value based on the format specifier
 // so that it can be used appropriately for comparisons
-export function normalize(val: any, format: Format<any>) : any {
+export function normalize(val: Date, format: string) : Date;
+export function normalize(val: Date, format: Format<any>) : Date;
+export function normalize(val: any, format: Format<any> | string) : any {
 	if (!val && val !== false)
 		return val;
 
 	if (val.constructor.name === "Date") {
-		if (format.specifier === "t") {
+		let dateFormat = typeof format === "string" ? format : format.specifier;
+		if (dateFormat === "t") {
 			// Set the date of the dateTime to January 1st, 1970
 			val = normalizeDateTime(val, JAN_01_1970);
 		}
-		else if (format.specifier === "d") {
+		else if (dateFormat === "d") {
 			// Set the time of the dateTime to 12AM
 			val = normalizeDateTime(JAN_01_1970, val);
 		}
 	}
 
 	return val;
-};
+}
