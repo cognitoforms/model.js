@@ -1,6 +1,8 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
+import { PropertyConverter } from "./entity-serializer";
+import { Property } from "./property";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -8,6 +10,18 @@ function resetModel() {
 	Types = {};
 	return new Model({
 		$namespace: Types as any,
+		Credits: {
+			Movie: "Movie",
+			CastSize: {
+				type: Number,
+				get: {
+					dependsOn: "Movie.Cast",
+					function() {
+						return this.Movie.Cast.length;
+					}
+				}
+			}
+		},
 		Person: {
 			Id: {
 				identifier: true,
@@ -24,7 +38,8 @@ function resetModel() {
 			Species: {
 				constant: "Homo sapiens",
 				type: String
-			}
+			},
+			Movie: "Movie"
 		},
 		Movie: {
 			Id: {
@@ -35,6 +50,18 @@ function resetModel() {
 			Director: "Person",
 			ReleaseDate: Date,
 			Genres: "String[]",
+			Credits: {
+				type: "Credits"
+			},
+			Stars: {
+				type: "Person[]",
+				get: {
+					dependsOn: "Cast",
+					function() {
+						return this.Cast.filter(member => ["Freeman", "Ford", "Damon", "Weaver", "Roberts"].includes(member.LastName));
+					}
+				}
+			},
 			Cast: "Person[]"
 		}
 	});
@@ -44,12 +71,13 @@ const Alien = {
 	Title: "Alien",
 	Director: { FirstName: "Ridley", LastName: "Scott" },
 	Genres: ["science fiction", "action"],
-	Cast: [] as string[]
+	Cast: []
 };
 
 describe("Entity", () => {
+	let model: Model;
 	beforeEach(() => {
-		resetModel();
+		model = resetModel();
 	});
 
 	describe("construction", () => {
@@ -92,6 +120,33 @@ describe("Entity", () => {
 		it("cannot initialize constant properties", () => {
 			const person = new Types.Person({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
+		});
+
+		// Unfortunately I can't figure out how to replicate the production scenario...
+		// This test does not fail if I undo the fix
+		it("correctly initializes circular calculations dependent on lists", () => {
+			class CreditsConverter extends PropertyConverter {
+				shouldConvert(context, prop: Property) {
+					return prop.name === "Credits";
+				}
+
+				deserialize(context: Entity, value: any, prop: Property) {
+					return { ...value, Movie: context };
+				}
+			}
+			model.serializer.registerPropertyConverter(new CreditsConverter());
+			const movie = new Types.Movie({
+				Id: "1",
+				Title: "Star Wars",
+				ReleaseDate: new Date(1977, 4, 25),
+				Credits: {},
+				Cast: [
+					{ FirstName: "Harrison", LastName: "Ford" },
+					{ FirstName: "Carrie", LastName: "Fisher" },
+					{ FirstName: "Mark", LastName: "Hammill" }
+				]				
+			});
+			expect(movie.Credits.CastSize).toEqual(movie.Cast.length);
 		});
 	});
 
@@ -252,6 +307,18 @@ describe("Entity", () => {
 
 			movie.Cast.pop();
 			expect(movie.Cast.slice()).toEqual([sigourney]);
+		});
+
+		// This was throwing Max call stack exceeded
+		it("can be calculated", () => {
+			const movie = new Types.Movie({
+				Title: "Alien",
+				Cast: [
+					{ FirstName: "Sigourney", LastName: "Weaver" },
+					{ FirstName: "Bolaji", LastName: "Badejo" }
+				]				
+			});
+			expect(movie.Stars.length).toBe(1);
 		});
 	});
 
