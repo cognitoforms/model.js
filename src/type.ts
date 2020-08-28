@@ -111,7 +111,7 @@ export class Type {
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
 		// Attempt to fetch an existing instance if the state contains an Id property
 		const { context, instance } = Type$createOrUpdate(this, state, valueResolver);
-		return new Promise(resolve => context.ready(() => resolve(instance)));
+		return new Promise(resolve => context.whenReady(() => resolve(instance)));
 	}
 
 	/** Generates a unique id suitable for an instance in the current type hierarchy. */
@@ -505,6 +505,10 @@ export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: I
 	else
 		context = new InitializationContext(isNew, contextOrResolver);
 
+	// We need to pause processing of callbacks to prevent publishing entity events while still processing
+	// the state graph
+	const resumeContextQueue = context.delayQueue();
+
 	let instance = id && type.get(id);
 	if (instance) {
 		// Assign state to the existing object
@@ -517,6 +521,9 @@ export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: I
 		// Construct an instance using the known id if it is present
 		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
 	}
+
+	resumeContextQueue();
+
 	return { context, instance };
 }
 

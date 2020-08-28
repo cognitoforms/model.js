@@ -57,11 +57,15 @@ export class Entity {
 			type.register(this);
 
 			// Initialize existing entity with provided property values
-			if (!isNew && properties)
+			if (!isNew && properties) {
+				// We need to pause processing of callbacks to prevent publishing entity events while still processing the state graph
+				const resumeContextQueue = context.delayQueue();
 				this.init(properties, context);
+				resumeContextQueue();
+			}
 
 			// Raise the initNew or initExisting event on this type and all base types
-			context.ready(() => {
+			context.whenReady(() => {
 				for (let t = type; t; t = t.baseType) {
 					if (isNew)
 						(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
@@ -144,7 +148,7 @@ export class Entity {
 		this.set(state);
 
 		if (context !== null && !hadContext) {
-			context.ready(() => {
+			context.whenReady(() => {
 				this._context = null;
 			});
 		}

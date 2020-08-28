@@ -14,23 +14,41 @@ export class InitializationContext {
 		this.valueResolver = valueResolver;
 	}
 
+	/**
+	 * Prevents any waiting callbacks from being executed.
+	 * @returns A callback which removes your delay.
+	 */
+	delayQueue() {
+		// create a promise which will never actually be resolved, but it will prevent the waiting queue from being processed
+		const marker = new Promise(() => {});
+		this.tasks.add(marker);
+		return () => this.tasks.delete(marker) && this.processWaitingQueue();
+	}
+
 	wait(task: Promise<any>) {
 		this.tasks.add(task);
 		task.then(() => {
 			this.tasks.delete(task);
-			// allow additional tasks to be queued as a result of this one
-			Promise.resolve().then(() => {
-				if (this.tasks.size === 0)
-					while (this.waiting.length > 0 && this.tasks.size === 0) {
-						const done = this.waiting.shift();
-						done();
-					}
-			});
+			// process the queue asynchronously to allow additional tasks to be queued as a result of this one
+			Promise.resolve().then(() => this.processWaitingQueue());
 		});
 	}
 
-	ready(callback: () => void) {
-		if (this.tasks.size === 0)
+	get canProcessQueue() {
+		return this.tasks.size === 0;
+	}
+
+	private processWaitingQueue() {
+		if (this.canProcessQueue) {
+			while (this.waiting.length > 0 && this.canProcessQueue) {
+				const done = this.waiting.shift();
+				done();
+			}
+		}
+	}
+
+	whenReady(callback: () => void) {
+		if (this.canProcessQueue)
 			callback();
 		else
 			this.waiting.push(callback);
@@ -48,6 +66,6 @@ export class InitializationContext {
 	}
 
 	get readyPromise() {
-		return new Promise(resolve => this.ready(resolve));
+		return new Promise(resolve => this.whenReady(resolve));
 	}
 }
