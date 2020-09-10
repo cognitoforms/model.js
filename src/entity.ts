@@ -143,7 +143,7 @@ export class Entity {
 			this._context = context;
 		// Ensure provided context waits on the existing context to be ready
 		else if (this._context !== context)
-			context.wait(this._context.readyPromise);
+			context.wait(this._context.ready);
 
 		this.set(state);
 
