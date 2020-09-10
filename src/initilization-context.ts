@@ -15,14 +15,20 @@ export class InitializationContext {
 	}
 
 	/**
-	 * Prevents any waiting callbacks from being executed.
-	 * @returns A callback which removes your delay.
+	 * Prevents any waiting callbacks from being executed before the specified action completes.
+	 * @returns The return value of `action`.
 	 */
-	delayQueue() {
+	execute<T>(action: () => T): T {
 		// create a promise which will never actually be resolved, but it will prevent the waiting queue from being processed
 		const marker = new Promise(() => {});
 		this.tasks.add(marker);
-		return () => this.tasks.delete(marker) && this.processWaitingQueue();
+
+		const result = action();
+
+		this.tasks.delete(marker);
+		this.processWaitingQueue();
+
+		return result;
 	}
 
 	wait(task: Promise<any>) {

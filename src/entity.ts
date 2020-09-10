@@ -59,9 +59,7 @@ export class Entity {
 			// Initialize existing entity with provided property values
 			if (!isNew && properties) {
 				// We need to pause processing of callbacks to prevent publishing entity events while still processing the state graph
-				const resumeContextQueue = context.delayQueue();
-				this.init(properties, context);
-				resumeContextQueue();
+				context.execute(() => this.init(properties, context));
 			}
 
 			// Raise the initNew or initExisting event on this type and all base types

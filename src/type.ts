@@ -507,22 +507,21 @@ export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: I
 
 	// We need to pause processing of callbacks to prevent publishing entity events while still processing
 	// the state graph
-	const resumeContextQueue = context.delayQueue();
-
-	let instance = id && type.get(id);
-	if (instance) {
-		// Assign state to the existing object
-		instance.updateWithContext(context, state);
-	}
-	else {
-		// Cast the jstype to any so we can call the internal constructor signature that takes a context
-		// We don't want to put the context on the public constructor interface
-		const Ctor = type.jstype as any;
-		// Construct an instance using the known id if it is present
-		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
-	}
-
-	resumeContextQueue();
+	const instance = context.execute(() => {
+		let instance = id && type.get(id);
+		if (instance) {
+			// Assign state to the existing object
+			instance.updateWithContext(context, state);
+		}
+		else {
+			// Cast the jstype to any so we can call the internal constructor signature that takes a context
+			// We don't want to put the context on the public constructor interface
+			const Ctor = type.jstype as any;
+			// Construct an instance using the known id if it is present
+			instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+		}
+		return instance;
+	});
 
 	return { context, instance };
 }
