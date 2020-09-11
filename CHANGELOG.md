@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
+### Fixed
+- incorrect initialization of calculations due to timing issues during entity construction
+- stack overflow when initializing calculated list properties
 ### Changed
 - Change the `normalize` function to accept a format string
 
