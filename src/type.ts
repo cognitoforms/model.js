@@ -111,7 +111,7 @@ export class Type {
 	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
 		// Attempt to fetch an existing instance if the state contains an Id property
 		const { context, instance } = Type$createOrUpdate(this, state, valueResolver);
-		return new Promise(resolve => context.ready(() => resolve(instance)));
+		return new Promise(resolve => context.whenReady(() => resolve(instance)));
 	}
 
 	/** Generates a unique id suitable for an instance in the current type hierarchy. */
@@ -505,18 +505,24 @@ export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: I
 	else
 		context = new InitializationContext(isNew, contextOrResolver);
 
-	let instance = id && type.get(id);
-	if (instance) {
-		// Assign state to the existing object
-		instance.updateWithContext(context, state);
-	}
-	else {
-		// Cast the jstype to any so we can call the internal constructor signature that takes a context
-		// We don't want to put the context on the public constructor interface
-		const Ctor = type.jstype as any;
-		// Construct an instance using the known id if it is present
-		instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
-	}
+	// We need to pause processing of callbacks to prevent publishing entity events while still processing
+	// the state graph
+	const instance = context.execute(() => {
+		let instance = id && type.get(id);
+		if (instance) {
+			// Assign state to the existing object
+			instance.updateWithContext(context, state);
+		}
+		else {
+			// Cast the jstype to any so we can call the internal constructor signature that takes a context
+			// We don't want to put the context on the public constructor interface
+			const Ctor = type.jstype as any;
+			// Construct an instance using the known id if it is present
+			instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+		}
+		return instance;
+	});
+
 	return { context, instance };
 }
 
