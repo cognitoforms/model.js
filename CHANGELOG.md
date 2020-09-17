@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Fix for initialization of calculated lists (#33)
+
 ## [0.8.2] - 2020-09-11
 ### Fixed
 - incorrect initialization of calculations due to timing issues during entity construction
