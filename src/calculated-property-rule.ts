@@ -108,36 +108,31 @@ export class CalculatedPropertyRule extends Rule {
 
 		// modify list properties to match the calculated value instead of overwriting the property
 		if (this.property.isList) {
-			if (!this.property.isInited(obj)) {
-				Property$init(this.property, obj, newValue);
-			}
-			else {
-				// re-calculate the list values
-				var newList = newValue;
+			// re-calculate the list values
+			var newList = newValue;
 
-				// compare the new list to the old one to see if changes were made
-				var curList = this.property.value(obj) as ObservableArray<any>;
+			// compare the new list to the old one to see if changes were made
+			var curList = this.property.value(obj) as ObservableArray<any>;
 
-				if (newList.length === curList.length) {
-					var noChanges = true;
+			if (newList.length === curList.length) {
+				var noChanges = true;
 
-					for (var i = 0; i < newList.length; ++i) {
-						if (newList[i] !== curList[i]) {
-							noChanges = false;
-							break;
-						}
-					}
-
-					if (noChanges) {
-						return;
+				for (var i = 0; i < newList.length; ++i) {
+					if (newList[i] !== curList[i]) {
+						noChanges = false;
+						break;
 					}
 				}
 
-				// update the current list so observers will receive the change events
-				curList.batchUpdate((array) => {
-					updateArray(array, newList);
-				});
+				if (noChanges) {
+					return;
+				}
 			}
+
+			// update the current list so observers will receive the change events
+			curList.batchUpdate((array) => {
+				updateArray(array, newList);
+			});
 		}
 		else {
 			// Otherwise, just set the property to the new value
