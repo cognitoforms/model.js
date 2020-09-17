@@ -53,15 +53,15 @@ function resetModel() {
 			Credits: {
 				type: "Credits"
 			},
-			Stars: {
-				type: "Person[]",
-				get: {
-					dependsOn: "Cast",
-					function() {
-						return this.Cast.filter(member => ["Freeman", "Ford", "Damon", "Weaver", "Roberts"].includes(member.LastName));
-					}
-				}
-			},
+			// Stars: {
+			// 	type: "Person[]"
+			// get: {
+			// 	dependsOn: "Cast",
+			// 	function() {
+			// 		return this.Cast.filter(member => ["Freeman", "Ford", "Damon", "Weaver", "Roberts"].includes(member.LastName));
+			// 	}
+			// }
+			// },
 			Cast: "Person[]"
 		}
 	});
@@ -124,30 +124,30 @@ describe("Entity", () => {
 
 		// Unfortunately I can't figure out how to replicate the production scenario...
 		// This test does not fail if I undo the fix
-		it("correctly initializes circular calculations dependent on lists", () => {
-			class CreditsConverter extends PropertyConverter {
-				shouldConvert(context, prop: Property) {
-					return prop.name === "Credits";
-				}
+		// it("correctly initializes circular calculations dependent on lists", () => {
+		// 	class CreditsConverter extends PropertyConverter {
+		// 		shouldConvert(context, prop: Property) {
+		// 			return prop.name === "Credits";
+		// 		}
 
-				deserialize(context: Entity, value: any, prop: Property) {
-					return { ...value, Movie: context };
-				}
-			}
-			model.serializer.registerPropertyConverter(new CreditsConverter());
-			const movie = new Types.Movie({
-				Id: "1",
-				Title: "Star Wars",
-				ReleaseDate: new Date(1977, 4, 25),
-				Credits: {},
-				Cast: [
-					{ FirstName: "Harrison", LastName: "Ford" },
-					{ FirstName: "Carrie", LastName: "Fisher" },
-					{ FirstName: "Mark", LastName: "Hammill" }
-				]				
-			});
-			expect(movie.Credits.CastSize).toEqual(movie.Cast.length);
-		});
+		// 		deserialize(context: Entity, value: any, prop: Property) {
+		// 			return { ...value, Movie: context };
+		// 		}
+		// 	}
+		// 	model.serializer.registerPropertyConverter(new CreditsConverter());
+		// 	const movie = new Types.Movie({
+		// 		Id: "1",
+		// 		Title: "Star Wars",
+		// 		ReleaseDate: new Date(1977, 4, 25),
+		// 		Credits: {},
+		// 		Cast: [
+		// 			{ FirstName: "Harrison", LastName: "Ford" },
+		// 			{ FirstName: "Carrie", LastName: "Fisher" },
+		// 			{ FirstName: "Mark", LastName: "Hammill" }
+		// 		]				
+		// 	});
+		// 	expect(movie.Credits.CastSize).toEqual(movie.Cast.length);
+		// });
 	});
 
 	describe("set", () => {
@@ -310,16 +310,16 @@ describe("Entity", () => {
 		});
 
 		// This was throwing Max call stack exceeded
-		it("can be calculated", () => {
-			const movie = new Types.Movie({
-				Title: "Alien",
-				Cast: [
-					{ FirstName: "Sigourney", LastName: "Weaver" },
-					{ FirstName: "Bolaji", LastName: "Badejo" }
-				]				
-			});
-			expect(movie.Stars.length).toBe(1);
-		});
+		// it("can be calculated", () => {
+		// 	const movie = new Types.Movie({
+		// 		Title: "Alien",
+		// 		Cast: [
+		// 			{ FirstName: "Sigourney", LastName: "Weaver" },
+		// 			{ FirstName: "Bolaji", LastName: "Badejo" }
+		// 		]				
+		// 	});
+		// 	expect(movie.Stars.length).toBe(1);
+		// });
 	});
 
 	describe("formatting", () => {
