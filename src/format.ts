@@ -184,8 +184,8 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 		this.type = type;
 		this.formatEval = formatEval;
 
-		// Compile the model format
-		this.compile();
+		// Compile the model format when the model is ready
+		this.model.ready(() => this.compile(), { enqueueWhileProcessing: false });
 	}
 
 	compile(): void {
