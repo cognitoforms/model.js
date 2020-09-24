@@ -1,8 +1,8 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
-import { PropertyConverter } from "./entity-serializer";
-import { Property } from "./property";
+import EnglishCulture from "../test/culture/en";
+import EnglishResources from "../test/resource/en";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -10,6 +10,11 @@ function resetModel() {
 	Types = {};
 	return new Model({
 		$namespace: Types as any,
+		$locale: "en",
+		$culture: EnglishCulture,
+		$resources: {
+			en: EnglishResources
+		},
 		Credits: {
 			Movie: "Movie",
 			CastSize: {
@@ -21,6 +26,23 @@ function resetModel() {
 					}
 				}
 			}
+		},
+		Movie: {
+			Id: {
+				identifier: true,
+				type: String
+			},
+			Title: String,
+			Director: {
+				type: "Person",
+				format: "[FullName] [Salary]"
+			},
+			ReleaseDate: Date,
+			Genres: "String[]",
+			Credits: {
+				type: "Credits"
+			},
+			Cast: "Person[]"
 		},
 		Person: {
 			Id: {
@@ -39,30 +61,12 @@ function resetModel() {
 				constant: "Homo sapiens",
 				type: String
 			},
-			Movie: "Movie"
-		},
-		Movie: {
-			Id: {
-				identifier: true,
-				type: String
-			},
-			Title: String,
-			Director: "Person",
-			ReleaseDate: Date,
-			Genres: "String[]",
-			Credits: {
-				type: "Credits"
-			},
-			// Stars: {
-			// 	type: "Person[]"
-			// get: {
-			// 	dependsOn: "Cast",
-			// 	function() {
-			// 		return this.Cast.filter(member => ["Freeman", "Ford", "Damon", "Weaver", "Roberts"].includes(member.LastName));
-			// 	}
-			// }
-			// },
-			Cast: "Person[]"
+			Movie: "Movie",
+			Salary: {
+				default: null,
+				type: Number,
+				format: "C"
+			}
 		}
 	});
 }
@@ -121,33 +125,6 @@ describe("Entity", () => {
 			const person = new Types.Person({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
 		});
-
-		// Unfortunately I can't figure out how to replicate the production scenario...
-		// This test does not fail if I undo the fix
-		// it("correctly initializes circular calculations dependent on lists", () => {
-		// 	class CreditsConverter extends PropertyConverter {
-		// 		shouldConvert(context, prop: Property) {
-		// 			return prop.name === "Credits";
-		// 		}
-
-		// 		deserialize(context: Entity, value: any, prop: Property) {
-		// 			return { ...value, Movie: context };
-		// 		}
-		// 	}
-		// 	model.serializer.registerPropertyConverter(new CreditsConverter());
-		// 	const movie = new Types.Movie({
-		// 		Id: "1",
-		// 		Title: "Star Wars",
-		// 		ReleaseDate: new Date(1977, 4, 25),
-		// 		Credits: {},
-		// 		Cast: [
-		// 			{ FirstName: "Harrison", LastName: "Ford" },
-		// 			{ FirstName: "Carrie", LastName: "Fisher" },
-		// 			{ FirstName: "Mark", LastName: "Hammill" }
-		// 		]				
-		// 	});
-		// 	expect(movie.Credits.CastSize).toEqual(movie.Cast.length);
-		// });
 	});
 
 	describe("set", () => {
@@ -308,18 +285,6 @@ describe("Entity", () => {
 			movie.Cast.pop();
 			expect(movie.Cast.slice()).toEqual([sigourney]);
 		});
-
-		// This was throwing Max call stack exceeded
-		// it("can be calculated", () => {
-		// 	const movie = new Types.Movie({
-		// 		Title: "Alien",
-		// 		Cast: [
-		// 			{ FirstName: "Sigourney", LastName: "Weaver" },
-		// 			{ FirstName: "Bolaji", LastName: "Badejo" }
-		// 		]				
-		// 	});
-		// 	expect(movie.Stars.length).toBe(1);
-		// });
 	});
 
 	describe("formatting", () => {
@@ -336,6 +301,12 @@ describe("Entity", () => {
 		it("supports token value post processing", () => {
 			const movie = new Types.Movie(Alien);
 			expect(movie.toString("[Title] - [Director.FirstName] [Director.LastName]", v => `'${v}'`)).toBe("'Alien' - 'Ridley' 'Scott'");
+		});
+
+		it("uses format of properties targeted by tokens", () => {
+			const movie = new Types.Movie(Alien);
+			movie.Director.Salary = 100000;
+			expect(movie.toString("[Director]")).toBe("Ridley Scott $100,000.00");
 		});
 	});
 });
