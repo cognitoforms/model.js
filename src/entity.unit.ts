@@ -1,17 +1,17 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
-import EnglishCulture from "../test/culture/en";
 import "./resource-en";
+import { CultureInfo } from "./globalization";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
 function resetModel() {
 	Types = {};
+	CultureInfo.setup();
 	return new Model({
 		$namespace: Types as any,
 		$locale: "en",
-		$culture: EnglishCulture,
 		Credits: {
 			Movie: "Movie",
 			CastSize: {
