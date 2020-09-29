@@ -2,7 +2,7 @@
 import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
 import EnglishCulture from "../test/culture/en";
-import EnglishResources from "../test/resource/en";
+import "./resource-en";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -12,9 +12,6 @@ function resetModel() {
 		$namespace: Types as any,
 		$locale: "en",
 		$culture: EnglishCulture,
-		$resources: {
-			en: EnglishResources
-		},
 		Credits: {
 			Movie: "Movie",
 			CastSize: {
