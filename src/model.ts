@@ -21,7 +21,8 @@ export class Model {
 
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
 
-	private _ready: (() => void)[];
+	private _readyCallbacks: (() => void)[];
+	private _readyProcessing = false;
 	private readonly _formats: { [name: string]: { [name: string]: Format<ValueType> } };
 
 	readonly serializer = new EntitySerializer();
@@ -277,16 +278,19 @@ export class Model {
 	 */
 	prepare(extend: () => void): void {
 		// Create a model initialization scope
-		if (!this._ready) {
+		if (!this._readyCallbacks) {
+			this._readyProcessing = false;
 			// Create an array to track model initialization callbacks
-			Object.defineProperty(this, "_ready", { enumerable: false, configurable: true, writable: true, value: [] });
+			Object.defineProperty(this, "_readyCallbacks", { enumerable: false, configurable: true, writable: true, value: [] });
 
 			// Extend the model
 			extend();
 
 			// Complete pending model initialization steps
-			this._ready.forEach(init => init());
-			delete this._ready;
+			this._readyProcessing = true;
+			this._readyCallbacks.forEach(init => init());
+			this._readyProcessing = false;
+			delete this._readyCallbacks;
 		}
 
 		// Leverage the current model initialization scope
@@ -294,13 +298,16 @@ export class Model {
 			extend();
 	}
 
-	ready(init: () => void): void {
-		if (this._ready) {
-			this._ready.push(init);
-		}
-		else {
-			init();
-		}
+	/**
+	 * Execute a function when the model is ready.
+	 * @param init The function to invoke when the model is ready.
+	 * @param enqueueWhileProcessing Determines whether the callback should be added to the queue while the queue is being processed.
+	 */
+	ready(callback: () => void, { enqueueWhileProcessing = true }: { enqueueWhileProcessing?: boolean; } = {}): void {
+		if (this._readyCallbacks && (!this._readyProcessing || enqueueWhileProcessing))
+			this._readyCallbacks.push(callback);
+		else
+			callback();
 	}
 
 	/**

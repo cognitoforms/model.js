@@ -61,6 +61,54 @@ describe("validation-rule", () => {
 		(instance as any).Number = 2;
 		expect(instance.meta.conditions[0].condition.message).toBe("Property Prop 2 is not valid");
 	});
+
+	test("nested format paths are added as predicates to rule referencing property with dynamic label", () => {
+		const model = new Model({
+			Name: {
+				First: String,
+				Last: String
+			},
+			Movie: {
+				Title: String,
+				Director: {
+					type: "Person",
+					format: "[Name]"
+				}
+			},
+			Person: {
+				Name: {
+					type: "Name",
+					format: "[First] [Last]"
+				}
+			},
+			Test: {
+				Number: Number,
+				Movie: {
+					type: "Movie",
+					format: "[Title], directed by [Director]"
+				},
+				Prop: {
+					type: String,
+					label: "[Movie]",
+					error: {
+						dependsOn: "",
+						function() {
+							return "{property} is not valid";
+						}
+					}
+				}
+			}
+		});
+
+		const instance = new model.types.Test.jstype({ Movie: { Title: "Alien", Director: { Name: { First: "Ridley", Last: "Scott" } } } });
+		expect(instance.meta.conditions.length).toBe(1);
+		expect(instance.meta.conditions[0].condition.message).toBe("Alien, directed by Ridley Scott is not valid");
+		(instance as any).Movie.Title = "Star Wars";
+		expect(instance.meta.conditions[0].condition.message).toBe("Star Wars, directed by Ridley Scott is not valid");
+		(instance as any).Movie.Director.Name.First = "George";
+		(instance as any).Movie.Director.Name.Last = "Lucas";
+		expect(instance.meta.conditions[0].condition.message).toBe("Star Wars, directed by George Lucas is not valid");
+	});
 	test("property label included in error message can be dynamic and use a custom source", () => {
 		const model = new Model({
 			Parent: {
