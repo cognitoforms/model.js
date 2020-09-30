@@ -319,7 +319,7 @@ export class ObservableArrayImplementation<ItemType> extends Array<ItemType> imp
 }
 
 /**
- * Override's native Array methods that manipulate the array 
+ * Override's native Array methods that manipulate the array
  * @param array The array to extend
  */
 export function ObservableArray$overrideNativeMethods<ItemType>(this: ItemType[] | ObservableArrayImplementation<ItemType>): void {
@@ -567,7 +567,7 @@ function observableSplice(arr: any[], events: any[], index: number, removeCount:
 
 	if (removeCount) {
 		removedItems = arr.splice(index, removeCount);
-	
+
 		if (events) {
 			events.push({
 				action: "remove",

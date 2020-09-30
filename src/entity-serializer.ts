@@ -30,6 +30,7 @@ export class PropertyConverter {
 	 * @param context The `Entity` containing the specified property.
 	 * @param prop The property being serialized/deserialized.
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	shouldConvert(context: Entity, prop: Property): boolean {
 		return true;
 	}
@@ -59,6 +60,7 @@ export class PropertyConverter {
 	 * @param prop The current property being deserialized.
 	 * @param value The value to deserialize.
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	deserialize(context: Entity, value: any, property: Property): any {
 		return value;
 	}
@@ -83,7 +85,7 @@ export class EntitySerializer {
 	 * inherit from the specified type. Injected properties will appear before model properties in the serialized
 	 * output.
 	 * @param type Either a Type or the fullName of a Type
-	 * @param injector 
+	 * @param injector
 	 */
 	registerPropertyInjector(type: Type | string, injector: PropertyInjector): void {
 		let injectors = this._propertyInjectors.get(type) || [];
@@ -99,7 +101,7 @@ export class EntitySerializer {
 
 	/**
 	 * Returns the property injectors registered for a specific type, including name-based registrations.
-	 * @param type 
+	 * @param type
 	 */
 	private getInjectorsOrDefault(type: Type): PropertyInjector[] {
 		return (this._propertyInjectors.get(type) || []).concat(this._propertyInjectors.get(type.fullName) || []);
@@ -107,7 +109,7 @@ export class EntitySerializer {
 
 	/**
 	 * Returns property injectors registered for a type and its base types.
-	 * @param type 
+	 * @param type
 	 */
 	private getPropertyInjectors(type: Type): PropertyInjector[] {
 		let injectors = [];

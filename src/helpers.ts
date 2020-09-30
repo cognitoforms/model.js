@@ -63,8 +63,8 @@ function isObject(obj: any): boolean {
 	return getTypeName(obj) === "object" || (obj && obj instanceof Object);
 }
 
-// If a getter method matching the given property name is found on the target it is invoked and returns the 
-// value, unless the the value is undefined, in which case null is returned instead.  This is done so that 
+// If a getter method matching the given property name is found on the target it is invoked and returns the
+// value, unless the the value is undefined, in which case null is returned instead.  This is done so that
 // calling code can interpret a return value of undefined to mean that the property it requested does not exist.
 function getValue(target: any, property: string): any {
 	var value;
@@ -222,7 +222,7 @@ export function toTitleCase(input: string): string {
 		return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 	});
 
-	// Certain minor words should be left lowercase unless 
+	// Certain minor words should be left lowercase unless
 	// they are the first or last words in the string
 	lowers = ["A", "An", "The", "And", "But", "Or", "For", "Nor", "As", "At",
 		"By", "For", "From", "In", "Into", "Near", "Of", "On", "Onto",
@@ -321,6 +321,7 @@ export function flatMap<Input, Output>(input: Input[], callback: (i: Input) => O
  * @param input The input array
  */
 export function entries(obj: any): [string, any][] {
+	// eslint-disable-next-line one-var
 	var ownProps = Object.keys(obj),
 		i = ownProps.length,
 		resArray = new Array(i); // preallocate the Array

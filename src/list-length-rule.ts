@@ -2,10 +2,8 @@ import { ValidationRule } from "./validation-rule";
 import { Entity } from "./entity";
 import { Type } from "./type";
 
-
 export class ListLengthRule extends ValidationRule {
 	constructor(rootType: Type, options: any) {
-
 		// ensure the rule name is specified
 		options.name = options.name || "ListLength";
 
@@ -59,5 +57,4 @@ export class ListLengthRule extends ValidationRule {
 		// call the base type constructor
 		super(rootType, options);
 	}
-
 }

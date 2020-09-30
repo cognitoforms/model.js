@@ -123,7 +123,7 @@ export class Property implements PropertyPath {
 		// Use prepare() to defer property path resolution while the model is being extended
 		targetType.model.prepare(() => {
 			options = { ...options };
-			
+
 			// Label
 			if (options.label)
 				this.label = options.label;
@@ -433,8 +433,8 @@ export class Property implements PropertyPath {
 					let errorFn = errorOptions.function;
 					if (errorOptions.resource)
 						errorFn = function() {
-							return errorOptions.function.call(this) ? targetType.model.getResource(errorOptions.resource) : null;						
-						}; 
+							return errorOptions.function.call(this) ? targetType.model.getResource(errorOptions.resource) : null;
+						};
 					let errorDependsOn = errorOptions.dependsOn;
 
 					if (typeof (errorFn) !== "function") {

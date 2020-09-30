@@ -46,7 +46,7 @@ function createEventObject<EventArgsType>(args: EventArgsType): EventObject & Ev
 	return eventObject as EventObject & EventArgsType;
 }
 
-export class Event<This, EventArgsType> implements EventPublisher<This, EventArgsType>, EventSubscriber<This, EventArgsType> { 
+export class Event<This, EventArgsType> implements EventPublisher<This, EventArgsType>, EventSubscriber<This, EventArgsType> {
     private func: FunctorWith1Arg<EventArgsType, void> & ((this: This, args: EventObject & EventArgsType) => void);
     private readonly subscriptionChanged: EventSubscriptionChanged<Event<This, EventArgsType>>;
 

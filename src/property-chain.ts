@@ -59,7 +59,7 @@ export class PropertyChain implements PropertyPath {
 				this.properties.forEach((property, index, props) => {
 					let handler: PropertyAccessEventHandler;
 					let priorProp: Property = index > 0 ? props[index - 1] : null;
-					handler = args => { 
+					handler = args => {
 						this.rootType.known().forEach(known => {
 							if (this.testConnection(known, args.entity, priorProp)) {
 								(this.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(known, {
@@ -87,7 +87,7 @@ export class PropertyChain implements PropertyPath {
 				this.properties.forEach((property, index, props) => {
 					let handler: PropertyChangeEventHandler;
 					let priorProp: Property = index > 0 ? props[index - 1] : null;
-					handler = args => { 
+					handler = args => {
 						this.rootType.known().forEach(known => {
 							if (this.testConnection(known, args.entity, priorProp)) {
 								(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(known, {
@@ -149,7 +149,7 @@ export class PropertyChain implements PropertyPath {
 		if (obj == null) throw new Error("Argument 'obj' cannot be null or undefined.");
 		if (callback == null) throw new Error("Argument 'callback' cannot be null or undefined.");
 		if (typeof (callback) !== "function") throw new Error("Argument 'callback' must be of type function: " + callback + ".");
-	
+
 		// invoke callback on obj first
 		var target: Entity = arguments[3] || obj;
 		var lastProp: Property = arguments[5] || null;
@@ -158,7 +158,7 @@ export class PropertyChain implements PropertyPath {
 			var isLastProperty = p === this.properties.length - 1;
 			var canSkipRemainingProps = isLastProperty || (filter && lastProp === filter);
 			var enableCallback = (!filter || lastProp === filter);
-	
+
 			// if the target is a list, invoke the callback once per item in the list
 			if (target instanceof Array) {
 				for (var i = 0; i < target.length; ++i) {
@@ -174,17 +174,17 @@ export class PropertyChain implements PropertyPath {
 						}
 					}
 				}
-				
+
 				// subsequent properties already visited in preceding loop
 				return true;
-			} 
+			}
 			else {
 				// take into account any chain filters along the way
 				if (enableCallback && callback(target, prop) === false) {
 					return false;
 				}
 			}
-	
+
 			// if a property filter is used and was just evaluated, stop early
 			if (canSkipRemainingProps) {
 				break;
@@ -192,15 +192,15 @@ export class PropertyChain implements PropertyPath {
 
 			// move to next property in the chain
 			target = target.__fields__[prop.name];
-	
+
 			// break early if the target is undefined
 			if (target === undefined || target === null) {
 				break;
 			}
-	
+
 			lastProp = prop;
 		}
-	
+
 		return true;
 	}
 

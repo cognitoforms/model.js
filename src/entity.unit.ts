@@ -1,8 +1,6 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
-import { PropertyConverter } from "./entity-serializer";
-import { Property } from "./property";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -17,7 +15,7 @@ function resetModel() {
 				get: {
 					dependsOn: "Movie.Cast",
 					function() {
-						return this.Movie.Cast.length;
+						return (this as any).Movie.Cast.length;
 					}
 				}
 			}
@@ -75,9 +73,8 @@ const Alien = {
 };
 
 describe("Entity", () => {
-	let model: Model;
 	beforeEach(() => {
-		model = resetModel();
+		resetModel();
 	});
 
 	describe("construction", () => {
@@ -114,12 +111,12 @@ describe("Entity", () => {
 
 		it("cannot initialize calculated properties", () => {
 			const person = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" });
-			expect(person.FullName).toBe("John Doe");
+			expect((person as any).FullName).toBe("John Doe");
 		});
 
 		it("cannot initialize constant properties", () => {
 			const person = new Types.Person({ Species: "Homo erectus" });
-			expect(person.Species).toBe("Homo sapiens");
+			expect((person as any).Species).toBe("Homo sapiens");
 		});
 
 		// Unfortunately I can't figure out how to replicate the production scenario...
@@ -144,7 +141,7 @@ describe("Entity", () => {
 		// 			{ FirstName: "Harrison", LastName: "Ford" },
 		// 			{ FirstName: "Carrie", LastName: "Fisher" },
 		// 			{ FirstName: "Mark", LastName: "Hammill" }
-		// 		]				
+		// 		]
 		// 	});
 		// 	expect(movie.Credits.CastSize).toEqual(movie.Cast.length);
 		// });
@@ -160,13 +157,13 @@ describe("Entity", () => {
 		it("cannot be used to set calculated properties", () => {
 			const person = new Types.Person({ FirstName: "John", LastName: "Doe" });
 			person.set({ FullName: "Full Name" });
-			expect(person.FullName).toBe("John Doe");
+			expect((person as any).FullName).toBe("John Doe");
 		});
 
 		it("cannot be used to set constant properties", () => {
 			const person = new Types.Person();
 			person.set({ Species: "Homo erectus" });
-			expect(person.Species).toBe("Homo sapiens");
+			expect((person as any).Species).toBe("Homo sapiens");
 		});
 	});
 
@@ -316,7 +313,7 @@ describe("Entity", () => {
 		// 		Cast: [
 		// 			{ FirstName: "Sigourney", LastName: "Weaver" },
 		// 			{ FirstName: "Bolaji", LastName: "Badejo" }
-		// 		]				
+		// 		]
 		// 	});
 		// 	expect(movie.Stars.length).toBe(1);
 		// });
