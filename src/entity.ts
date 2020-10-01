@@ -188,7 +188,7 @@ export class Entity {
 
 					// Modifying/replacing existing list item
 					if (idx < currentValue.length) {
-						// If the item is a state object, create/update the entity using the state 
+						// If the item is a state object, create/update the entity using the state
 						if (!(s instanceof ChildEntity) && typeof s === "object") {
 							const listItem = currentValue[idx] as Entity;
 							// If the entity is a non-pooled type, update in place

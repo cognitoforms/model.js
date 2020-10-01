@@ -15,7 +15,7 @@ const detectRunawayRules = true;
 // Controls the maximum number of times that a child event scope can transfer events
 // to its parent while the parent scope is exiting. A large number indicates that
 // rules are not reaching steady-state. Technically something other than rules could
-// cause this scenario, but in practice they are the primary use-case for event scope. 
+// cause this scenario, but in practice they are the primary use-case for event scope.
 const nonExitingScopeNestingCount = 100;
 
 let Rule$customRuleIndex = 0;
@@ -29,7 +29,7 @@ export class Rule {
 	invocationTypes: RuleInvocationType = 0;
 	predicates: PropertyPath[] = [];
 	returnValues: Property[] = [];
-	
+
 	private _execute: (this: Entity) => void;
 	private _registered: boolean;
 
@@ -144,7 +144,7 @@ export class Rule {
 		if (properties && properties.constructor === String)
 			properties = Array.prototype.slice.call(arguments);
 
-		if (!properties) 
+		if (!properties)
 			throw new Error("Rule must specify at least one property for returns.");
 
 		// Add to the set of existing return value properties
@@ -323,7 +323,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 				let parentEventScope = EventScope$current.parent as any;
 				if (parentEventScope._exitEventVersion) {
 					// Determine the maximum number nested calls to EventScope$perform
-					// before considering a rule to be a "runaway" rule. 
+					// before considering a rule to be a "runaway" rule.
 					var maxNesting;
 					if (typeof nonExitingScopeNestingCount === "number") {
 						maxNesting = nonExitingScopeNestingCount - 1;
@@ -347,7 +347,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 export function Rule$ensureConditionType(ruleName: string, typeOrProp: Type | Property, category: string): ErrorConditionType | WarningConditionType {
 	var generatedCode =
 		typeOrProp instanceof Property ? `${typeOrProp.containingType.fullName}.${typeOrProp.name}.${ruleName}` :
-			typeOrProp instanceof Type ? `${typeOrProp}.${ruleName}` : 
+			typeOrProp instanceof Type ? `${typeOrProp}.${ruleName}` :
 				ruleName;
 
 	var counter: string | number = "";

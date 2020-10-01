@@ -248,7 +248,7 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 					}
 				}
 				catch (e) {
-					// 
+					//
 				}
 
 				// Create a token for the current match, including the prefix, path and format
@@ -354,10 +354,6 @@ export function createFormat<T>(model: Model, type: any, format: string): Format
 		var isCurrencyFormat = format.match(/[$c]+/i);
 		var isPercentageFormat = format.match(/[%p]+/i);
 		var isIntegerFormat = format.match(/[dnfg]0/i);
-
-		var currencyDecimalDigits = model.$culture.numberFormat.CurrencyDecimalDigits;
-
-		var integerExpr = /^-?[0-9]{1,10}$/;
 
 		return Format.create<number>(model, {
 			specifier: format,

@@ -41,7 +41,7 @@ describe("Type", () => {
 			if (prop.name === "Sibling")
 				return Promise.resolve({ Id: value, Name: "Sibling Name" });
 		});
-		expect(parent.Child.Sibling.Name).toBe("Sibling Name");
+		expect((parent as any).Child.Sibling.Name).toBe("Sibling Name");
 	});
 
 	/**
@@ -87,7 +87,7 @@ describe("Type", () => {
 				{ Lookup: "b" }
 			]
 		}, valueResolver);
-		expect(parent.List[1].Lookup.Name).toBe("Lookup B");
+		expect((parent as any).List[1].Lookup.Name).toBe("Lookup B");
 	});
 
 	test("createOrUpdate should support circular async resolution after entities already exist", async () => {
@@ -120,6 +120,6 @@ describe("Type", () => {
 		// ensure entity instances already exist and are pooled
 		await model.types.Entity.create(entities.a, siblingResolver);
 		let root = await model.types.Entity.create(entities.a, siblingResolver);
-		expect(root.Sibling.Sibling).toBe(root);
+		expect((root as any).Sibling.Sibling).toBe(root);
 	});
 });

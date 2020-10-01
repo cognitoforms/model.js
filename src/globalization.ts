@@ -149,7 +149,7 @@ export function expandDateFormat(dtf: DateTimeFormatInfo, format: string): strin
 				return dtf["MonthDayPattern"];
 			case "s":
 				return dtf["SortableDateTimePattern"];
-			
+
 			case "Y": case "y":
 				return dtf["YearMonthPattern"];
 			default:
@@ -516,7 +516,7 @@ function padYear(year: number): string {
 export function formatDate(date: Date, format: string, cultureInfo: CultureInfo): string {
 	if (!date)
 		return null;
-		
+
 	var dtf = cultureInfo.dateTimeFormat;
 	var convert = dtf.Calendar.convert;
 	if (!format || !format.length || (format === "i")) {
@@ -707,7 +707,7 @@ export function getNumberStyle(format: string): string {
 	if (format.match(/[dnfg]0/i))
 		return "Integer";
 
-	return "Number";	
+	return "Number";
 }
 
 export function parseNumber(value: string, style: string = "Number" || "Integer" || "Currency" || "Percent", cultureInfo: CultureInfo) : number {
@@ -724,10 +724,10 @@ export function parseNumber(value: string, style: string = "Number" || "Integer"
 	if (style === "Currency") {
 		result = _parseNumber(value.replace(cultureInfo.numberFormat.CurrencySymbol, ""), cultureInfo) * sign;
 
-		// if there is a decimal place, check the precision isnt greater than allowed for currency. 
+		// if there is a decimal place, check the precision isnt greater than allowed for currency.
 		// Floating points in js can be skewed under certain circumstances, we are just checking the decimals instead of multiplying results.
 		var resultvalue = result.toString();
-		if (resultvalue.indexOf('.') > -1 && (resultvalue.length - (resultvalue.indexOf('.') + 1)) > cultureInfo.numberFormat.CurrencyDecimalDigits	) {
+		if (resultvalue.indexOf(".") > -1 && (resultvalue.length - (resultvalue.indexOf(".") + 1)) > cultureInfo.numberFormat.CurrencyDecimalDigits	) {
 			result = NaN;
 		}
 	}
@@ -742,7 +742,7 @@ export function parseNumber(value: string, style: string = "Number" || "Integer"
 	// Just parse a simple number
 	else
 		result = _parseNumber(value, cultureInfo) * sign;
-	
+
 	return result;
 }
 
@@ -755,7 +755,7 @@ function isInteger(obj: any) {
  * @param value The text to parse
  * @param cultureInfo The culture
  */
-export function _parseNumber(value: string, cultureInfo: CultureInfo): number {	
+export function _parseNumber(value: string, cultureInfo: CultureInfo): number {
 	value = value.trim();
 	if (value.match(/^[+-]?infinity$/i)) {
 		return parseFloat(value);
@@ -768,16 +768,16 @@ export function _parseNumber(value: string, cultureInfo: CultureInfo): number {
 	var signInfo = parseNumberNegativePattern(value, numFormat, numFormat.NumberNegativePattern);
 	var sign = signInfo[0];
 	var num = signInfo[1];
-	if ((sign === '') && (numFormat.NumberNegativePattern !== 1)) {
+	if ((sign === "") && (numFormat.NumberNegativePattern !== 1)) {
 		signInfo = parseNumberNegativePattern(value, numFormat, 1);
 		sign = signInfo[0];
 		num = signInfo[1];
 	}
-	if (sign === '') sign = '+';
+	if (sign === "") sign = "+";
 	var exponent;
 	var intAndFraction;
-	var exponentPos = num.indexOf('e');
-	if (exponentPos < 0) exponentPos = num.indexOf('E');
+	var exponentPos = num.indexOf("e");
+	if (exponentPos < 0) exponentPos = num.indexOf("E");
 	if (exponentPos < 0) {
 		intAndFraction = num;
 		exponent = null;
@@ -797,21 +797,21 @@ export function _parseNumber(value: string, cultureInfo: CultureInfo): number {
 		integer = intAndFraction.substr(0, decimalPos);
 		fraction = intAndFraction.substr(decimalPos + numFormat.NumberDecimalSeparator.length);
 	}
-	integer = integer.split(numFormat.NumberGroupSeparator).join('');
+	integer = integer.split(numFormat.NumberGroupSeparator).join("");
 	var altNumGroupSeparator = numFormat.NumberGroupSeparator.replace(/\u00A0/g, " ");
 	if (numFormat.NumberGroupSeparator !== altNumGroupSeparator) {
-		integer = integer.split(altNumGroupSeparator).join('');
+		integer = integer.split(altNumGroupSeparator).join("");
 	}
 	var p = sign + integer;
 	if (fraction !== null) {
-		p += '.' + fraction;
+		p += "." + fraction;
 	}
 	if (exponent !== null) {
 		var expSignInfo = parseNumberNegativePattern(exponent, numFormat, 1);
-		if (expSignInfo[0] === '') {
-			expSignInfo[0] = '+';
+		if (expSignInfo[0] === "") {
+			expSignInfo[0] = "+";
 		}
-		p += 'e' + expSignInfo[0] + expSignInfo[1];
+		p += "e" + expSignInfo[0] + expSignInfo[1];
 	}
 
 	if (p.match(/^[+-]?\d*\.?\d*(e[+-]?\d+)?$/)) {
@@ -942,7 +942,7 @@ function expandNumber(number: number, precision: number, groupSizes: number[], s
 export function formatNumber(number: number, format: string, cultureInfo: CultureInfo): string {
 	if (isNaN(number))
 		return null;
-		
+
 	if (!format || (format.length === 0) || (format === "i")) {
 		if (cultureInfo && (cultureInfo.name.length > 0)) {
 			return number.toLocaleString();
@@ -1111,7 +1111,7 @@ const invariantCultureInfo = {
 		MonthGenitiveNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", ""]
 	},
 	eras: [1, "A.D.", null, 0]
-};	
+};
 
 export class CultureInfo {
 	name: string;
@@ -1193,7 +1193,7 @@ export class CultureInfo {
 
 	_getMonthIndex(value: string, abbr?: boolean) {
 		// Get or create the cache of upper-case month names
-		let upperMonths: string[] = abbr ? this._upperAbbrMonths : this._upperMonths; 
+		let upperMonths: string[] = abbr ? this._upperAbbrMonths : this._upperMonths;
 		if (!upperMonths) {
 			if (abbr)
 				upperMonths = this._upperAbbrMonths = toUpperArray(this.dateTimeFormat.AbbreviatedMonthNames);
@@ -1205,7 +1205,7 @@ export class CultureInfo {
 		var i = upperMonths.indexOf(value);
 		if (i < 0) {
 			// Get or create the cache of upper-case genitive month names
-			let upperMonthsGenitive: string[] = abbr ? this._upperAbbrMonthsGenitive : this._upperMonthsGenitive; 
+			let upperMonthsGenitive: string[] = abbr ? this._upperAbbrMonthsGenitive : this._upperMonthsGenitive;
 			if (!upperMonthsGenitive) {
 				if (abbr)
 					upperMonthsGenitive = this._upperAbbrMonthsGenitive = toUpperArray(this.dateTimeFormat.AbbreviatedMonthGenitiveNames);

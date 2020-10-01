@@ -20,7 +20,7 @@ export class AllowedValuesRule extends ValidationRule {
 
 		// ensure the error message is specified
 		options.message = options.message || rootType.model.getResource("allowed-values");
-	
+
 		// convert property path sources into a source function
 		let source: (this: Entity) => any[];
 		if (options.source instanceof Property || options.source instanceof PropertyChain) {
@@ -36,19 +36,19 @@ export class AllowedValuesRule extends ValidationRule {
 			if (options.ignoreValidation) {
 				return true;
 			}
-	
+
 			// return true if no value is currently selected
 			if (!value) {
 				return true;
 			}
-	
+
 			// get the list of allowed values of the property for the given object
 			var allowed = source.call(this);
-	
-			// ensure that the value or list of values is in the allowed values list (single and multi-select)				
+
+			// ensure that the value or list of values is in the allowed values list (single and multi-select)
 			if (value instanceof Array) {
 				return value.every(function (item) { return allowed.indexOf(item) >= 0; });
-			} 
+			}
 			else {
 				return allowed.indexOf(value) >= 0;
 			}

@@ -8,7 +8,7 @@ export class FormatError {
 	readonly messageTemplate: string;
 	readonly invalidValue: any;
 	readonly format: Format<any>;
-	
+
 	static ConditionType: ErrorConditionType = null;
 
 	constructor(format: Format<any>, message: string, invalidValue: any) {
@@ -21,7 +21,7 @@ export class FormatError {
 		this.invalidValue = invalidValue;
 	}
 
-	createCondition(target: Entity, prop: Property): Condition {		
+	createCondition(target: Entity, prop: Property): Condition {
 		return new Condition(FormatError.ConditionType, this.messageTemplate.replace("{property}", prop.label), target, this.format, [prop]);
 	}
 

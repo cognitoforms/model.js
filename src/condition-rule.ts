@@ -29,7 +29,7 @@ export class ConditionRule extends Rule {
 
 		// call the base rule constructor
 		super(rootType, options.name, options);
-	
+
 		// assertion function
 		this.assert = options.assert;
 
@@ -37,8 +37,8 @@ export class ConditionRule extends Rule {
 		this.message = options.message;
 
 		// condition type
-		this.conditionType = options.conditionType ? (typeof options.conditionType === "string" ? 
-			ConditionType.get(options.conditionType) : 
+		this.conditionType = options.conditionType ? (typeof options.conditionType === "string" ?
+			ConditionType.get(options.conditionType) :
 			options.conditionType) :
 			Rule$ensureConditionType(options.name, rootType, options.category || "Error");
 

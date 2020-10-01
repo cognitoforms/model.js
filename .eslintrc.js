@@ -26,6 +26,7 @@ module.exports = {
 		"indent": ["error", "tab", { "SwitchCase": 1 }],
 		"object-curly-spacing": ["error", "always"],
 		"linebreak-style": ["error", "windows"],
+		"no-trailing-spaces": ["error"],
 		"quotes": ["error", "double", { "allowTemplateLiterals": true }],
 		"semi": ["error", "always"],
 		"standard/no-callback-literal": "off",

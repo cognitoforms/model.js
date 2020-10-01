@@ -1,6 +1,6 @@
 import { Rule, RuleInvocationOptions, RuleOptions } from "./rule";
 import { Type } from "./type";
-import { Property, PropertyRuleOptions, Property$init } from "./property";
+import { Property, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
 import { ObservableArray, updateArray } from "./observable-array";
 import { RuleInvocationType } from "./rule-invocation-type";
@@ -23,7 +23,7 @@ export class CalculatedPropertyRule extends Rule {
 		let property: Property;
 		let defaultIfError: any = calculationErrorDefault;
 		let calculateFn: string | ((this: Entity) => any);
-		
+
 		if (!name) {
 			name = options.name;
 		}
@@ -44,7 +44,7 @@ export class CalculatedPropertyRule extends Rule {
 
 			if (!name) {
 				// Generate a reasonable default rule name if not specified
-				name = options.name = (rootType.fullName + "." + (typeof property === "string" ? property : property.name) + ".Calculated");	
+				name = options.name = (rootType.fullName + "." + (typeof property === "string" ? property : property.name) + ".Calculated");
 			}
 
 			if (options.hasOwnProperty("defaultIfError"))
@@ -53,7 +53,7 @@ export class CalculatedPropertyRule extends Rule {
 			calculateFn = options.calculate;
 		}
 
-		// Call the base rule constructor 
+		// Call the base rule constructor
 		super(rootType, name, options);
 
 		// Public read-only properties
