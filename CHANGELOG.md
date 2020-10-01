@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 ### Fixed
 - reference properties with tokenized formats not being formatted correctly (#35)
+### Added
+- Handle validation rule messages that are non-string (#38)
 
 ## [0.8.3] - 2020-09-17
 ### Fixed
