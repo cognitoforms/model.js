@@ -140,4 +140,34 @@ describe("validation-rule", () => {
 		(instance as any).Parent.Name = "New Parent Object";
 		expect(instance.meta.conditions[0].condition.message).toBe("Property Prop owned by New Parent Object is not valid");
 	});
+	test("function may return a non-string value that can be coerced to a string", () => {
+		const model = new Model({
+			Test: {
+				Prop1: {
+					type: String,
+					error: {
+						dependsOn: "",
+						function(): string {
+							return ["Error 1"] as unknown as string;
+						}
+					}
+				},
+				Prop2: {
+					type: String,
+					label: "Prop2 [Prop1]",
+					error: {
+						dependsOn: "",
+						function(): string {
+							return ["Error 2"] as unknown as string;
+						}
+					}
+				}
+			}
+		});
+
+		const instance = new model.types.Test.jstype();
+		expect(instance.meta.conditions.length).toBe(2);
+		expect(instance.meta.conditions[0].condition.message).toBe("Error 1");
+		expect(instance.meta.conditions[1].condition.message).toBe("Error 2");
+	});
 });
