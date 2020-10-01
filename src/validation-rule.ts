@@ -60,12 +60,18 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 					// Create a function to apply the format to the property label when generating the message
 					options.message = function () {
-						let message = "";
+						let message: any = "";
 
 						try {
 							message = messageFunction.call(this);
-							if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-								message = message.replace("{property}", evaluateLabel(property, this));
+							if (typeof message === "string") {
+								if (message.trim().length > 0 && message.indexOf("{property}") >= 0) {
+									message = message.replace("{property}", evaluateLabel(property, this));
+								}
+							}
+							else if (message != null) {
+								console.warn("Converting message of type '" + (typeof message) + "' for rule '" + options.name + "' to a string.");
+								message = message.toString();
 							}
 						}
 						catch (e) {
@@ -94,11 +100,17 @@ export class ValidationRule extends ConditionRule implements PropertyRule {
 
 				// Create a function to apply the format to the property label when generating the message
 				options.message = function () {
-					let message = "";
+					let message: any = "";
 					try {
 						message = messageFunction.call(this);
-						if (typeof message === "string" && message.trim().length > 0 && message.indexOf("{property}") >= 0) {
-							message = message.replace("{property}", property.label);
+						if (typeof message === "string") {
+							if (message.trim().length > 0 && message.indexOf("{property}") >= 0) {
+								message = message.replace("{property}", property.label);
+							}
+						}
+						else if (message != null) {
+							console.warn("Converting message of type '" + (typeof message) + "' for rule '" + options.name + "' to a string.");
+							message = message.toString();
 						}
 					}
 					catch (e) {

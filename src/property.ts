@@ -148,9 +148,7 @@ export class Property implements PropertyPath {
 				// Specifier
 				if (typeof (options.format) === "string") {
 					let format = options.format;
-					targetType.model.ready(() => {
-						this.format = targetType.model.getFormat(this.propertyType, format);
-					});
+					this.format = targetType.model.getFormat(this.propertyType, format);
 				}
 
 				// Format
@@ -206,8 +204,7 @@ export class Property implements PropertyPath {
 							property: this,
 							calculate: getOptions.function,
 							onChangeOf: resolveDependsOn(this, "get", getOptions.dependsOn)
-						})
-							.register();
+						}).register();
 					});
 				}
 				else {
@@ -249,7 +246,7 @@ export class Property implements PropertyPath {
 
 					// If extending baseType property specifically for a child type, use a rule
 					if (this.containingType === targetType)
-					 	this._defaultValue = defaultConstant;
+						this._defaultValue = defaultConstant;
 					else
 						options.default = { function: function () { return defaultConstant; }, dependsOn: "" };
 				}
