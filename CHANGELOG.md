@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Simplify 'normalize' and make it no longer tied to a particular time zone (#39)
+
 ## [0.8.4] - 2020-10-01
 ### Fixed
 - reference properties with tokenized formats not being formatted correctly (#35)
