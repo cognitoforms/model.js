@@ -134,47 +134,37 @@ export class EventScope {
 	}
 }
 
-export function EventScope$onExit(callback: Function, thisPtr: any = null): void {
+export function EventScope$onExit(callback: Function): void {
 	if (EventScope$current === null) {
 		// Immediately invoke the callback
-		if (thisPtr) {
-			callback.call(thisPtr);
-		}
-		else {
-			callback();
-		}
+		callback();
 	}
 	else if (!EventScope$current.isActive) {
 		throw new Error("The current event scope cannot be inactive.");
 	}
 	else {
 		// Subscribe to the exit event
-		EventScope$current.onExit.subscribe(callback.bind(thisPtr));
+		EventScope$current.onExit.subscribe(callback as any);
 	}
 }
 
-export function EventScope$onAbort(callback: Function, thisPtr: any = null): void {
+export function EventScope$onAbort(callback: Function): void {
 	if (EventScope$current !== null) {
 		if (!EventScope$current.isActive) {
 			throw new Error("The current event scope cannot be inactive.");
 		}
 
 		// Subscribe to the abort event
-		EventScope$current.onAbort.subscribe(callback.bind(thisPtr));
+		EventScope$current.onAbort.subscribe(callback as any);
 	}
 }
 
-export function EventScope$perform(callback: Function, thisPtr: any = null): void {
+export function EventScope$perform(callback: Function): void {
 	// Create an event scope
 	var scope = new EventScope();
 	try {
 		// Invoke the callback
-		if (thisPtr) {
-			callback.call(thisPtr);
-		}
-		else {
-			callback();
-		}
+		callback();
 	}
 	finally {
 		// Exit the event scope

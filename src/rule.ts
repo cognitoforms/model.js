@@ -185,11 +185,11 @@ export class Rule {
 					function (args) {
 						if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 							pendingInvocation(args.entity.meta, rule, true);
-							EventScope$onExit(function () {
+							EventScope$onExit(() => {
 								pendingInvocation(args.entity.meta, rule, false);
 								executeRule(rule, args.entity);
 							});
-							EventScope$onAbort(function () {
+							EventScope$onAbort(() => {
 								pendingInvocation(args.entity.meta, rule, false);
 							});
 						}
