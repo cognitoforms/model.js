@@ -3,6 +3,8 @@ import { getEventSubscriptions } from "./helpers";
 
 export let EventScope$current: EventScope = null;
 
+let __lastEventScopeId = 0;
+
 // TODO: Make `nonExitingScopeNestingCount` an editable configuration value
 // Controls the maximum number of times that a child event scope can transfer events
 // to its parent while the parent scope is exiting. A large number indicates that
@@ -22,6 +24,8 @@ export class EventScope {
 
 	isActive: boolean;
 
+	readonly _uid: number;
+
 	private _exitEventVersion: number;
 	private _exitEventHandlerCount: number;
 
@@ -29,6 +33,8 @@ export class EventScope {
 	readonly onAbort: EventSubscriber<EventScope, EventScopeAbortEventArgs>;
 
 	constructor() {
+		this._uid = ++__lastEventScopeId;
+
 		// If there is a current event scope
 		// then it will be the parent of the new event scope
 		this.parent = EventScope$current;
