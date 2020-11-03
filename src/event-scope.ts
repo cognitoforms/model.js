@@ -5,12 +5,11 @@ export let EventScope$current: EventScope = null;
 
 let __lastEventScopeId = 0;
 
-// TODO: Make `nonExitingScopeNestingCount` an editable configuration value
 // Controls the maximum number of times that a child event scope can transfer events
 // to its parent while the parent scope is exiting. A large number indicates that
 // rules are not reaching steady-state. Technically something other than rules could
 // cause this scenario, but in practice they are the primary use-case for event scope.
-const nonExitingScopeNestingCount = 100;
+export const EventScope$nonExitingScopeNestingCount = 100;
 
 interface EventScopeExitEventArgs {
 }
@@ -88,8 +87,7 @@ export class EventScope {
 					delete this._exitEventVersion;
 				}
 				else {
-					// if (typeof ...config.nonExitingScopeNestingCount === "number") { ...
-					var maxNesting = nonExitingScopeNestingCount - 1;
+					var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
 					if (this.parent._exitEventVersion >= maxNesting) {
 						this.abort(true);
 						console.warn(`[event-scope] Exceeded max nesting of ${maxNesting}`);

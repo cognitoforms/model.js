@@ -4,19 +4,12 @@ import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
 import { Type } from "./type";
 import { RuleInvocationType } from "./rule-invocation-type";
-import { EventScope$current, EventScope$perform, EventScope$onExit, EventScope$onAbort } from "./event-scope";
+import { EventScope$current, EventScope$nonExitingScopeNestingCount, EventScope$perform, EventScope$onExit, EventScope$onAbort } from "./event-scope";
 import { ObjectMeta } from "./object-meta";
 import { ErrorConditionType, WarningConditionType, ConditionType, ErrorConditionTypeConstructor, WarningConditionTypeConstructor } from "./condition-type";
 
 // TODO: Make `detectRunawayRules` an editable configuration value
 const detectRunawayRules = true;
-
-// TODO: Make `nonExitingScopeNestingCount` an editable configuration value
-// Controls the maximum number of times that a child event scope can transfer events
-// to its parent while the parent scope is exiting. A large number indicates that
-// rules are not reaching steady-state. Technically something other than rules could
-// cause this scenario, but in practice they are the primary use-case for event scope.
-const nonExitingScopeNestingCount = 100;
 
 let Rule$customRuleIndex = 0;
 
@@ -325,15 +318,15 @@ function executeRule(rule: Rule, obj: Entity): void {
 					// Determine the maximum number nested calls to EventScope$perform
 					// before considering a rule to be a "runaway" rule.
 					var maxNesting;
-					if (typeof nonExitingScopeNestingCount === "number") {
-						maxNesting = nonExitingScopeNestingCount - 1;
+					if (typeof EventScope$nonExitingScopeNestingCount === "number") {
+						maxNesting = EventScope$nonExitingScopeNestingCount - 1;
 					}
 					else {
 						maxNesting = 99;
 					}
 
-					if (parentEventScope._exitEventVersion > maxNesting) {
-						// TODO: logWarning("Aborting rule '" + rule.name + "'.");
+					if (parentEventScope._exitEventVersion >= maxNesting) {
+						console.warn(`[rule] Exceeded max scope nesting while running rule '${rule.name}'`);
 						return;
 					}
 				}
