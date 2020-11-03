@@ -326,7 +326,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 					}
 
 					if (parentEventScope._exitEventVersion >= maxNesting) {
-						console.warn(`[rule] Exceeded max scope nesting while running rule '${rule.name}'`);
+						console.warn(`Exceeded max scope nesting while running rule '${rule.name}'.`);
 						return;
 					}
 				}
