@@ -60,15 +60,7 @@ export class EventScope {
 			this.onExit.clear();
 		}
 		finally {
-			// The event scope is no longer active
-			this.isActive = false;
-
-			if (EventScope$current && EventScope$current === this) {
-				// Roll back to the closest active scope
-				while (EventScope$current && !EventScope$current.isActive) {
-					EventScope$current = EventScope$current.parent;
-				}
-			}
+			this.dispose();
 		}
 	}
 
@@ -76,6 +68,8 @@ export class EventScope {
 		if (!this.isActive) {
 			throw new Error("The event scope cannot be exited because it is not active.");
 		}
+
+		let scopeAborted = false;
 
 		try {
 			var exitSubscriptions = getEventSubscriptions(this.onExit as Event<EventScope, EventScopeExitEventArgs>);
@@ -98,7 +92,8 @@ export class EventScope {
 					var maxNesting = nonExitingScopeNestingCount - 1;
 					if (this.parent._exitEventVersion >= maxNesting) {
 						this.abort(true);
-						// TODO: Warn... "Event scope 'exit' subscribers were discarded due to non-exiting."
+						console.warn(`[event-scope] Exceeded max nesting of ${maxNesting}`);
+						scopeAborted = true;
 						return;
 					}
 
@@ -121,15 +116,23 @@ export class EventScope {
 			}
 		}
 		finally {
-			// The event scope is no longer active
-			this.isActive = false;
+			if (!scopeAborted)
+				this.dispose();
+		}
+	}
 
-			if (EventScope$current && EventScope$current === this) {
-				// Roll back to the closest active scope
-				while (EventScope$current && !EventScope$current.isActive) {
-					EventScope$current = EventScope$current.parent;
-				}
-			}
+	dispose() {
+		// The event scope is no longer active
+		this.isActive = false;
+
+		if (this !== EventScope$current) {
+			console.warn(`Disposed of non-current event scope ${this._uid}.`);
+			return;
+		}
+
+		// Roll back to the closest active scope
+		while (EventScope$current && !EventScope$current.isActive) {
+			EventScope$current = EventScope$current.parent;
 		}
 	}
 }
