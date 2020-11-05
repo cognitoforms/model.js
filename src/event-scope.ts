@@ -1,8 +1,6 @@
 import { Event, EventSubscriber } from "./events";
 import { getEventSubscriptions } from "./helpers";
 
-let __lastEventScopeId = 0;
-
 // Controls the maximum number of times that a child event scope can transfer events
 // to its parent while the parent scope is exiting. A large number indicates that
 // rules are not reaching steady-state. Technically something other than rules could
@@ -13,8 +11,10 @@ export interface EventScopeExitEventArgs {
 	abort: boolean;
 }
 
+let __lastEventScopeId = 0;
+
 export class EventScope {
-	parent: EventScope;
+	readonly parent: EventScope;
 
 	current: EventScope = null;
 
@@ -22,15 +22,15 @@ export class EventScope {
 
 	readonly _uid: number;
 
+	readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
 	private _exitEventVersion: number;
 	private _exitEventHandlerCount: number;
 
-	readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
-
 	private constructor(parent: EventScope, isActive: boolean = false) {
-		this._uid = ++__lastEventScopeId;
 		this.parent = parent;
+		this.current = null;
 		this.isActive = isActive;
+		this._uid = ++__lastEventScopeId;
 		this._onExit = new Event<EventScope, EventScopeExitEventArgs>();
 	}
 
@@ -63,8 +63,7 @@ export class EventScope {
 					var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
 					if (this.parent._exitEventVersion >= maxNesting) {
 						(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: true });
-						// Clear the events to ensure that they aren't
-						// inadvertantly raised again through this scope
+						// Clear the events to ensure that they aren't inadvertantly raised again through this scope
 						this._onExit.clear();
 						console.warn("Exceeded max scope nesting.");
 						return;
@@ -82,8 +81,7 @@ export class EventScope {
 					}
 				}
 
-				// Clear the events to ensure that they aren't
-				// inadvertantly raised again through this scope
+				// Clear the events to ensure that they aren't inadvertantly raised again through this scope
 				this._onExit.clear();
 			}
 		}
