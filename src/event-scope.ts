@@ -112,7 +112,7 @@ export class EventScope {
 					else {
 						var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
 						if (this.parent._exitEventVersion >= maxNesting) {
-							this.exit({ abort: true });
+							this.dispose({ abort: true });
 							console.warn("Exceeded max scope nesting.");
 							return;
 						}
