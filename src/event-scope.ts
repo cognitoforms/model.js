@@ -41,15 +41,21 @@ export class EventScope {
 	perform(callback: Function): void {
 		// Create an event scope
 		var scope = new EventScope(this.current, true);
+		let isExiting = false;
 		try {
 			this.current = scope;
 			// Invoke the callback
 			callback();
+			isExiting = true;
+			scope.exit({ abort: false });
+		}
+		catch (e) {
+			if (!isExiting) {
+				// Exit the event scope
+				scope.exit({ abort: true });
+			}
 		}
 		finally {
-			// Exit the event scope
-			scope.exit();
-
 			if (scope !== this.current) {
 				console.warn(`Exited non-current event scope ${scope._uid}.`);
 			}
@@ -76,46 +82,49 @@ export class EventScope {
 		}
 	}
 
-	exit(): void {
+	exit({ abort = false }: EventScopeExitEventArgs): void {
 		if (!this.isActive) {
 			throw new Error("The event scope cannot be exited because it is not active.");
 		}
 
 		try {
-			var exitSubscriptions = getEventSubscriptions(this._onExit as Event<EventScope, EventScopeExitEventArgs>);
-			if (exitSubscriptions && exitSubscriptions.length > 0) {
-				// If there is no parent scope, then go ahead and execute the 'exit' event
-				if (this.parent === null || !this.parent.isActive) {
-					// Record the initial version and initial number of subscribers
-					this._exitEventVersion = 0;
-					this._exitEventHandlerCount = exitSubscriptions.length;
+			if (abort) {
+				(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: true });
+			}
+			else {
+				var exitSubscriptions = getEventSubscriptions(this._onExit as Event<EventScope, EventScopeExitEventArgs>);
+				if (exitSubscriptions && exitSubscriptions.length > 0) {
+					// If there is no parent scope, then go ahead and execute the 'exit' event
+					if (this.parent === null || !this.parent.isActive) {
+						// Record the initial version and initial number of subscribers
+						this._exitEventVersion = 0;
+						this._exitEventHandlerCount = exitSubscriptions.length;
 
-					// Invoke all subscribers
-					(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: false });
+						// Invoke all subscribers
+						(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: false });
 
-					// Delete the fields to indicate that raising the exit event suceeded
-					delete this._exitEventHandlerCount;
-					delete this._exitEventVersion;
-				}
-				else {
-					var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
-					if (this.parent._exitEventVersion >= maxNesting) {
-						(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: true });
-						// Clear the events to ensure that they aren't inadvertantly raised again through this scope
-						this._onExit.clear();
-						console.warn("Exceeded max scope nesting.");
-						return;
+						// Delete the fields to indicate that raising the exit event suceeded
+						delete this._exitEventHandlerCount;
+						delete this._exitEventVersion;
 					}
-
-					// Move subscribers to the parent scope
-					exitSubscriptions.forEach(sub => {
-						if (!sub.isOnce || !sub.isExecuted) {
-							this.parent._onExit.subscribe(sub.handler);
+					else {
+						var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
+						if (this.parent._exitEventVersion >= maxNesting) {
+							this.exit({ abort: true });
+							console.warn("Exceeded max scope nesting.");
+							return;
 						}
-					});
 
-					if (this.parent._exitEventVersion !== undefined) {
-						this.parent._exitEventVersion++;
+						// Move subscribers to the parent scope
+						exitSubscriptions.forEach(sub => {
+							if (!sub.isOnce || !sub.isExecuted) {
+								this.parent._onExit.subscribe(sub.handler);
+							}
+						});
+
+						if (this.parent._exitEventVersion !== undefined) {
+							this.parent._exitEventVersion++;
+						}
 					}
 				}
 
