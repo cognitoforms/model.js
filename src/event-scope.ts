@@ -59,6 +59,8 @@ export class EventScope {
 		catch (e) {
 			if (!isDisposing)
 				this.current.dispose({ abort: true });
+
+			throw e;
 		}
 		finally {
 			// Roll back to the closest active scope
@@ -116,15 +118,14 @@ export class EventScope {
 						}
 						catch (e) {
 							this.dispose({ abort: true });
-							console.warn(e);
-							return;
+							throw e;
 						}
 					}
 				}
-
-				// Clear the events to ensure that they aren't inadvertantly raised again through this scope
-				this._onExit.clear();
 			}
+
+			// Clear the events to ensure that they aren't inadvertantly raised again through this scope
+			this._onExit.clear();
 		}
 		finally {
 			// The event scope is no longer active

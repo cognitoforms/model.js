@@ -4,13 +4,10 @@ import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
 import { Type } from "./type";
 import { RuleInvocationType } from "./rule-invocation-type";
-import { EventScope, EventScope$nonExitingScopeNestingCount } from "./event-scope";
+import { EventScope } from "./event-scope";
 import { ObjectMeta } from "./object-meta";
 import { ErrorConditionType, WarningConditionType, ConditionType, ErrorConditionTypeConstructor, WarningConditionTypeConstructor } from "./condition-type";
 import { Model } from "./model";
-
-// TODO: Make `detectRunawayRules` an editable configuration value
-const detectRunawayRules = true;
 
 let Rule$customRuleIndex = 0;
 
@@ -317,31 +314,14 @@ function executeRule(rule: Rule, obj: Entity): void {
 		return;
 	}
 
-	rule.eventScope.perform(() => {
-		if (detectRunawayRules) {
-			if (rule.eventScope.current.parent) {
-				let parentEventScope = rule.eventScope.current.parent as any;
-				if (parentEventScope._exitEventVersion) {
-					// Determine the maximum number nested calls to EventScope$perform
-					// before considering a rule to be a "runaway" rule.
-					var maxNesting;
-					if (typeof EventScope$nonExitingScopeNestingCount === "number") {
-						maxNesting = EventScope$nonExitingScopeNestingCount - 1;
-					}
-					else {
-						maxNesting = 99;
-					}
-
-					if (parentEventScope._exitEventVersion >= maxNesting) {
-						console.warn(`Exceeded max scope nesting while running rule '${rule.name}'.`);
-						return;
-					}
-				}
-			}
-		}
-
-		rule.execute(obj);
-	});
+	try {
+		rule.eventScope.perform(() => {
+			rule.execute(obj);
+		});
+	}
+	catch (e) {
+		console.warn(`Error encountered while running rule "${rule.name}": ${e.message || e}`);
+	}
 };
 
 export function Rule$ensureConditionType(ruleName: string, typeOrProp: Type | Property, category: string): ErrorConditionType | WarningConditionType {
