@@ -149,4 +149,8 @@ export class EventScope {
 			this._exitEventVersion++;
 		}
 	}
+
+	toString() {
+		return `${(this.parent ? this.parent.toString() + "->" : "")}${this._uid}`;
+	}
 }
