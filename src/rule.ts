@@ -187,12 +187,10 @@ export class Rule {
 					function (args) {
 						if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 							pendingInvocation(args.entity.meta, rule, true);
-							rule.eventScope.onExit(() => {
+							rule.eventScope.onExit(e => {
 								pendingInvocation(args.entity.meta, rule, false);
-								executeRule(rule, args.entity);
-							});
-							rule.eventScope.onAbort(() => {
-								pendingInvocation(args.entity.meta, rule, false);
+								if (!e.abort)
+									executeRule(rule, args.entity);
 							});
 						}
 					}
@@ -223,12 +221,10 @@ export class Rule {
 							// Immediately execute the rule if there are explicit event subscriptions for the property
 							if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 								pendingInvocation(args.entity.meta, rule, true);
-								rule.eventScope.onExit(() => {
+								rule.eventScope.onExit(e => {
 									pendingInvocation(args.entity.meta, rule, false);
-									executeRule(rule, args.entity);
-								});
-								rule.eventScope.onAbort(() => {
-									pendingInvocation(args.entity.meta, rule, false);
+									if (!e.abort)
+										executeRule(rule, args.entity);
 								});
 							}
 						}
@@ -238,10 +234,12 @@ export class Rule {
 								Property$pendingInit(args.entity, returnValue, true);
 							});
 							// Defer change notification until the scope of work has completed
-							rule.eventScope.onExit(() => {
-								rule.returnValues.forEach((returnValue) => {
-									(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
-								});
+							rule.eventScope.onExit(e => {
+								if (!e.abort) {
+									rule.returnValues.forEach((returnValue) => {
+										(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
+									});
+								}
 							});
 						}
 					}
