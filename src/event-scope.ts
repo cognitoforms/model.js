@@ -1,4 +1,4 @@
-import { Event, EventSubscriber } from "./events";
+import { Event, EventSubscriber, EventSubscription } from "./events";
 import { getEventSubscriptions } from "./helpers";
 
 // Controls the maximum number of times that a child event scope can transfer events
@@ -110,22 +110,14 @@ export class EventScope {
 						delete this._exitEventVersion;
 					}
 					else {
-						var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
-						if (this.parent._exitEventVersion >= maxNesting) {
-							this.dispose({ abort: true });
-							console.warn("Exceeded max scope nesting.");
-							return;
+						try {
+							// Attempt to move subscribers to the parent scope
+							this.parent.receiveEventHandlers(exitSubscriptions);
 						}
-
-						// Move subscribers to the parent scope
-						exitSubscriptions.forEach(sub => {
-							if (!sub.isOnce || !sub.isExecuted) {
-								this.parent._onExit.subscribe(sub.handler);
-							}
-						});
-
-						if (this.parent._exitEventVersion !== undefined) {
-							this.parent._exitEventVersion++;
+						catch (e) {
+							this.dispose({ abort: true });
+							console.warn(e);
+							return;
 						}
 					}
 				}
@@ -137,6 +129,24 @@ export class EventScope {
 		finally {
 			// The event scope is no longer active
 			this.isActive = false;
+		}
+	}
+
+	private receiveEventHandlers(subscriptions: EventSubscription<EventScope, EventScopeExitEventArgs>[]) {
+		var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
+		if (this._exitEventVersion >= maxNesting) {
+			throw new Error("Exceeded max scope event transfer.");
+		}
+
+		// Move subscribers to the parent scope
+		subscriptions.forEach(sub => {
+			if (!sub.isOnce || !sub.isExecuted) {
+				this._onExit.subscribe(sub.handler);
+			}
+		});
+
+		if (this._exitEventVersion !== undefined) {
+			this._exitEventVersion++;
 		}
 	}
 }
