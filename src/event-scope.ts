@@ -45,23 +45,16 @@ export class EventScope {
 			// Invoke the callback
 			callback();
 			isDisposing = true;
-			scope.dispose({ abort: false });
+			this.current.dispose({ abort: false });
 		}
 		catch (e) {
-			if (!isDisposing) {
-				// Exit the event scope
-				scope.dispose({ abort: true });
-			}
+			if (!isDisposing)
+				this.current.dispose({ abort: true });
 		}
 		finally {
-			if (scope !== this.current) {
-				console.warn(`Exited non-current event scope ${scope._uid}.`);
-			}
-			else {
-				// Roll back to the closest active scope
-				while (this.current && !this.current.isActive) {
-					this.current = this.current.parent;
-				}
+			// Roll back to the closest active scope
+			while (this.current && !this.current.isActive) {
+				this.current = this.current.parent;
 			}
 		}
 	}
