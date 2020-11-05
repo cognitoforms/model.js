@@ -24,7 +24,6 @@ export class EventScope {
 
 	readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
 	private _exitEventVersion: number;
-	private _exitEventHandlerCount: number;
 
 	private constructor(parent: EventScope, isActive: boolean = false) {
 		this.parent = parent;
@@ -96,15 +95,13 @@ export class EventScope {
 				if (exitSubscriptions && exitSubscriptions.length > 0) {
 					// If there is no parent scope, then go ahead and execute the 'exit' event
 					if (this.parent === null || !this.parent.isActive) {
-						// Record the initial version and initial number of subscribers
+						// Record the initial "version" before starting to call subscribers
 						this._exitEventVersion = 0;
-						this._exitEventHandlerCount = exitSubscriptions.length;
 
 						// Invoke all subscribers
 						(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, { abort: false });
 
-						// Delete the fields to indicate that raising the exit event suceeded
-						delete this._exitEventHandlerCount;
+						// Delete the field to indicate that raising the exit event suceeded
 						delete this._exitEventVersion;
 					}
 					else {
