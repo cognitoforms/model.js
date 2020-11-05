@@ -40,18 +40,18 @@ export class EventScope {
 	perform(callback: Function): void {
 		// Create an event scope
 		var scope = new EventScope(this.current, true);
-		let isExiting = false;
+		let isDisposing = false;
 		try {
 			this.current = scope;
 			// Invoke the callback
 			callback();
-			isExiting = true;
-			scope.exit({ abort: false });
+			isDisposing = true;
+			scope.dispose({ abort: false });
 		}
 		catch (e) {
-			if (!isExiting) {
+			if (!isDisposing) {
 				// Exit the event scope
-				scope.exit({ abort: true });
+				scope.dispose({ abort: true });
 			}
 		}
 		finally {
@@ -81,7 +81,7 @@ export class EventScope {
 		}
 	}
 
-	exit({ abort = false }: EventScopeExitEventArgs): void {
+	dispose({ abort = false }: EventScopeExitEventArgs): void {
 		if (!this.isActive) {
 			throw new Error("The event scope cannot be exited because it is not active.");
 		}
