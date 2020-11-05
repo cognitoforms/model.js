@@ -4,9 +4,10 @@ import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
 import { Type } from "./type";
 import { RuleInvocationType } from "./rule-invocation-type";
-import { EventScope$current, EventScope$nonExitingScopeNestingCount, EventScope$perform, EventScope$onExit, EventScope$onAbort } from "./event-scope";
+import { EventScope, EventScope$nonExitingScopeNestingCount } from "./event-scope";
 import { ObjectMeta } from "./object-meta";
 import { ErrorConditionType, WarningConditionType, ConditionType, ErrorConditionTypeConstructor, WarningConditionTypeConstructor } from "./condition-type";
+import { Model } from "./model";
 
 // TODO: Make `detectRunawayRules` an editable configuration value
 const detectRunawayRules = true;
@@ -52,6 +53,14 @@ export class Rule {
 			if (options.execute instanceof Function)
 				this._execute = options.execute;
 		}
+	}
+
+	get model(): Model {
+		return this.rootType.model;
+	}
+
+	get eventScope(): EventScope {
+		return this.rootType.model.eventScope;
 	}
 
 	execute(entity: Entity): void {
@@ -178,11 +187,11 @@ export class Rule {
 					function (args) {
 						if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 							pendingInvocation(args.entity.meta, rule, true);
-							EventScope$onExit(() => {
+							rule.eventScope.onExit(() => {
 								pendingInvocation(args.entity.meta, rule, false);
 								executeRule(rule, args.entity);
 							});
-							EventScope$onAbort(() => {
+							rule.eventScope.onAbort(() => {
 								pendingInvocation(args.entity.meta, rule, false);
 							});
 						}
@@ -214,11 +223,11 @@ export class Rule {
 							// Immediately execute the rule if there are explicit event subscriptions for the property
 							if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 								pendingInvocation(args.entity.meta, rule, true);
-								EventScope$onExit(() => {
+								rule.eventScope.onExit(() => {
 									pendingInvocation(args.entity.meta, rule, false);
 									executeRule(rule, args.entity);
 								});
-								EventScope$onAbort(() => {
+								rule.eventScope.onAbort(() => {
 									pendingInvocation(args.entity.meta, rule, false);
 								});
 							}
@@ -229,7 +238,7 @@ export class Rule {
 								Property$pendingInit(args.entity, returnValue, true);
 							});
 							// Defer change notification until the scope of work has completed
-							EventScope$onExit(() => {
+							rule.eventScope.onExit(() => {
 								rule.returnValues.forEach((returnValue) => {
 									(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
 								});
@@ -310,10 +319,10 @@ function executeRule(rule: Rule, obj: Entity): void {
 		return;
 	}
 
-	EventScope$perform(function () {
+	rule.eventScope.perform(() => {
 		if (detectRunawayRules) {
-			if (EventScope$current.parent) {
-				let parentEventScope = EventScope$current.parent as any;
+			if (rule.eventScope.current.parent) {
+				let parentEventScope = rule.eventScope.current.parent as any;
 				if (parentEventScope._exitEventVersion) {
 					// Determine the maximum number nested calls to EventScope$perform
 					// before considering a rule to be a "runaway" rule.

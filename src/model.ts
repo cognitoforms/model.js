@@ -6,6 +6,7 @@ import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
 import { CultureInfo, formatNumber, parseNumber, formatDate, parseDate, expandDateFormat, getNumberStyle } from "./globalization";
+import { EventScope } from "./event-scope";
 
 const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
 
@@ -20,6 +21,7 @@ export class Model {
 	readonly $culture: CultureInfo;
 
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
+	readonly eventScope: EventScope;
 
 	private _readyCallbacks: (() => void)[];
 	private _readyProcessing = false;
@@ -31,6 +33,7 @@ export class Model {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
+		this.eventScope = EventScope.create();
 
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
 

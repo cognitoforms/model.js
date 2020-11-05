@@ -1,8 +1,6 @@
 import { Event, EventSubscriber } from "./events";
 import { getEventSubscriptions } from "./helpers";
 
-export let EventScope$current: EventScope = null;
-
 let __lastEventScopeId = 0;
 
 // Controls the maximum number of times that a child event scope can transfer events
@@ -21,6 +19,8 @@ interface EventScopeAbortEventArgs {
 export class EventScope {
 	parent: EventScope;
 
+	current: EventScope = null;
+
 	isActive: boolean;
 
 	readonly _uid: number;
@@ -28,21 +28,19 @@ export class EventScope {
 	private _exitEventVersion: number;
 	private _exitEventHandlerCount: number;
 
-	readonly onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
-	readonly onAbort: EventSubscriber<EventScope, EventScopeAbortEventArgs>;
+	readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
+	readonly _onAbort: EventSubscriber<EventScope, EventScopeAbortEventArgs>;
 
-	constructor() {
+	private constructor(parent: EventScope, isActive: boolean = false) {
 		this._uid = ++__lastEventScopeId;
+		this.parent = parent;
+		this.isActive = isActive;
+		this._onExit = new Event<EventScope, EventScopeExitEventArgs>();
+		this._onAbort = new Event<EventScope, EventScopeAbortEventArgs>();
+	}
 
-		// If there is a current event scope
-		// then it will be the parent of the new event scope
-		this.parent = EventScope$current;
-
-		this.isActive = true;
-		this.onExit = new Event<EventScope, EventScopeExitEventArgs>();
-		this.onAbort = new Event<EventScope, EventScopeAbortEventArgs>();
-
-		EventScope$current = this;
+	static create(): EventScope {
+		return new EventScope(null, false);
 	}
 
 	abort(maxNestingExceeded: boolean = false): void {
@@ -51,15 +49,16 @@ export class EventScope {
 		}
 
 		try {
-			(this.onAbort as Event<EventScope, EventScopeAbortEventArgs>).publish(this, { maxNestingExceeded: maxNestingExceeded });
+			(this._onAbort as Event<EventScope, EventScopeAbortEventArgs>).publish(this, { maxNestingExceeded: maxNestingExceeded });
 
 			// Clear the events to ensure that they aren't
 			// inadvertantly raised again through this scope
-			this.onAbort.clear();
-			this.onExit.clear();
+			this._onAbort.clear();
+			this._onExit.clear();
 		}
 		finally {
-			this.dispose();
+			// The event scope is no longer active
+			this.isActive = false;
 		}
 	}
 
@@ -71,7 +70,7 @@ export class EventScope {
 		let scopeAborted = false;
 
 		try {
-			var exitSubscriptions = getEventSubscriptions(this.onExit as Event<EventScope, EventScopeExitEventArgs>);
+			var exitSubscriptions = getEventSubscriptions(this._onExit as Event<EventScope, EventScopeExitEventArgs>);
 			if (exitSubscriptions && exitSubscriptions.length > 0) {
 				// If there is no parent scope, then go ahead and execute the 'exit' event
 				if (this.parent === null || !this.parent.isActive) {
@@ -80,7 +79,7 @@ export class EventScope {
 					this._exitEventHandlerCount = exitSubscriptions.length;
 
 					// Invoke all subscribers
-					(this.onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, {});
+					(this._onExit as Event<EventScope, EventScopeExitEventArgs>).publish(this, {});
 
 					// Delete the fields to indicate that raising the exit event suceeded
 					delete this._exitEventHandlerCount;
@@ -98,7 +97,7 @@ export class EventScope {
 					// Move subscribers to the parent scope
 					exitSubscriptions.forEach(sub => {
 						if (!sub.isOnce || !sub.isExecuted) {
-							this.parent.onExit.subscribe(sub.handler);
+							this.parent._onExit.subscribe(sub.handler);
 						}
 					});
 
@@ -109,66 +108,64 @@ export class EventScope {
 
 				// Clear the events to ensure that they aren't
 				// inadvertantly raised again through this scope
-				this.onAbort.clear();
-				this.onExit.clear();
+				this._onAbort.clear();
+				this._onExit.clear();
 			}
 		}
 		finally {
-			if (!scopeAborted)
-				this.dispose();
+			if (!scopeAborted) {
+				// The event scope is no longer active
+				this.isActive = false;
+			}
 		}
 	}
 
-	dispose() {
-		// The event scope is no longer active
-		this.isActive = false;
-
-		if (this !== EventScope$current) {
-			console.warn(`Disposed of non-current event scope ${this._uid}.`);
-			return;
+	onExit(callback: Function): void {
+		if (this.current === null) {
+			// Immediately invoke the callback
+			callback();
 		}
-
-		// Roll back to the closest active scope
-		while (EventScope$current && !EventScope$current.isActive) {
-			EventScope$current = EventScope$current.parent;
-		}
-	}
-}
-
-export function EventScope$onExit(callback: Function): void {
-	if (EventScope$current === null) {
-		// Immediately invoke the callback
-		callback();
-	}
-	else if (!EventScope$current.isActive) {
-		throw new Error("The current event scope cannot be inactive.");
-	}
-	else {
-		// Subscribe to the exit event
-		EventScope$current.onExit.subscribe(callback as any);
-	}
-}
-
-export function EventScope$onAbort(callback: Function): void {
-	if (EventScope$current !== null) {
-		if (!EventScope$current.isActive) {
+		else if (!this.current.isActive) {
 			throw new Error("The current event scope cannot be inactive.");
 		}
-
-		// Subscribe to the abort event
-		EventScope$current.onAbort.subscribe(callback as any);
+		else {
+			// Subscribe to the exit event
+			this.current._onExit.subscribe(callback as any);
+		}
 	}
-}
 
-export function EventScope$perform(callback: Function): void {
-	// Create an event scope
-	var scope = new EventScope();
-	try {
-		// Invoke the callback
-		callback();
+	onAbort(callback: Function): void {
+		if (this.current !== null) {
+			if (!this.current.isActive) {
+				throw new Error("The current event scope cannot be inactive.");
+			}
+
+			// Subscribe to the abort event
+			this.current._onAbort.subscribe(callback as any);
+		}
 	}
-	finally {
-		// Exit the event scope
-		scope.exit();
+
+	perform(callback: Function): void {
+		// Create an event scope
+		var scope = new EventScope(this.current, true);
+		try {
+			this.current = scope;
+			// Invoke the callback
+			callback();
+		}
+		finally {
+			// Exit the event scope
+			scope.exit();
+
+			if (scope !== this.current) {
+				console.warn(`Exited non-current event scope ${scope._uid}.`);
+			}
+			else {
+				// Roll back to the closest active scope
+				while (this.current && !this.current.isActive) {
+					this.current = this.current.parent;
+				}
+			}
+		}
 	}
 }
