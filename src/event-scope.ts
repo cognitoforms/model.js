@@ -17,12 +17,11 @@ export class EventScope {
 	readonly parent: EventScope;
 
 	current: EventScope = null;
-
 	isActive: boolean;
 
-	readonly _uid: number;
+	private readonly _uid: number;
 
-	readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
+	private readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
 	private _exitEventVersion: number;
 
 	private constructor(parent: EventScope, isActive: boolean = false) {
@@ -81,7 +80,7 @@ export class EventScope {
 		}
 	}
 
-	dispose({ abort = false }: EventScopeExitEventArgs): void {
+	private dispose({ abort = false }: EventScopeExitEventArgs): void {
 		if (!this.isActive) {
 			throw new Error("The event scope cannot be exited because it is not active.");
 		}
