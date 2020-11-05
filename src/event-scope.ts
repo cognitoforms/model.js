@@ -38,6 +38,44 @@ export class EventScope {
 		return new EventScope(null, false);
 	}
 
+	perform(callback: Function): void {
+		// Create an event scope
+		var scope = new EventScope(this.current, true);
+		try {
+			this.current = scope;
+			// Invoke the callback
+			callback();
+		}
+		finally {
+			// Exit the event scope
+			scope.exit();
+
+			if (scope !== this.current) {
+				console.warn(`Exited non-current event scope ${scope._uid}.`);
+			}
+			else {
+				// Roll back to the closest active scope
+				while (this.current && !this.current.isActive) {
+					this.current = this.current.parent;
+				}
+			}
+		}
+	}
+
+	onExit(handler: (args: EventScopeExitEventArgs) => void): void {
+		if (this.current === null) {
+			// Immediately invoke the callback
+			handler({ abort: false });
+		}
+		else if (!this.current.isActive) {
+			throw new Error("The current event scope cannot be inactive.");
+		}
+		else {
+			// Subscribe to the exit event
+			this.current._onExit.subscribe(handler);
+		}
+	}
+
 	exit(): void {
 		if (!this.isActive) {
 			throw new Error("The event scope cannot be exited because it is not active.");
@@ -88,44 +126,6 @@ export class EventScope {
 		finally {
 			// The event scope is no longer active
 			this.isActive = false;
-		}
-	}
-
-	onExit(handler: (args: EventScopeExitEventArgs) => void): void {
-		if (this.current === null) {
-			// Immediately invoke the callback
-			handler({ abort: false });
-		}
-		else if (!this.current.isActive) {
-			throw new Error("The current event scope cannot be inactive.");
-		}
-		else {
-			// Subscribe to the exit event
-			this.current._onExit.subscribe(handler);
-		}
-	}
-
-	perform(callback: Function): void {
-		// Create an event scope
-		var scope = new EventScope(this.current, true);
-		try {
-			this.current = scope;
-			// Invoke the callback
-			callback();
-		}
-		finally {
-			// Exit the event scope
-			scope.exit();
-
-			if (scope !== this.current) {
-				console.warn(`Exited non-current event scope ${scope._uid}.`);
-			}
-			else {
-				// Roll back to the closest active scope
-				while (this.current && !this.current.isActive) {
-					this.current = this.current.parent;
-				}
-			}
 		}
 	}
 }
