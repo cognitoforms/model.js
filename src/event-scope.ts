@@ -36,14 +36,23 @@ export class EventScope {
 		return new EventScope(null, false);
 	}
 
+	/**
+	 * Creates a new event scope, performs the action, then exits the scope
+	 * @param callback The action to perform within the new scope
+	 */
 	perform(callback: Function): void {
 		// Create an event scope
 		var scope = new EventScope(this.current, true);
+
 		let isDisposing = false;
+
 		try {
 			this.current = scope;
+
 			// Invoke the callback
 			callback();
+
+			// Dispose of the event scope
 			isDisposing = true;
 			this.current.dispose({ abort: false });
 		}
@@ -59,6 +68,10 @@ export class EventScope {
 		}
 	}
 
+	/**
+	 * Subscribes to the "exit" event of the current scope, or invokes immediately if there is not a current scope
+	 * @param handler The event handler to invoke when exited
+	 */
 	onExit(handler: (args: EventScopeExitEventArgs) => void): void {
 		if (this.current === null) {
 			// Immediately invoke the callback
