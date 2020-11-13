@@ -940,7 +940,7 @@ function expandNumber(number: number, precision: number, groupSizes: number[], s
  * @param cultureInfo The culture
  */
 export function formatNumber(number: number, format: string, cultureInfo: CultureInfo): string {
-	if (isNaN(number))
+	if (number === null || isNaN(number))
 		return null;
 
 	if (!format || (format.length === 0) || (format === "i")) {
