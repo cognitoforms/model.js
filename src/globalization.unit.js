@@ -62,6 +62,14 @@ describe("globalize", function () {
 		test("returns null given null", () => {
 			expect(formatNumber(null, "n1", CultureInfo.CurrentCulture)).toBeNull();
 		});
+
+		test("returns null given string", () => {
+			expect(formatNumber("5", "n1", CultureInfo.CurrentCulture)).toBeNull();
+		});
+
+		test("returns null given object", () => {
+			expect(formatNumber({ x: 5 }, "n1", CultureInfo.CurrentCulture)).toBeNull();
+		});
 	});
 
 	describe("parseNumber", () => {
