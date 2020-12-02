@@ -4,6 +4,7 @@ import { CultureInfo } from "./globalization";
 import { Model } from "./model";
 
 describe("EventScope", () => {
+	beforeAll(() => CultureInfo.setup());
 	it("creates a new scope when 'perform' is called", () => {
 		const scope = EventScope.create();
 		let counter = 0;
@@ -55,7 +56,6 @@ describe("EventScope", () => {
 		expect(scope.current).toBeNull();
 	});
 	it("aborts when the maximum scope nesting count is reached", () => {
-		CultureInfo.setup();
 		const model = new Model({
 			$namespace: {},
 			$locale: "en",
