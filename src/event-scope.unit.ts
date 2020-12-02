@@ -1,4 +1,4 @@
-import { EventScope } from "./event-scope";
+import { EventScope, EventScope$nonExitingScopeNestingCount } from "./event-scope";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { Model } from "./model";
@@ -137,7 +137,7 @@ describe("EventScope", () => {
 		expect(context.MatchedUser).not.toBeNull();
 		expect(context.MatchedUser.FullName).toBe("Dave Smith");
 		context.MatchedUser.FirstName = "Bob";
-		const maxNesting = 100 - 1;
+		const maxNesting = EventScope$nonExitingScopeNestingCount - 1;
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
 		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
 		expect(model.eventScope.current).toBeNull();
