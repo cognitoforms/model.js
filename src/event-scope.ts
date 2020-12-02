@@ -60,6 +60,7 @@ export class EventScope {
 			if (!isDisposing)
 				this.current.dispose({ abort: true });
 
+			console.warn(`Error occurred in EventScope ${(isDisposing ? "dispose" : "callback")} function.`);
 			throw e;
 		}
 		finally {
@@ -118,6 +119,7 @@ export class EventScope {
 						}
 						catch (e) {
 							this.dispose({ abort: true });
+							console.warn("Error occurred in EventScope dispose function.");
 							throw e;
 						}
 					}
