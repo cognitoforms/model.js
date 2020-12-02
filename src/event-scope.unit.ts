@@ -45,9 +45,9 @@ describe("EventScope", () => {
 		expect(scope.current).toBeNull();
 		try {
 			scope.perform(() => {
-			counter++;
-			throw new Error("Fail!");
-		});
+				counter++;
+				throw new Error("Fail!");
+			});
 		}
 		catch (e) {
 			// Do nothing
@@ -141,5 +141,51 @@ describe("EventScope", () => {
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
 		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
 		expect(model.eventScope.current).toBeNull();
+	});
+	it("aborts when the maximum scope depth is reached", async () => {
+		const model = new Model({
+			$namespace: {},
+			$locale: "en",
+			"User": {
+				"FirstName": {
+					type: String,
+					required: true
+				},
+				"LastName": {
+					type: String,
+					required: true
+				},
+				"AbbreviateName": {
+					type: Boolean,
+					get: {
+						dependsOn: "{FullName,FirstName,LastName}",
+						defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
+						function(this: any) {
+							return this.FullName === `${this.FirstName.substring(0, 1)}. ${this.LastName}` ? true : this.FullName === this.toString("[FirstName] [LastName]") ? false : null;
+						}
+					}
+				},
+				"FullName": {
+					type: "String",
+					get: {
+						dependsOn: "{AbbreviateName,FirstName,LastName}",
+						defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
+						function(this: any) {
+							// The "Abbreviated" code path will throw an error if FirstName doesn't have a value
+							return this.AbbreviateName ? `${this.FirstName.substring(0, 1)}. ${this.LastName}` : this.toString("[FirstName] [LastName]");
+						}
+					},
+					set(this: any) {
+						this.AbbreviateName = undefined;
+					}
+				}
+			}
+		});
+
+		const user1 = new model.$namespace.User({ FirstName: "Dave", LastName: "Smith" });
+		user1.AbbreviateName = true;
+		expect(user1.FullName).toBe("D. Smith");
+		expect(user1.meta.conditions.length).toBe(0);
+		expect(user1.AbbreviateName).toBe(true);
 	});
 });
