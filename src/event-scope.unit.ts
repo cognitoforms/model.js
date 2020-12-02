@@ -1,34 +1,37 @@
-import { EventScope$current, EventScope$perform, EventScope$onExit, EventScope$nonExitingScopeNestingCount } from "./event-scope";
+import { EventScope } from "./event-scope";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { Model } from "./model";
 
 describe("EventScope", () => {
 	it("creates a new scope when 'perform' is called", () => {
+		const scope = EventScope.create();
 		let counter = 0;
-		expect(EventScope$current).toBeNull();
-		EventScope$perform(() => {
-			expect(EventScope$current).not.toBeNull();
+		expect(scope.current).toBeNull();
+		scope.perform(() => {
+			expect(scope.current).not.toBeNull();
 		    counter++;
 		});
 		expect(counter).toBe(1);
-		expect(EventScope$current).toBeNull();
+		expect(scope.current).toBeNull();
 	});
 	it("invokes the callback immediately if a scope was not already active", () => {
+		const scope = EventScope.create();
 		let counter = 0;
-		EventScope$perform(() => {
+		scope.perform(() => {
 			expect(counter).toBe(0);
 		    counter++;
 		});
 		expect(counter).toBe(1);
 		counter++;
 	});
-	it("invokes 'onExit' when the active scope exits", () => {
+	it("invokes 'onComplete' when the active scope exits", () => {
+		const scope = EventScope.create();
 		let counter = 0;
-		EventScope$perform(() => {
+		scope.perform(() => {
 			expect(counter).toBe(0);
 			counter++;
-			EventScope$onExit(() => {
+			scope.onExit(() => {
 				expect(counter).toBe(1);
 			});
 		});
@@ -36,14 +39,20 @@ describe("EventScope", () => {
 		counter++;
 	});
 	it("exits automatically when an error occurs", () => {
+		const scope = EventScope.create();
 		let counter = 0;
-		expect(EventScope$current).toBeNull();
-		EventScope$perform(() => {
+		expect(scope.current).toBeNull();
+		try {
+			scope.perform(() => {
 			counter++;
 			throw new Error("Fail!");
 		});
+		}
+		catch (e) {
+			// Do nothing
+		}
 		expect(counter).toBe(1);
-		expect(EventScope$current).toBeNull();
+		expect(scope.current).toBeNull();
 	});
 	it("aborts when the maximum scope nesting count is reached", () => {
 		CultureInfo.setup();
@@ -128,9 +137,9 @@ describe("EventScope", () => {
 		expect(context.MatchedUser).not.toBeNull();
 		expect(context.MatchedUser.FullName).toBe("Dave Smith");
 		context.MatchedUser.FirstName = "Bob";
-		const maxNesting = EventScope$nonExitingScopeNestingCount - 1;
+		const maxNesting = 100 - 1;
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
 		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
-		expect(EventScope$current).toBeNull();
+		expect(model.eventScope.current).toBeNull();
 	});
 });
