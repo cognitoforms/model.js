@@ -7,6 +7,14 @@ import { getEventSubscriptions } from "./helpers";
 // cause this scenario, but in practice they are the primary use-case for event scope.
 export const EventScope$nonExitingScopeNestingCount = 100;
 
+// Controls the maximum depth that an event scope can reach. A large number indicates
+// that the consumer of the event scope is likely cycling through the same activities
+// repeatedly (i.e. infinite recursion) and the browser's "max stack" limit will
+// likely be reached at some point. This setting can be used to cause the event
+// scope to exit before the limit is reached, in order to avoid the browser
+// terminating the script in a way that it may not be able to fully recover from.
+export const EventScope$maxDepth = 1000;
+
 export interface EventScopeExitEventArgs {
 	abort: boolean;
 }
@@ -20,6 +28,7 @@ export class EventScope {
 	isActive: boolean;
 
 	private readonly _uid: number;
+	private readonly _depth: number;
 
 	private readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
 	private _exitEventVersion: number;
@@ -29,6 +38,7 @@ export class EventScope {
 		this.current = null;
 		this.isActive = isActive;
 		this._uid = ++__lastEventScopeId;
+		this._depth = parent === null ? 1 : parent._depth + 1;
 		this._onExit = new Event<EventScope, EventScopeExitEventArgs>();
 	}
 
@@ -47,6 +57,9 @@ export class EventScope {
 		let isDisposing = false;
 
 		try {
+			if (scope._depth >= EventScope$maxDepth)
+				throw new Error("Exceeded max scope depth.");
+
 			this.current = scope;
 
 			// Invoke the callback
