@@ -1,10 +1,14 @@
 import { Functor$create, FunctorWith1Arg, FunctorItem } from "./functor";
 import { hasOwnProperty } from "./helpers";
 
-export class EventObject {
-	stopPropagation(): void {
-		// TODO: Implement 'stopPropagation()'?
-		throw new Error("Method 'stopPropagation' is not implemented.");
+export interface EventObject {
+	preventDefault(): void;
+}
+
+export class EventObjectImpl implements EventObject {
+	isDefaultPrevented: boolean = false;
+	preventDefault(): void {
+		this.isDefaultPrevented = true;
 	}
 }
 
@@ -35,7 +39,7 @@ export interface EventSubscriptionChanged<EventType> {
 }
 
 function createEventObject<EventArgsType>(args: EventArgsType): EventObject & EventArgsType {
-	let eventObject = new EventObject();
+	let eventObject: EventObject = new EventObjectImpl();
 
 	for (var prop in args) {
 		if (hasOwnProperty(args, prop)) {
@@ -56,13 +60,14 @@ export class Event<This, EventArgsType> implements EventPublisher<This, EventArg
     	}
     }
 
-    publish(thisObject: This, args: EventArgsType): void {
+    publish(thisObject: This, args: EventArgsType): EventObject & EventArgsType {
     	if (!this.func) {
     		// No subscribers
     		return;
     	}
     	let eventObject = createEventObject<EventArgsType>(args);
     	this.func.call(thisObject, eventObject);
+    	return eventObject;
     }
 
     subscribe(handler: EventHandler<This, EventArgsType>): void {
