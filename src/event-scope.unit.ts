@@ -1,4 +1,4 @@
-import { EventScope, EventScope$nonExitingScopeNestingCount } from "./event-scope";
+import { EventScope, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { Model } from "./model";
@@ -6,7 +6,7 @@ import { Model } from "./model";
 describe("EventScope", () => {
 	beforeAll(() => CultureInfo.setup());
 	it("creates a new scope when 'perform' is called", () => {
-		const scope = EventScope.create();
+		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		expect(scope.current).toBeNull();
 		scope.perform(() => {
@@ -17,7 +17,7 @@ describe("EventScope", () => {
 		expect(scope.current).toBeNull();
 	});
 	it("invokes the callback immediately if a scope was not already active", () => {
-		const scope = EventScope.create();
+		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		scope.perform(() => {
 			expect(counter).toBe(0);
@@ -27,7 +27,7 @@ describe("EventScope", () => {
 		counter++;
 	});
 	it("invokes 'onComplete' when the active scope exits", () => {
-		const scope = EventScope.create();
+		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		scope.perform(() => {
 			expect(counter).toBe(0);
@@ -40,7 +40,7 @@ describe("EventScope", () => {
 		counter++;
 	});
 	it("exits automatically when an error occurs", () => {
-		const scope = EventScope.create();
+		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		expect(scope.current).toBeNull();
 		try {
@@ -137,7 +137,7 @@ describe("EventScope", () => {
 		expect(context.MatchedUser).not.toBeNull();
 		expect(context.MatchedUser.FullName).toBe("Dave Smith");
 		context.MatchedUser.FirstName = "Bob";
-		const maxNesting = EventScope$nonExitingScopeNestingCount - 1;
+		const maxNesting = model.eventScope.settings.maxExitingTransferCount - 1;
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
 		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
 		expect(model.eventScope.current).toBeNull();
@@ -180,6 +180,8 @@ describe("EventScope", () => {
 					}
 				}
 			}
+		}, {
+			maxEventScopeDepth: 100
 		});
 
 		const user1 = new model.$namespace.User({ FirstName: "Dave", LastName: "Smith" });

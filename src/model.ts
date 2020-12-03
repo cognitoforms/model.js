@@ -6,7 +6,7 @@ import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
 import { CultureInfo, formatNumber, parseNumber, formatDate, parseDate, expandDateFormat, getNumberStyle } from "./globalization";
-import { EventScope } from "./event-scope";
+import { EventScope, EventScopeSettings, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 
 const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
 
@@ -33,7 +33,7 @@ export class Model {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
-		this.eventScope = EventScope.create();
+		this.eventScope = EventScope.create(this.settings.eventScopeSettings);
 
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
 
@@ -412,6 +412,15 @@ export type ModelConfiguration = {
 	 */
 	useGlobalObject?: boolean;
 
+	/**
+	 * Controls the maximum number of times that a child event scope can transfer events to its parent while the parent scope is exiting.
+	 */
+	maxExitingEventScopeTransferCount?: number;
+
+	/**
+	 * Controls the maximum depth that an event scope can reach.
+	 */
+	maxEventScopeDepth?: number;
 }
 
 export class ModelSettings {
@@ -422,9 +431,16 @@ export class ModelSettings {
 	// Don't pollute the window object by default
 	readonly useGlobalObject: boolean = false;
 
+	// Use sane defaults for event scope settings, i.e. "non-exiting" scope detection
+	readonly eventScopeSettings: EventScopeSettings = EVENT_SCOPE_DEFAULT_SETTINGS;
+
 	constructor(config?: ModelConfiguration) {
 		this.createOwnProperties = config && !!config.createOwnProperties;
 		this.useGlobalObject = config && !!config.useGlobalObject;
+		this.eventScopeSettings = {
+			maxExitingTransferCount: (config && typeof config.maxExitingEventScopeTransferCount === "number" ? config.maxExitingEventScopeTransferCount : null) || EVENT_SCOPE_DEFAULT_SETTINGS.maxExitingTransferCount,
+			maxDepth: (config && typeof config.maxEventScopeDepth === "number" ? config.maxEventScopeDepth : null) || EVENT_SCOPE_DEFAULT_SETTINGS.maxDepth
+		};
 	}
 }
 

@@ -1,19 +1,30 @@
 import { Event, EventSubscriber, EventSubscription } from "./events";
 import { getEventSubscriptions } from "./helpers";
 
-// Controls the maximum number of times that a child event scope can transfer events
-// to its parent while the parent scope is exiting. A large number indicates that
-// rules are not reaching steady-state. Technically something other than rules could
-// cause this scenario, but in practice they are the primary use-case for event scope.
-export const EventScope$nonExitingScopeNestingCount = 100;
+export interface EventScopeSettings {
+	/**
+	 * Controls the maximum number of times that a child event scope can transfer events to its parent
+	 * while the parent scope is exiting. A large number indicates that the consumer of the event scope
+	 * is likely cycling through the same activities repeatedly (i.e. infinite loop). This setting can
+	 * be used to cause the event scope to exit before the browser chooses to terminate the script in
+	 * a way that it may not be able to fully recover from.
+	 */
+	maxExitingTransferCount: number;
 
-// Controls the maximum depth that an event scope can reach. A large number indicates
-// that the consumer of the event scope is likely cycling through the same activities
-// repeatedly (i.e. infinite recursion) and the browser's "max stack" limit will
-// likely be reached at some point. This setting can be used to cause the event
-// scope to exit before the limit is reached, in order to avoid the browser
-// terminating the script in a way that it may not be able to fully recover from.
-export const EventScope$maxDepth = 1000;
+	/**
+	 * Controls the maximum depth that an event scope can reach. A large number indicates that the consumer
+	 * of the event scope is likely cycling through the same activities repeatedly (i.e. infinite recursion)
+	 * and the browser's "max stack" limit will likely be reached at some point. This setting can be
+	 * used to cause the event scope to exit before the limit is reached, in order to avoid the browser
+	 * terminating the script in a way that it may not be able to fully recover from.
+	 */
+	maxDepth: number;
+}
+
+export const EVENT_SCOPE_DEFAULT_SETTINGS: EventScopeSettings = {
+	maxExitingTransferCount: 100,
+	maxDepth: 1000
+};
 
 export interface EventScopeExitEventArgs {
 	abort: boolean;
@@ -27,23 +38,26 @@ export class EventScope {
 	current: EventScope = null;
 	isActive: boolean;
 
+	readonly settings: EventScopeSettings;
+
 	private readonly _uid: number;
 	private readonly _depth: number;
 
 	private readonly _onExit: EventSubscriber<EventScope, EventScopeExitEventArgs>;
 	private _exitEventVersion: number;
 
-	private constructor(parent: EventScope, isActive: boolean = false) {
+	private constructor(parent: EventScope, maxExitingTransferCount: number, maxDepth: number, isActive: boolean = false) {
 		this.parent = parent;
 		this.current = null;
 		this.isActive = isActive;
+		this.settings = { maxExitingTransferCount, maxDepth };
 		this._uid = ++__lastEventScopeId;
 		this._depth = parent === null ? 1 : parent._depth + 1;
 		this._onExit = new Event<EventScope, EventScopeExitEventArgs>();
 	}
 
-	static create(): EventScope {
-		return new EventScope(null, false);
+	static create({ maxExitingTransferCount = EVENT_SCOPE_DEFAULT_SETTINGS.maxExitingTransferCount, maxDepth = EVENT_SCOPE_DEFAULT_SETTINGS.maxDepth }: EventScopeSettings): EventScope {
+		return new EventScope(null, maxExitingTransferCount, maxDepth, false);
 	}
 
 	/**
@@ -51,16 +65,15 @@ export class EventScope {
 	 * @param callback The action to perform within the new scope
 	 */
 	perform(callback: Function): void {
-		// Create an event scope
-		var scope = new EventScope(this.current, true);
+		var scope = new EventScope(this.current, this.settings.maxExitingTransferCount, this.settings.maxDepth, true);
 
 		let isDisposing = false;
 
 		try {
-			if (scope._depth >= EventScope$maxDepth)
-				throw new Error("Exceeded max scope depth.");
-
 			this.current = scope;
+
+			if (scope._depth >= this.settings.maxDepth)
+				throw new Error("Exceeded max scope depth.");
 
 			// Invoke the callback
 			callback();
@@ -147,7 +160,7 @@ export class EventScope {
 	}
 
 	private receiveEventHandlers(subscriptions: EventSubscription<EventScope, EventScopeExitEventArgs>[]) {
-		var maxNesting = EventScope$nonExitingScopeNestingCount - 1;
+		var maxNesting = this.settings.maxExitingTransferCount - 1;
 		if (this._exitEventVersion >= maxNesting) {
 			throw new Error("Exceeded max scope event transfer.");
 		}
