@@ -128,6 +128,9 @@ describe("EventScope", () => {
 			}
 		});
 
+		let eventScopeError: Error = null;
+		model.eventScope.onError.subscribe(e => { eventScopeError = e.error; e.preventDefault(); });
+
 		const context = new model.$namespace.Context();
 		const user1 = new model.$namespace.UserRef({ FirstName: "Dave", LastName: "Smith", Id: "abc123", IsArchived: true });
 		context.Users.push(user1);
@@ -141,6 +144,8 @@ describe("EventScope", () => {
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
 		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
 		expect(model.eventScope.current).toBeNull();
+		expect(eventScopeError).not.toBeNull();
+		expect(eventScopeError.message).toBe("Exceeded max scope event transfer.");
 	});
 	it("aborts when the maximum scope depth is reached", async () => {
 		const model = new Model({
@@ -184,10 +189,15 @@ describe("EventScope", () => {
 			maxEventScopeDepth: 100
 		});
 
+		let eventScopeError: Error = null;
+		model.eventScope.onError.subscribe(e => { eventScopeError = e.error; e.preventDefault(); });
+
 		const user1 = new model.$namespace.User({ FirstName: "Dave", LastName: "Smith" });
 		user1.AbbreviateName = true;
 		expect(user1.FullName).toBe("D. Smith");
 		expect(user1.meta.conditions.length).toBe(0);
 		expect(user1.AbbreviateName).toBe(true);
+		expect(eventScopeError).not.toBeNull();
+		expect(eventScopeError.message).toBe("Exceeded max scope depth.");
 	});
 });

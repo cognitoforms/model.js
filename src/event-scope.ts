@@ -1,4 +1,4 @@
-import { Event, EventSubscriber, EventSubscription } from "./events";
+import { Event, EventObjectImpl, EventSubscriber, EventSubscription } from "./events";
 import { getEventSubscriptions } from "./helpers";
 
 export interface EventScopeSettings {
@@ -30,6 +30,10 @@ export interface EventScopeExitEventArgs {
 	abort: boolean;
 }
 
+export interface EventScopeErrorEventArgs {
+	error: Error;
+}
+
 let __lastEventScopeId = 0;
 
 export class EventScope {
@@ -39,6 +43,7 @@ export class EventScope {
 	isActive: boolean;
 
 	readonly settings: EventScopeSettings;
+	readonly onError: EventSubscriber<EventScope, EventScopeErrorEventArgs>;
 
 	private readonly _uid: number;
 	private readonly _depth: number;
@@ -51,6 +56,7 @@ export class EventScope {
 		this.current = null;
 		this.isActive = isActive;
 		this.settings = { maxExitingTransferCount, maxDepth };
+		this.onError = new Event<EventScope, EventScopeErrorEventArgs>();
 		this._uid = ++__lastEventScopeId;
 		this._depth = parent === null ? 1 : parent._depth + 1;
 		this._onExit = new Event<EventScope, EventScopeExitEventArgs>();
@@ -86,7 +92,9 @@ export class EventScope {
 			if (!isDisposing)
 				this.current.dispose({ abort: true });
 
-			throw e;
+			const errorEvent = (this.onError as Event<EventScope, EventScopeErrorEventArgs>).publish(this, { error: e }) as EventObjectImpl & EventScopeErrorEventArgs;
+			if (!errorEvent.isDefaultPrevented)
+				throw e;
 		}
 		finally {
 			// Roll back to the closest active scope
