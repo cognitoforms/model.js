@@ -20,11 +20,9 @@ describe("EventScope", () => {
 		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		scope.perform(() => {
-			expect(counter).toBe(0);
 		    counter++;
 		});
 		expect(counter).toBe(1);
-		counter++;
 	});
 	it("invokes 'onExit' when the active scope exits", () => {
 		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
