@@ -148,7 +148,7 @@ export class EventScope {
 					else {
 						try {
 							// Attempt to move subscribers to the parent scope
-							this.parent.receiveEventHandlers(exitSubscriptions);
+							this.parent.receiveExitEventSubscribers(exitSubscriptions);
 						}
 						catch (e) {
 							this.dispose({ abort: true });
@@ -167,18 +167,14 @@ export class EventScope {
 		}
 	}
 
-	private receiveEventHandlers(subscriptions: EventSubscription<EventScope, EventScopeExitEventArgs>[]) {
+	private receiveExitEventSubscribers(subscriptions: EventSubscription<EventScope, EventScopeExitEventArgs>[]) {
 		var maxNesting = this.settings.maxExitingTransferCount - 1;
 		if (this._exitEventVersion >= maxNesting) {
 			throw new Error("Exceeded max scope event transfer.");
 		}
 
 		// Move subscribers to the parent scope
-		subscriptions.forEach(sub => {
-			if (!sub.isOnce || !sub.isExecuted) {
-				this._onExit.subscribe(sub.handler);
-			}
-		});
+		subscriptions.forEach(sub => this._onExit.subscribe(sub.handler));
 
 		if (this._exitEventVersion !== undefined) {
 			this._exitEventVersion++;
