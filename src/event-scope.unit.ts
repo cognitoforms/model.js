@@ -28,14 +28,12 @@ describe("EventScope", () => {
 		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		scope.perform(() => {
-			expect(counter).toBe(0);
 			counter++;
 			scope.onExit(() => {
-				expect(counter).toBe(1);
+				counter++;
 			});
 		});
-		expect(counter).toBe(1);
-		counter++;
+		expect(counter).toBe(2);
 	});
 	it("exits automatically when an error occurs", () => {
 		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
