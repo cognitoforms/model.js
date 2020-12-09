@@ -26,7 +26,7 @@ describe("EventScope", () => {
 		expect(counter).toBe(1);
 		counter++;
 	});
-	it("invokes 'onComplete' when the active scope exits", () => {
+	it("invokes 'onExit' when the active scope exits", () => {
 		const scope = EventScope.create(EVENT_SCOPE_DEFAULT_SETTINGS);
 		let counter = 0;
 		scope.perform(() => {
