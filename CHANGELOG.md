@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.7] - 2020-12-11
 ### Changed
 - refactored internal EventScope concept to avoid runaway rules
 ## [0.8.6] - 2020-11-17
