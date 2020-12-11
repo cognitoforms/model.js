@@ -4,19 +4,10 @@ import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
 import { Type } from "./type";
 import { RuleInvocationType } from "./rule-invocation-type";
-import { EventScope$current, EventScope$perform, EventScope$onExit, EventScope$onAbort } from "./event-scope";
+import { EventScope } from "./event-scope";
 import { ObjectMeta } from "./object-meta";
 import { ErrorConditionType, WarningConditionType, ConditionType, ErrorConditionTypeConstructor, WarningConditionTypeConstructor } from "./condition-type";
-
-// TODO: Make `detectRunawayRules` an editable configuration value
-const detectRunawayRules = true;
-
-// TODO: Make `nonExitingScopeNestingCount` an editable configuration value
-// Controls the maximum number of times that a child event scope can transfer events
-// to its parent while the parent scope is exiting. A large number indicates that
-// rules are not reaching steady-state. Technically something other than rules could
-// cause this scenario, but in practice they are the primary use-case for event scope.
-const nonExitingScopeNestingCount = 100;
+import { Model } from "./model";
 
 let Rule$customRuleIndex = 0;
 
@@ -59,6 +50,14 @@ export class Rule {
 			if (options.execute instanceof Function)
 				this._execute = options.execute;
 		}
+	}
+
+	get model(): Model {
+		return this.rootType.model;
+	}
+
+	get eventScope(): EventScope {
+		return this.rootType.model.eventScope;
 	}
 
 	execute(entity: Entity): void {
@@ -185,12 +184,10 @@ export class Rule {
 					function (args) {
 						if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 							pendingInvocation(args.entity.meta, rule, true);
-							EventScope$onExit(function () {
+							rule.eventScope.onExit(e => {
 								pendingInvocation(args.entity.meta, rule, false);
-								executeRule(rule, args.entity);
-							});
-							EventScope$onAbort(function () {
-								pendingInvocation(args.entity.meta, rule, false);
+								if (!e.abort)
+									executeRule(rule, args.entity);
 							});
 						}
 					}
@@ -221,12 +218,10 @@ export class Rule {
 							// Immediately execute the rule if there are explicit event subscriptions for the property
 							if (canExecuteRule(rule, args.entity) && !pendingInvocation(args.entity.meta, rule)) {
 								pendingInvocation(args.entity.meta, rule, true);
-								EventScope$onExit(() => {
+								rule.eventScope.onExit(e => {
 									pendingInvocation(args.entity.meta, rule, false);
-									executeRule(rule, args.entity);
-								});
-								EventScope$onAbort(() => {
-									pendingInvocation(args.entity.meta, rule, false);
+									if (!e.abort)
+										executeRule(rule, args.entity);
 								});
 							}
 						}
@@ -236,10 +231,12 @@ export class Rule {
 								Property$pendingInit(args.entity, returnValue, true);
 							});
 							// Defer change notification until the scope of work has completed
-							EventScope$onExit(() => {
-								rule.returnValues.forEach((returnValue) => {
-									(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
-								});
+							rule.eventScope.onExit(e => {
+								if (!e.abort) {
+									rule.returnValues.forEach((returnValue) => {
+										(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
+									});
+								}
 							});
 						}
 					}
@@ -317,31 +314,14 @@ function executeRule(rule: Rule, obj: Entity): void {
 		return;
 	}
 
-	EventScope$perform(function () {
-		if (detectRunawayRules) {
-			if (EventScope$current.parent) {
-				let parentEventScope = EventScope$current.parent as any;
-				if (parentEventScope._exitEventVersion) {
-					// Determine the maximum number nested calls to EventScope$perform
-					// before considering a rule to be a "runaway" rule.
-					var maxNesting;
-					if (typeof nonExitingScopeNestingCount === "number") {
-						maxNesting = nonExitingScopeNestingCount - 1;
-					}
-					else {
-						maxNesting = 99;
-					}
-
-					if (parentEventScope._exitEventVersion > maxNesting) {
-						// TODO: logWarning("Aborting rule '" + rule.name + "'.");
-						return;
-					}
-				}
-			}
-		}
-
-		rule.execute(obj);
-	});
+	try {
+		rule.eventScope.perform(() => {
+			rule.execute(obj);
+		});
+	}
+	catch (e) {
+		console.warn(`Error encountered while running rule "${rule.name}".`);
+	}
 };
 
 export function Rule$ensureConditionType(ruleName: string, typeOrProp: Type | Property, category: string): ErrorConditionType | WarningConditionType {
