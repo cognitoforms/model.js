@@ -241,7 +241,12 @@ export class Entity {
 			value = this.serializer.deserialize(this, state, prop, this._context);
 
 		if (value !== undefined)
-			Property$setter(prop, this, value);
+			try {
+				Property$setter(prop, this, value);
+			}
+			catch (e) {
+				console.warn(e);
+			}
 	}
 
 	get(property: string): any {
