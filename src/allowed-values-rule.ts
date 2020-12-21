@@ -8,6 +8,7 @@ import { PropertyPath } from "./property-path";
 export class AllowedValuesRule extends ValidationRule {
 	readonly source: ((this: Entity) => any[]);
 	readonly ignoreValidation: boolean;
+	readonly preventInvalidValues: boolean;
 
 	/**
 	 * Creates a rule that validates whether a selected value or values is in a list of allowed values.
@@ -60,6 +61,7 @@ export class AllowedValuesRule extends ValidationRule {
 		// store the allowed values source
 		this.source = source;
 		this.ignoreValidation = !!options.ignoreValidation;
+		this.preventInvalidValues = !!options.preventInvalidValues;
 	}
 
 	values(obj: Entity): any[] {
@@ -77,4 +79,6 @@ export interface AllowedValuesRuleOptions extends ValidationRuleOptions {
 	source?: PropertyPath | ((this: Entity) => any[]);
 
 	ignoreValidation?: boolean;
+
+	preventInvalidValues?: boolean;
 }

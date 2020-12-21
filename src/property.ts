@@ -293,6 +293,7 @@ export class Property implements PropertyPath {
 							property: this,
 							source: allowedValuesOptions.function,
 							ignoreValidation: allowedValuesOptions.ignoreValidation,
+							preventInvalidValues: allowedValuesOptions.preventInvalidValues,
 							onChangeOf: resolveDependsOn(this, "allowedValues", allowedValuesOptions.dependsOn)
 						})).register();
 					});
@@ -675,6 +676,7 @@ export function isPropertyValueFunction<T>(obj: any): obj is PropertyValueFuncti
 
 export interface AllowedValuesFunctionAndOptions<T> extends PropertyValueFunctionAndOptions<T> {
 	ignoreValidation?: boolean;
+	preventInvalidValues?: boolean;
 }
 
 type LambdaFunction<ReturnType> = () => ReturnType;
@@ -1018,6 +1020,12 @@ export function Property$setter(property: Property, obj: Entity, val: any, addit
 function Property$shouldSetValue(property: Property, obj: Entity, old: any, val: any): boolean {
 	if (!property.canSetValue(obj, val)) {
 		throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (isEntityType(property.propertyType) ? property.propertyType.meta.fullName : parseFunctionName(property.propertyType)) + " was expected.");
+	}
+
+	for (const rule of property.rules) {
+		if (rule instanceof AllowedValuesRule && rule.preventInvalidValues && !rule.values(obj).includes(val) && val !== null && val !== undefined) {
+			throw new Error("Cannot set "+ property.name + ", \""+ val +"\" is not an allowed value.");
+		}
 	}
 
 	// Update lists as batch remove/add operations
