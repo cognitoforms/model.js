@@ -1022,8 +1022,8 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 		throw new Error("Cannot set " + property.name + "=" + (val === undefined ? "<undefined>" : val) + " for instance " + obj.meta.type.fullName + "|" + obj.meta.id + ": a value of type " + (isEntityType(property.propertyType) ? property.propertyType.meta.fullName : parseFunctionName(property.propertyType)) + " was expected.");
 	}
 
-	for (let rule of property.rules) {
-		if (rule instanceof AllowedValuesRule && rule.preventInvalidValues && !rule.values(obj).includes(val) && !!val) {
+	for (const rule of property.rules) {
+		if (rule instanceof AllowedValuesRule && rule.preventInvalidValues && !rule.values(obj).includes(val) && val !== null && val !== undefined) {
 			throw new Error("Cannot set "+ property.name + ", \""+ val +"\" is not an allowed value.");
 		}
 	}
