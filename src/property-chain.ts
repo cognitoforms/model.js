@@ -88,7 +88,7 @@ export class PropertyChain implements PropertyPath {
 					let handler: PropertyChangeEventHandler;
 					let priorProp: Property = index > 0 ? props[index - 1] : null;
 					handler = args => {
-						if(priorProp) {
+						if (priorProp) {
 							this.rootType.known().forEach(known => {
 								if (this.testConnection(known, args.entity, priorProp)) {
 									(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(known, {
@@ -100,8 +100,7 @@ export class PropertyChain implements PropertyPath {
 								}
 							});
 						}
-						else 
-						{
+						else {
 							(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(args.entity, {
 								entity: args.entity,
 								property: args.property,
