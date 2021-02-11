@@ -75,7 +75,6 @@ describe("PropertyChain", () => {
 				XYZ: String
 			}
 		});
-		const testConnectionSpy = jest.spyOn(PropertyChain.prototype, "testConnection");
 
 		const Person = model.getJsType("Person");
 		const chain = (Person.meta as Type).getPath("Group.Name");
@@ -86,6 +85,8 @@ describe("PropertyChain", () => {
 
 		const Group = model.getJsType("Group");
 		const group = new Group({ Name: "Patrick's Group", Id: "XDA-1V9-AM3", Country: "US", Language: "English", XYZ: "XYZ", ABC: "SBC" });
+
+		const testConnectionSpy = jest.spyOn(PropertyChain.prototype, "testConnection");
 
 		for (let p of (Person.meta as Type).known()) {
 			p.Group = group;
