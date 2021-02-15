@@ -93,7 +93,7 @@ export class EventScope {
 				this.current.dispose({ abort: true });
 
 			const errorEvent = (this.onError as Event<EventScope, EventScopeErrorEventArgs>).publish(this, { error: e }) as EventObjectImpl & EventScopeErrorEventArgs;
-			if (!errorEvent.isDefaultPrevented)
+			if (errorEvent === undefined || !errorEvent.isDefaultPrevented)
 				throw e;
 		}
 		finally {

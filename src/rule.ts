@@ -321,6 +321,8 @@ function executeRule(rule: Rule, obj: Entity): void {
 	}
 	catch (e) {
 		console.warn(`Error encountered while running rule "${rule.name}".`);
+		if (e)
+			console.warn(e);
 	}
 };
 
