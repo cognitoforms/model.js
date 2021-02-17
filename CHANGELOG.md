@@ -3,9 +3,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- errors thrown during rule calculation are logged
+
 ## [0.8.8] - 2020-12-21
-### Added
-- ability to prevent property set if value would violate AllowedValuesRule
+### added
+- ability to prevent property set if value would violate allowedvaluesrule
 
 ## [0.8.7] - 2020-12-11
 ### Changed
