@@ -28,7 +28,7 @@ export class RequiredRule extends ValidationRule {
 		}
 		else {
 			// ensure the error message is specified
-			options.message = options.message || rootType.model.getResource("required");
+			options.message = options.message || function() { return rootType.model.getResource("required"); };
 
 			if (options.isValid) {
 				if (options.when) {

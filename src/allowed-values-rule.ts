@@ -20,7 +20,7 @@ export class AllowedValuesRule extends ValidationRule {
 		options.name = options.name || "AllowedValues";
 
 		// ensure the error message is specified
-		options.message = options.message || rootType.model.getResource("allowed-values");
+		options.message = options.message || function() { return rootType.model.getResource("allowed-values"); };
 
 		// convert property path sources into a source function
 		let source: (this: Entity) => any[];
