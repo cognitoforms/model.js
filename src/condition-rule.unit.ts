@@ -13,8 +13,6 @@ function createModel(options) {
 
 describe("ConditionRule", () => {
 	test("Custom condition", async () => {
-		let consoleOutputs = [];
-		window.console.warn = jest.fn((s)=> consoleOutputs.push(s.toString()));
 		const model = await createModel({
 			Test: {
 				Text: {
