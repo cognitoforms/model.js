@@ -28,7 +28,7 @@ export class RequiredRule extends ValidationRule {
 		}
 		else {
 			// ensure the error message is specified
-			options.message = options.message || rootType.model.getResource("required");
+			options.message = options.message || function() { return rootType.model.getResource("required"); };
 
 			if (options.isValid) {
 				if (options.when) {
@@ -43,7 +43,7 @@ export class RequiredRule extends ValidationRule {
 					};
 				}
 			}
-			else if (typeof options.message !== "function") {
+			else if (options.message) {
 				// create the validation function based on the rule options
 				options.isValid = function(this: Entity, prop: Property, val: any): boolean {
 					if (options.when && !options.when.call(this)) {

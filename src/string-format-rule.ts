@@ -19,12 +19,13 @@ export class StringFormatRule extends ValidationRule {
 
 			// see if the error message is a valid resource: {resource-name}
 			if (typeof options.message === "string" && rootType.model.resourceExists(options.message)) {
-				options.message = rootType.model.getResource(options.message);
+				const message : string = options.message;
+				options.message = function() { return rootType.model.getResource(message); };
 			}
 
 			// get the default validation message if not specified
 			if (!options.message) {
-				options.message = rootType.model.getResource("string-format").replace("{formatDescription}", options.description);
+				options.message = function() { return rootType.model.getResource("string-format").replace("{formatDescription}", options.description); };
 			}
 
 			let expression = options.expression instanceof RegExp ? options.expression : RegExp(options.expression);

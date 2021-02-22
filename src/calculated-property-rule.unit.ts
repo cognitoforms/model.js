@@ -10,14 +10,14 @@ function createModel(options) {
 		});
 	});
 }
-describe("calculated-rule", () => {
+
+describe("CalculateRule", () => {
 	test("Errors thrown in calculated rules are displayed to the user.", async () => {
 		let consoleOutputs = [];
 		window.console.warn = jest.fn((s)=> consoleOutputs.push(s.toString()));
 		const model = await createModel({
 			Test: {
 				Choice: {
-					label: "Choice",
 					default: {
 						dependsOn: "Text",
 						function: function() { return (this ? this.Text : null); }
@@ -29,22 +29,7 @@ describe("calculated-rule", () => {
 					},
 					type: String
 				},
-				Choice_Choices: {
-					label: "Choice_Choices",
-					constant: [
-						{
-							Label: "First"
-						},
-						{
-							Label: "Second"
-						},
-						{
-							Label: "Third"
-						}
-					]
-				},
 				Text: {
-					label: "Text",
 					type: String
 				}
 			}
