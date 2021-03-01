@@ -88,16 +88,26 @@ export class PropertyChain implements PropertyPath {
 					let handler: PropertyChangeEventHandler;
 					let priorProp: Property = index > 0 ? props[index - 1] : null;
 					handler = args => {
-						this.rootType.known().forEach(known => {
-							if (this.testConnection(known, args.entity, priorProp)) {
-								(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(known, {
-									entity: known,
-									property: args.property,
-									oldValue: args.oldValue,
-									newValue: args.newValue
-								});
-							}
-						});
+						if (priorProp) {
+							this.rootType.known().forEach(known => {
+								if (this.testConnection(known, args.entity, priorProp)) {
+									(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(known, {
+										entity: known,
+										property: args.property,
+										oldValue: args.oldValue,
+										newValue: args.newValue
+									});
+								}
+							});
+						}
+						else {
+							(this.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(args.entity, {
+								entity: args.entity,
+								property: args.property,
+								oldValue: args.oldValue,
+								newValue: args.newValue
+							});
+						}
 					};
 					this.stepChanged[index] = handler;
 					property.changed.subscribe(handler);
