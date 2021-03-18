@@ -69,13 +69,6 @@ function resetModel() {
 	});
 }
 
-// const Alien = {
-// 	Title: "Alien",
-// 	Director: { FirstName: "Ridley", LastName: "Scott" },
-// 	Genres: ["science fiction", "action"],
-// 	Cast: []
-// };
-
 const Alien = {
 	Cast: [],
    	Credits: null,
