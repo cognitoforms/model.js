@@ -136,7 +136,7 @@ export class EntitySerializer {
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(entity: Entity, serializeNull: boolean = false): object {
+	serialize(entity: Entity): object {
 		let result: object = {};
 		const type = entity.meta.type;
 		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
@@ -148,8 +148,7 @@ export class EntitySerializer {
 					if (result.hasOwnProperty(pair.key))
 						throw new Error(`Property '${pair.key}' was encountered twice during serialization. Make sure injected properties do not collide with model properties.`);
 
-					if (serializeNull || pair.value !== null)
-						(result as any)[pair.key] = pair.value;
+					(result as any)[pair.key] = pair.value;
 				}
 			});
 		return result;
