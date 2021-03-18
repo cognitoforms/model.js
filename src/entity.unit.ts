@@ -70,10 +70,22 @@ function resetModel() {
 }
 
 const Alien = {
-	Title: "Alien",
-	Director: { FirstName: "Ridley", LastName: "Scott" },
-	Genres: ["science fiction", "action"],
-	Cast: []
+	Cast: [],
+   	Credits: null,
+	Director: {
+		FirstName: "Ridley",
+		Id: null,
+		LastName: "Scott",
+		Movie: null,
+		Salary: null
+	},
+	Genres: [
+		"science fiction",
+		"action"
+	],
+	Id: null,
+	ReleaseDate: null,
+	Title: "Alien"
 };
 
 describe("Entity", () => {
@@ -151,7 +163,7 @@ describe("Entity", () => {
 				const changed = jest.fn();
 				Types.Person.meta.getProperty("FirstName").changed.subscribe(changed);
 				Types.Person.meta.getProperty("LastName").changed.subscribe(changed);
-				await Types.Person.meta.create({ Id: "1", ...Alien.Director });
+				await Types.Person.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
 
 				expect(changed).not.toBeCalled();
 			});
@@ -159,7 +171,7 @@ describe("Entity", () => {
 			test("value list property", async () => {
 				const changed = jest.fn();
 				Types.Movie.meta.getProperty("Genres").changed.subscribe(changed);
-				await Types.Movie.meta.create({ Id: "1", ...Alien });
+				await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
 
 				expect(changed).not.toBeCalled();
 			});
