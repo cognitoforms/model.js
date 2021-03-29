@@ -937,6 +937,8 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 		// any rule causes a roundtrip to the server these changes will be available
 		// TODO: Implement notifyListChanged?
 		// property.containingType.model.notifyListChanged(target, property, changes);
+		if (args.changes.length === 0)
+			return;
 
 		// NOTE: oldValue is not currently implemented for lists
 		var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue: array };
