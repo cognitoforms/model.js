@@ -297,7 +297,7 @@ describe("Entity", () => {
 			expect(movie.Cast.slice()).toEqual([sigourney]);
 		});
 
-		it("should not publish property change event for no changes", () => {
+		it("should not publish property change event for no list changes", () => {
 			const movie = new Types.Movie(Alien);
 			const changehandler = jest.fn();
 			movie.meta.type.getProperty("Cast").changed.subscribe(changehandler);
