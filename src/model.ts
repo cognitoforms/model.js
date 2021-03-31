@@ -403,12 +403,17 @@ export type ModelNamespaceOption = {
 export type ModelConfiguration = {
 
 	/**
-	 * Determines whether properties are created as "own" properties, or placed on the type's prototype
+	 * Determines whether properties are created as "own" properties, or placed on the type's prototype.
 	 */
 	createOwnProperties?: boolean;
 
 	/**
-	 * Determines whether the global/window object is mutated, for example to hold references to types
+	 * Determines whether properties will have labels generated based on their name when a label is not provided.
+	 */
+	autogeneratePropertyLabels?: boolean;
+
+	/**
+	 * Determines whether the global/window object is mutated, for example to hold references to types.
 	 */
 	useGlobalObject?: boolean;
 
@@ -428,6 +433,8 @@ export class ModelSettings {
 	// which may be noticeable with very large object counts.
 	readonly createOwnProperties: boolean = false;
 
+	readonly autogeneratePropertyLabels: boolean = true;
+
 	// Don't pollute the window object by default
 	readonly useGlobalObject: boolean = false;
 
@@ -436,6 +443,10 @@ export class ModelSettings {
 
 	constructor(config?: ModelConfiguration) {
 		this.createOwnProperties = config && !!config.createOwnProperties;
+
+		if (config && config.autogeneratePropertyLabels === false)
+			this.autogeneratePropertyLabels = false;
+
 		this.useGlobalObject = config && !!config.useGlobalObject;
 		this.eventScopeSettings = {
 			maxExitingTransferCount: (config && typeof config.maxExitingEventScopeTransferCount === "number" ? config.maxExitingEventScopeTransferCount : null) || EVENT_SCOPE_DEFAULT_SETTINGS.maxExitingTransferCount,
