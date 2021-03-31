@@ -3,6 +3,7 @@ import { Model } from "./model";
 import { Entity, EntityConstructorForType } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
+import { updateArray } from "./observable-array";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -294,6 +295,14 @@ describe("Entity", () => {
 
 			movie.Cast.pop();
 			expect(movie.Cast.slice()).toEqual([sigourney]);
+		});
+
+		it("should not publish property change event for no changes", () => {
+			const movie = new Types.Movie(Alien);
+			const changehandler = jest.fn();
+			movie.meta.type.getProperty("Cast").changed.subscribe(changehandler);
+			movie["Cast"].batchUpdate(() => updateArray(movie["Cast"], []));
+			expect(changehandler).not.toBeCalled();
 		});
 	});
 
