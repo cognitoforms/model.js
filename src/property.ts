@@ -127,6 +127,8 @@ export class Property implements PropertyPath {
 			// Label
 			if (options.label)
 				this.label = options.label;
+			else if (targetType.model.settings.autogeneratePropertyLabels && !this.label)
+				this.label = this.name.replace(/(^[a-z]+|[A-Z]{2,}(?=[A-Z][a-z]|$)|[A-Z][a-z]*)/g, " $1").trim();
 
 			// Label Source
 			if (options.labelSource) {
