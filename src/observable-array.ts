@@ -537,7 +537,8 @@ export class ArrayObserver<ItemType> {
 			}
 		}
 		else if (Array.isArray(changes)) {
-			this.changed.publish(this.array, { changes: changes });
+			if (changes.length)
+				this.changed.publish(this.array, { changes: changes });
 		}
 		else {
 			this.changed.publish(this.array, { changes: [changes] });
