@@ -165,9 +165,11 @@ describe("Entity", () => {
 		});
 
 		it("cannot be used to set a value deserialized to undefined in a list", () => {
-			const person = new Types.Person({ FirstName: "John", LastName: "Doe" });
-			const movie = new Types.Movie({ Cast: [person, undefined] });
-			expect(movie.Cast.length).toBe(1);
+			const movie = new Types.Movie({ Cast: [{ FirstName: "John", LastName: "Doe" }] });
+			const movieBeforeSet = movie.Cast;
+			jest.spyOn(movie.serializer, "deserialize").mockImplementation(()=>undefined);
+			movie.set({ Cast: [{ FirstName: "Ridley", LastName: "Scott" }, { FirstName: "John", LastName: "Doe" }] });
+			expect(movie.Cast).toBe(movieBeforeSet);
 		});
 	});
 
