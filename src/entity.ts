@@ -186,6 +186,9 @@ export class Entity {
 					if (!(s instanceof ChildEntity))
 						s = this.serializer.deserialize(this, s, prop, this._context, false);
 
+					// Undefined(IgnoreProperty) got assigned, so do not set the property
+					if (s === undefined)
+						return;
 					// Modifying/replacing existing list item
 					if (idx < currentValue.length) {
 						// If the item is a state object, create/update the entity using the state
@@ -217,6 +220,9 @@ export class Entity {
 			else {
 				// Attempt to deserialize the state
 				let newState = this.serializer.deserialize(this, state, prop, this._context, false);
+				// Undefined(IgnoreProperty) got assigned, so do not set the property
+				if (newState === undefined)
+					return;
 				if (typeof newState !== "undefined")
 					state = newState;
 				// Got null, so assign null to the property

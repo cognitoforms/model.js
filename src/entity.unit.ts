@@ -155,6 +155,20 @@ describe("Entity", () => {
 			person.set({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
 		});
+
+		it("cannot be used to set a value deserialized to undefined", () => {
+			const person = new Types.Person(Alien.Director);
+			const movieBeforeSet = person.Movie;
+			jest.spyOn(person.serializer, "deserialize").mockImplementation(()=>undefined);
+			person.set({ Movie: Alien });
+			expect(person.Movie).toBe(movieBeforeSet);
+		});
+
+		it("cannot be used to set a value deserialized to undefined in a list", () => {
+			const person = new Types.Person({ FirstName: "John", LastName: "Doe" });
+			const movie = new Types.Movie({ Cast: [person, undefined] });
+			expect(movie.Cast.length).toBe(1);
+		});
 	});
 
 	describe("events", () => {
