@@ -301,7 +301,7 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 				if (this.formatEval)
 					value = this.formatEval(value);
 
-				if (typeof value !== "string" && value.length)
+				if (Array.isArray(value))
 					value = value.join(", ");
 
 				result = result + value;
