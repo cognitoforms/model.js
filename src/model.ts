@@ -291,7 +291,8 @@ export class Model {
 
 			// Complete pending model initialization steps
 			this._readyProcessing = true;
-			this._readyCallbacks.forEach(init => init());
+			for (const init of this._readyCallbacks)
+				init();
 			this._readyProcessing = false;
 			delete this._readyCallbacks;
 		}
