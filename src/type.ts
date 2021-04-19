@@ -67,9 +67,7 @@ export class Type {
 		// Set Format
 		if (format) {
 			if (typeof (format) === "string") {
-				this.model.ready(() => {
-					this.format = this.model.getFormat<Entity>(this.jstype, format);
-				});
+				this.format = this.model.getFormat<Entity>(this.jstype, format);
 			}
 			else
 				this.format = format;
