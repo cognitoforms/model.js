@@ -26,6 +26,13 @@ function resetModel() {
 				}
 			}
 		},
+		LineItem: {
+			Label: String,
+			Cost: Number
+		},
+		Budget: {
+			LineItems: "LineItem[]"
+		},
 		Movie: {
 			Id: {
 				identifier: true,
@@ -41,7 +48,8 @@ function resetModel() {
 			Credits: {
 				type: "Credits"
 			},
-			Cast: "Person[]"
+			Cast: "Person[]",
+			Budget: "Budget"
 		},
 		Person: {
 			Id: {
@@ -72,7 +80,8 @@ function resetModel() {
 
 const Alien = {
 	Cast: [],
-   	Credits: null,
+	Credits: null,
+	Budget: null,
 	Director: {
 		FirstName: "Ridley",
 		Id: null,
@@ -160,7 +169,7 @@ describe("Entity", () => {
 		it("cannot be used to set a value deserialized to undefined", () => {
 			const person = new Types.Person(Alien.Director);
 			const movieBeforeSet = person.Movie;
-			jest.spyOn(person.serializer, "deserialize").mockImplementation(()=>undefined);
+			jest.spyOn(person.serializer, "deserialize").mockImplementation(() => undefined);
 			person.set({ Movie: Alien });
 			expect(person.Movie).toBe(movieBeforeSet);
 		});
@@ -168,7 +177,7 @@ describe("Entity", () => {
 		it("cannot be used to set a value deserialized to undefined in a list", () => {
 			const movie = new Types.Movie({ Cast: [{ FirstName: "John", LastName: "Doe" }] });
 			const movieBeforeSet = movie.Cast;
-			jest.spyOn(movie.serializer, "deserialize").mockImplementation(()=>undefined);
+			jest.spyOn(movie.serializer, "deserialize").mockImplementation(() => undefined);
 			movie.set({ Cast: [{ FirstName: "Ridley", LastName: "Scott" }, { FirstName: "John", LastName: "Doe" }] });
 			expect(movie.Cast).toBe(movieBeforeSet);
 		});
@@ -342,6 +351,72 @@ describe("Entity", () => {
 			const movie = new Types.Movie(Alien);
 			movie.Director.Salary = 100000;
 			expect(movie.toString("[Director]")).toBe("Ridley Scott $100,000.00");
+		});
+	});
+
+	it("setting identifier property of entity marks meta.isNew = false", () => {
+		const movie = new Types.Movie(Alien);
+		movie.Id = "1";
+		expect(movie.meta.isNew).toBeFalsy();
+	});
+
+	describe("persist()", () => {
+		it("marks non-identifying entity as not new", () => {
+			const budget = new Types.Budget();	// Budget type has no identifier property
+			budget.persist();
+			expect(budget.meta.isNew).toBeFalsy();
+		});
+
+		describe("identifying entity", () => {
+			let movie: Entity;
+
+			beforeEach(() => {
+				movie = new Types.Movie(Alien);	// Movie type has an identifier property
+				movie.set({
+					Budget: {
+						LineItems: [
+							{ Label: "Item 1", Cost: 100 }
+						]
+					}
+				});
+			});
+
+			describe("with no id", () => {
+				it("does nothing", () => {
+					movie.persist();
+					expect(movie.meta.isNew).toBeTruthy();
+				});
+
+				it("does not affect nested entities", () => {
+					movie.persist();
+
+					expect(movie.Budget.meta.isNew).toBeTruthy();
+					for (const lineItem of movie.Budget.LineItems)
+						expect(lineItem.meta.isNew).toBeTruthy();
+				});
+			});
+
+			describe("with id", () => {
+				beforeEach(() => {
+					movie.Id = "1";
+				});
+
+				it("marks nested, non-identifying entities as not new", () => {
+					movie.persist();
+
+					expect(movie.Budget.meta.isNew).toBeFalsy();
+					for (const lineItem of movie.Budget.LineItems)
+						expect(lineItem.meta.isNew).toBeFalsy();
+				});
+
+				it("handles circular references", () => {
+					movie.set({ Credits: { Movie: movie } });
+
+					movie.persist();
+
+					expect(movie.Credits.meta.isNew).toBeFalsy();
+				});
+			});
 		});
 	});
 });

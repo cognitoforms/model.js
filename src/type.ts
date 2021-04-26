@@ -78,13 +78,13 @@ export class Type {
 			this.extend(options);
 	}
 
-	get identifier() {
+	get identifier(): Property {
 		if (this._identifier)
 			return this._identifier;
 		return this.baseType ? this.baseType.identifier : null;
 	}
 
-	set identifier(val) {
+	set identifier(val: Property) {
 		this._identifier = val;
 	}
 

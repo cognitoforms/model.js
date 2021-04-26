@@ -289,6 +289,32 @@ export class Entity {
 	serialize(): object {
 		return this.serializer.serialize(this);
 	}
+
+	persist() {
+		const visited = new Set<Entity>();
+
+		function _persist(entity: Entity) {
+			if (visited.has(entity))
+				return;
+
+			visited.add(entity);
+
+			const identifierProp = entity.meta.type.identifier;
+			if (identifierProp && identifierProp.value(entity) === null)
+				return;
+
+			entity.meta.isNew = false;
+			for (const property of entity.meta.type.properties.filter(p => isEntityType(p.propertyType))) {
+				const value = property.value(entity);
+				if (Array.isArray(value))
+					(value as Entity[]).forEach(item => _persist(item));
+				else if (value)
+					_persist(value);
+			}
+		}
+
+		_persist(this);
+	}
 }
 
 export interface EntityConstructor {
