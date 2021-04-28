@@ -33,6 +33,10 @@ function resetModel() {
 		Budget: {
 			LineItems: "LineItem[]"
 		},
+		Address: {
+			City: String,
+			State: String
+		},
 		Movie: {
 			Id: {
 				identifier: true,
@@ -69,6 +73,7 @@ function resetModel() {
 				type: String
 			},
 			Movie: "Movie",
+			Address: "Address",
 			Salary: {
 				default: null,
 				type: Number,
@@ -87,7 +92,8 @@ const Alien = {
 		Id: null,
 		LastName: "Scott",
 		Movie: null,
-		Salary: null
+		Salary: null,
+		Address: null
 	},
 	Genres: [
 		"science fiction",
@@ -145,24 +151,37 @@ describe("Entity", () => {
 			const person = new Types.Person({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
 		});
+
+		it("provides a way to wait for initialization to complete", async () => {
+			const Budget1 = { LineItems: [{ Label: "L1", Cost: 1000000 }] };
+			model.serializer.registerValueResolver((entity, prop, value) => {
+				if (prop.name === "Budget" && value === "BUDGET_1")
+					return Promise.resolve(Budget1);
+			});
+			const movie = new Types.Movie({ ...Alien, Budget: "BUDGET_1" });
+			const expected = { ...Alien, Budget: Budget1 };
+			expect(movie.serialize()).not.toEqual(expected);
+			await movie.initialized;
+			expect(movie.serialize()).toEqual(expected);
+		});
 	});
 
-	describe("set", () => {
+	describe("update", () => {
 		it("can be used to update an entity", () => {
 			const movie = new Types.Movie();
-			movie.set(Alien);
+			movie.update(Alien);
 			expect(movie.serialize()).toEqual(Alien);
 		});
 
 		it("cannot be used to set calculated properties", () => {
 			const person = new Types.Person({ FirstName: "John", LastName: "Doe" });
-			person.set({ FullName: "Full Name" });
+			person.update({ FullName: "Full Name" });
 			expect(person.FullName).toBe("John Doe");
 		});
 
 		it("cannot be used to set constant properties", () => {
 			const person = new Types.Person();
-			person.set({ Species: "Homo erectus" });
+			person.update({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
 		});
 
@@ -170,7 +189,7 @@ describe("Entity", () => {
 			const person = new Types.Person(Alien.Director);
 			const movieBeforeSet = person.Movie;
 			jest.spyOn(person.serializer, "deserialize").mockImplementation(() => undefined);
-			person.set({ Movie: Alien });
+			person.update({ Movie: Alien });
 			expect(person.Movie).toBe(movieBeforeSet);
 		});
 
@@ -178,8 +197,62 @@ describe("Entity", () => {
 			const movie = new Types.Movie({ Cast: [{ FirstName: "John", LastName: "Doe" }] });
 			const movieBeforeSet = movie.Cast;
 			jest.spyOn(movie.serializer, "deserialize").mockImplementation(() => undefined);
-			movie.set({ Cast: [{ FirstName: "Ridley", LastName: "Scott" }, { FirstName: "John", LastName: "Doe" }] });
+			movie.update({ Cast: [{ FirstName: "Ridley", LastName: "Scott" }, { FirstName: "John", LastName: "Doe" }] });
 			expect(movie.Cast).toBe(movieBeforeSet);
+		});
+
+		it("allows waiting for asynchronous values to be set", async () => {
+			const Budget1 = { LineItems: [{ Label: "L1", Cost: 1000000 }] };
+
+			model.serializer.registerValueResolver((entity, prop, value) => {
+				if (prop.name === "Budget" && value === "BUDGET_1")
+					return Promise.resolve(Budget1);
+			});
+
+			const movie = new Types.Movie(Alien);
+
+			const updateTask = movie.update({ Title: "Alien 2", Budget: "BUDGET_1" });
+
+			expect(movie.Title).toBe("Alien 2");
+			expect(movie.Budget).toBeNull();
+
+			await updateTask;
+
+			expect(movie.Budget.serialize()).toEqual(Budget1);
+		});
+
+		it("should support circular async value resolution", async () => {
+			const model = new Model({
+				Entity: {
+					Id: { identifier: true, type: String },
+					Name: String,
+					Sibling: "Entity"
+				}
+			});
+
+			const entities = {
+				a: {
+					Id: "a",
+					Name: "Entity A",
+					Sibling: "b"
+				},
+				b: {
+					Id: "b",
+					Name: "Entity B",
+					Sibling: "a"
+				}
+			};
+
+			const siblingResolver = (instance, prop, value) => {
+				if (prop.name === "Sibling")
+					return new Promise(resolve => setTimeout(() => resolve(entities[value]), 10));
+			};
+
+			model.serializer.registerValueResolver(siblingResolver);
+
+			let entity = await model.types.Entity.create(entities.a);
+			await entity.update(entities.a);
+			expect((entity as any).Sibling.Sibling).toBe(entity);
 		});
 	});
 
@@ -354,17 +427,18 @@ describe("Entity", () => {
 		});
 	});
 
-	it("setting identifier property of entity marks meta.isNew = false", () => {
-		const movie = new Types.Movie(Alien);
-		movie.Id = "1";
-		expect(movie.meta.isNew).toBeFalsy();
-	});
+	describe("markPersisted()", () => {
+		it("assigning identifier property of entity calls markPersisted", () => {
+			const movie = new Types.Movie(Alien);
+			const markPersisted = jest.spyOn(movie, "markPersisted");
+			movie.Id = "1";
+			expect(markPersisted).toBeCalledTimes(1);
+		});
 
-	describe("persist()", () => {
-		it("marks non-identifying entity as not new", () => {
+		it("does not affect non-identifying entity", () => {
 			const budget = new Types.Budget();	// Budget type has no identifier property
-			budget.persist();
-			expect(budget.meta.isNew).toBeFalsy();
+			budget.markPersisted();
+			expect(budget.meta.isNew).toBeTruthy();
 		});
 
 		describe("identifying entity", () => {
@@ -372,7 +446,7 @@ describe("Entity", () => {
 
 			beforeEach(() => {
 				movie = new Types.Movie(Alien);	// Movie type has an identifier property
-				movie.set({
+				movie.update({
 					Budget: {
 						LineItems: [
 							{ Label: "Item 1", Cost: 100 }
@@ -383,12 +457,12 @@ describe("Entity", () => {
 
 			describe("with no id", () => {
 				it("does nothing", () => {
-					movie.persist();
+					movie.markPersisted();
 					expect(movie.meta.isNew).toBeTruthy();
 				});
 
 				it("does not affect nested entities", () => {
-					movie.persist();
+					movie.markPersisted();
 
 					expect(movie.Budget.meta.isNew).toBeTruthy();
 					for (const lineItem of movie.Budget.LineItems)
@@ -402,7 +476,7 @@ describe("Entity", () => {
 				});
 
 				it("marks nested, non-identifying entities as not new", () => {
-					movie.persist();
+					movie.markPersisted();
 
 					expect(movie.Budget.meta.isNew).toBeFalsy();
 					for (const lineItem of movie.Budget.LineItems)
@@ -410,11 +484,30 @@ describe("Entity", () => {
 				});
 
 				it("handles circular references", () => {
-					movie.set({ Credits: { Movie: movie } });
+					movie.update({ Credits: { Movie: movie } });
 
-					movie.persist();
+					movie.markPersisted();
 
 					expect(movie.Credits.meta.isNew).toBeFalsy();
+				});
+
+				it("does not affect nested, sovereign entities", () => {
+					movie.markPersisted();
+					expect(movie.Director.meta.isNew).toBeTruthy();
+
+					movie.Director.update({
+						Id: "1",
+						// TODO: should Address be new after this update operation, even though Director's Id is getting assigned?
+						Address: { City: "Orlando", State: "Florida" }
+					});
+
+					// Assigning the Director's id will mark it as not new
+					expect(movie.Director.meta.isNew).toBeFalsy();
+
+					movie.markPersisted();
+
+					// But the Director's Address (an "owned" entity) should not be marked persisted as a result of persisting the Movie
+					expect(movie.Director.Address.meta.isNew).toBeTruthy();
 				});
 			});
 		});

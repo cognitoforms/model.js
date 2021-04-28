@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType, getIdFromState, Type$createOrUpdate } from "./type";
+import { Type, EntityType, isEntityType, getIdFromState } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
@@ -17,6 +17,7 @@ export class Entity {
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
 	private _context: InitializationContext = null;
+	readonly initialized: Promise<void>;
 
 	constructor(); // Prototype assignment *** used internally
 	constructor(type: Type, id: string, properties?: ObjectLookup<any>, context?: InitializationContext); // Construct existing instance with state
@@ -63,17 +64,21 @@ export class Entity {
 			}
 
 			// Raise the initNew or initExisting event on this type and all base types
-			context.whenReady(() => {
-				for (let t = type; t; t = t.baseType) {
-					if (isNew)
-						(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
-					else
-						(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
-				}
+			this.initialized = new Promise(resolve => {
+				context.whenReady(() => {
+					for (let t = type; t; t = t.baseType) {
+						if (isNew)
+							(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
+						else
+							(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
+					}
 
-				// Set values of new entity for provided properties
-				if (isNew && properties)
-					this.updateWithContext(context, properties);
+					// Set values of new entity for provided properties
+					if (isNew && properties)
+						this.updateWithContext(context, properties);
+
+					context.whenReady(resolve);
+				});
 			});
 		}
 	}
@@ -131,7 +136,7 @@ export class Entity {
 			Property$init(prop, this, value);
 	}
 
-	updateWithContext(context: InitializationContext, state: ObjectLookup<any>) {
+	private updateWithContext(context: InitializationContext, state: ObjectLookup<any>) {
 		const hadContext = !!this._context;
 		// Do not allow reentrant updates of the same entity for a given context
 		if (this._context === context)
@@ -143,7 +148,7 @@ export class Entity {
 		else if (this._context !== context)
 			context.wait(this._context.ready);
 
-		this.set(state);
+		this.update(state);
 
 		if (context !== null && !hadContext) {
 			context.whenReady(() => {
@@ -152,9 +157,36 @@ export class Entity {
 		}
 	}
 
-	set(properties: ObjectLookup<any>): void;
-	set(property: string, value: any): void;
-	set(property: any, value?: any): void {
+	private static createOrUpdate(type: Type, state: any, context?: InitializationContext) {
+		const id = getIdFromState(type, state);
+		const isNew = !id;
+		if (!context)
+			context = new InitializationContext(isNew);
+
+		// We need to pause processing of callbacks to prevent publishing entity events while still processing
+		// the state graph
+		const instance = context.execute(() => {
+			let instance = id && type.get(id);
+			if (instance) {
+				// Assign state to the existing object
+				instance.updateWithContext(context, state);
+			}
+			else {
+				// Cast the jstype to any so we can call the internal constructor signature that takes a context
+				// We don't want to put the context on the public constructor interface
+				const Ctor = type.jstype as any;
+				// Construct an instance using the known id if it is present
+				instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
+			}
+			return instance;
+		});
+
+		return instance;
+	}
+
+	update(properties: ObjectLookup<any>): Promise<void>;
+	update(property: string, value: any): Promise<void>;
+	update(property: any, value?: any): Promise<void> {
 		let properties: ObjectLookup<any>;
 
 		// Convert property/value pair to a property dictionary
@@ -162,6 +194,14 @@ export class Entity {
 			properties = { [property]: value };
 		else
 			properties = property;
+
+		if (!this._context) {
+			const context = new InitializationContext(true);
+			context.execute(() => {
+				this.updateWithContext(context, properties);
+			});
+			return context.ready;
+		}
 
 		// Set the specified properties
 		for (let [propName, state] of Entity.getSortedPropertyData(properties)) {
@@ -174,6 +214,8 @@ export class Entity {
 					this.setProp(prop, state);
 			}
 		}
+
+		return this._context.ready;
 	}
 
 	private setProp(prop: Property, state: any) {
@@ -199,7 +241,7 @@ export class Entity {
 							if (!ChildEntity.meta.identifier || getIdFromState(ChildEntity.meta, s) === listItem.meta.id)
 								listItem.updateWithContext(this._context, s);
 							else
-								currentValue.splice(idx, 1, Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
+								currentValue.splice(idx, 1, Entity.createOrUpdate(ChildEntity.meta, s, this._context));
 						}
 						else if (s instanceof ChildEntity)
 							currentValue.splice(idx, 1, s);
@@ -210,7 +252,7 @@ export class Entity {
 					else if (s instanceof ChildEntity)
 						currentValue.push(s);
 					else
-						currentValue.push(Type$createOrUpdate(ChildEntity.meta, s, this._context).instance);
+						currentValue.push(Entity.createOrUpdate(ChildEntity.meta, s, this._context));
 				});
 			}
 			else if (state instanceof ChildEntity)
@@ -238,7 +280,7 @@ export class Entity {
 					(currentValue as Entity).updateWithContext(this._context, state);
 				// Got an object, so attempt to fetch or create and assign the state
 				else
-					value = Type$createOrUpdate(ChildEntity.meta, state, this._context).instance;
+					value = Entity.createOrUpdate(ChildEntity.meta, state, this._context);
 			}
 		}
 		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
@@ -290,28 +332,28 @@ export class Entity {
 		return this.serializer.serialize(this);
 	}
 
-	persist() {
+	markPersisted() {
+		if (!this.meta.type.identifier || !this.meta.type.identifier.value(this))
+			return;
+
 		const visited = new Set<Entity>();
 
-		function _persist(entity: Entity) {
+		const _persist = (entity: Entity) => {
 			if (visited.has(entity))
 				return;
 
 			visited.add(entity);
 
-			const identifierProp = entity.meta.type.identifier;
-			if (identifierProp && identifierProp.value(entity) === null)
-				return;
-
 			entity.meta.isNew = false;
-			for (const property of entity.meta.type.properties.filter(p => isEntityType(p.propertyType))) {
+			// visit reference properties with non-identifying types
+			for (const property of entity.meta.type.properties.filter(p => isEntityType(p.propertyType) && !p.propertyType.meta.identifier)) {
 				const value = property.value(entity);
 				if (Array.isArray(value))
 					(value as Entity[]).forEach(item => _persist(item));
 				else if (value)
 					_persist(value);
 			}
-		}
+		};
 
 		_persist(this);
 	}
