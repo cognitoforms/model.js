@@ -1,8 +1,6 @@
 import { Entity } from "./entity";
 import { Property } from "./property";
 
-export type AsyncValueResolver = (instance: Entity, property: Property, value: any) => Promise<any> | void;
-
 export class InitializationContext {
 	private newDocument = false;
 	private tasks = new Set<Promise<any>>();

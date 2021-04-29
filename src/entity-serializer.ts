@@ -2,7 +2,9 @@ import { isEntityType, Type } from "./type";
 import { Entity, EntityConstructorForType } from "./entity";
 import { Property } from "./property";
 import { ObjectLookup, flatMap } from "./helpers";
-import { InitializationContext, AsyncValueResolver } from "./initilization-context";
+import { InitializationContext } from "./initilization-context";
+
+export type AsyncValueResolver = (instance: Entity, property: Property, value: any) => Promise<any> | void;
 
 export interface PropertySerializationResult {
 	key: string;
