@@ -1,6 +1,6 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
-import { EntityRegisteredEventArgs, Entity } from "./entity";
+import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs } from "./entity";
 import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
@@ -21,6 +21,8 @@ export class Model {
 	readonly $culture: CultureInfo;
 
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
+	readonly afterPropertySet: Event<Entity, EntityChangeEventArgs>;
+	readonly listChanged: Event<Entity, EntityChangeEventArgs>;
 	readonly eventScope: EventScope;
 
 	private _readyCallbacks: (() => void)[];
@@ -33,6 +35,8 @@ export class Model {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
+		this.afterPropertySet = new Event<Entity, EntityChangeEventArgs>();
+		this.listChanged = new Event<Entity, EntityChangeEventArgs>();
 		this.eventScope = EventScope.create(this.settings.eventScopeSettings);
 
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });

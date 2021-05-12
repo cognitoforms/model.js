@@ -946,6 +946,7 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 		(eventArgs as any)["changes"] = args.changes;
 		(eventArgs as any)["collectionChanged"] = true;
 
+		property.containingType.model.listChanged.publish(obj, { entity: obj, property, newValue: array });
 		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, eventArgs);
 		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
 	});
@@ -1080,6 +1081,7 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 			var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue, oldValue };
 			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, additionalArgs ? merge(eventArgs, additionalArgs) : eventArgs);
 			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, oldValue, newValue });
+			property.containingType.model.afterPropertySet.publish(obj, { entity: obj, property, newValue, oldValue });
 		}
 	}
 }
