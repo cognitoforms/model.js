@@ -1,4 +1,6 @@
-import { Model, normalize, ModelConfiguration } from "./model";
+import { createEventObject } from "./events";
+import { Model, normalize } from "./model";
+import "./resource-en";
 
 describe("normalize", () => {
 	it("returns the time portion of the given date if the format is 't'", async () => {
@@ -28,16 +30,23 @@ describe("normalize", () => {
 	});
 });
 
+function createModel(config = {}) {
+	return new Model({
+		Test: {
+			PropertyOne: String,
+			List: "Test2[]"
+
+		},
+		Test2: {
+			Text: {
+				type: String
+			}
+		}
+	}, config);
+}
+
 describe("settings", () => {
 	describe("autogeneratePropertyLabels", () => {
-		function createModel(config: ModelConfiguration = {}) {
-			return new Model({
-				Type: {
-					PropertyOne: String
-				}
-			}, config);
-		}
-
 		it("is enabled by default", () => {
 			const model = createModel();
 			expect(model.settings.autogeneratePropertyLabels).toBe(true);
@@ -46,15 +55,52 @@ describe("settings", () => {
 		it("enabled: causes property labels to be generated", () => {
 			const model = createModel({ autogeneratePropertyLabels: true });
 
-			const property = model.types["Type"].properties[0];
+			const property = model.types["Test"].properties[0];
 			expect(property.label).toBe("Property One");
 		});
 
 		it("disabled: does not cause property labels to be generated", () => {
 			const model = createModel({ autogeneratePropertyLabels: false });
 
-			const property = model.types["Type"].properties[0];
+			const property = model.types["Test"].properties[0];
 			expect(property.label).toBeUndefined();
 		});
+	});
+});
+
+describe("Global Events", () => {
+	it("After property set", async () => {
+		const model = createModel();
+		const mockFn = jest.fn();
+		model.afterPropertySet.subscribe(mockFn);
+		const TestModel = model.getJsType("Test");
+
+		var p = new TestModel();
+		p.PropertyOne = "test";
+
+		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, newValue: "test", oldValue: null, property: model.types["Test"].properties[0] }));
+	});
+
+	it("Entity registered", async () => {
+		const model = createModel();
+		const mockFn = jest.fn();
+		model.entityRegistered.subscribe(mockFn);
+		const TestModel = model.getJsType("Test");
+
+		var p = new TestModel();
+
+		expect(mockFn).toBeCalledWith(createEventObject({ entity: p }));
+	});
+
+	it("List changed", async () => {
+		const model = createModel();
+		const mockFn = jest.fn();
+		model.listChanged.subscribe(mockFn);
+		const TestModel = model.getJsType("Test");
+
+		var p = new TestModel();
+		p.List.push("test");
+
+		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, property: model.types["Test"].properties[1], newValue: p.List }));
 	});
 });

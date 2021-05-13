@@ -27,7 +27,6 @@ describe("ListLengthRule", () => {
 				Text: {
 					type: String
 				}
-
 			}
 		}) as any;
 		const Test = model.getJsType("Test");

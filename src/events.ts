@@ -38,7 +38,7 @@ export interface EventSubscriptionChanged<EventType> {
     (event: EventType): void;
 }
 
-function createEventObject<EventArgsType>(args: EventArgsType): EventObject & EventArgsType {
+export function createEventObject<EventArgsType>(args: EventArgsType): EventObject & EventArgsType {
 	let eventObject: EventObject = new EventObjectImpl();
 
 	for (var prop in args) {
