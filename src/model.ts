@@ -21,8 +21,8 @@ export class Model {
 	readonly $culture: CultureInfo;
 
 	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
-	readonly afterPropertySet: Event<Entity, EntityChangeEventArgs>;
-	readonly listChanged: Event<Entity, EntityChangeEventArgs>;
+	readonly afterPropertySet: EventSubscriber<Entity, EntityChangeEventArgs>;
+	readonly listChanged: EventSubscriber<Entity, EntityChangeEventArgs>;
 	readonly eventScope: EventScope;
 
 	private _readyCallbacks: (() => void)[];
