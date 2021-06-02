@@ -196,11 +196,17 @@ export class Entity {
 			properties = property;
 
 		if (!this._context) {
+			const wasNew = this.meta.isNew;
 			const context = new InitializationContext(true);
-			context.execute(() => {
-				this.updateWithContext(context, properties);
-			});
-			return context.ready;
+			context.execute(() => this.updateWithContext(context, properties));
+
+			const markPersistedWhenIdAssigned = () => {
+				if (wasNew && !this.meta.isNew)
+					this.markPersisted();
+			};
+
+			context.whenReady(markPersistedWhenIdAssigned);
+			return context.ready.then(markPersistedWhenIdAssigned);
 		}
 
 		// Set the specified properties

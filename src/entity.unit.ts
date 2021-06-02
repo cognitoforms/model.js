@@ -435,6 +435,32 @@ describe("Entity", () => {
 			expect(markPersisted).toBeCalledTimes(1);
 		});
 
+		it("nested entity is not considered new when assigned alongside identifier property", () => {
+			const movie = new Types.Movie(Alien);
+			movie.Director.update({
+				Id: "1",
+				Address: { City: "Orlando", State: "Florida" }
+			});
+
+			expect(movie.Director.meta.isNew).toBeFalsy();
+			expect(movie.Director.Address.meta.isNew).toBeFalsy();
+		});
+
+		it("asynchronously resolved nested entity is not considered new when assigned alongside identifier property", async () => {
+			model.serializer.registerValueResolver((instance, prop, value) => {
+				if (value === "test_async_address")
+					return Promise.resolve({ City: "Orlando", State: "Florida" });
+			});
+			const movie = new Types.Movie(Alien);
+			await movie.Director.update({
+				Id: "1",
+				Address: "test_async_address"
+			});
+
+			expect(movie.Director.meta.isNew).toBeFalsy();
+			expect(movie.Director.Address.meta.isNew).toBeFalsy();
+		});
+
 		it("does not affect non-identifying entity", () => {
 			const budget = new Types.Budget();	// Budget type has no identifier property
 			budget.markPersisted();
@@ -495,14 +521,12 @@ describe("Entity", () => {
 					movie.markPersisted();
 					expect(movie.Director.meta.isNew).toBeTruthy();
 
-					movie.Director.update({
-						Id: "1",
-						// TODO: should Address be new after this update operation, even though Director's Id is getting assigned?
-						Address: { City: "Orlando", State: "Florida" }
-					});
+					movie.Director.update({ Id: "1" });
 
 					// Assigning the Director's id will mark it as not new
 					expect(movie.Director.meta.isNew).toBeFalsy();
+
+					movie.Director.update({ Address: { City: "Orlando", State: "Florida" } });
 
 					movie.markPersisted();
 
