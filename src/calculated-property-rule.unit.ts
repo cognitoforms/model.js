@@ -1,9 +1,11 @@
-import { Model } from "./model";
+import { EntityConstructor, EntityConstructorForType } from "./entity";
+import { Model, ModelLocalizationOptions, ModelNamespaceOption, ModelOptions } from "./model";
 
 import "./resource-en";
+import { EntityType, Type } from "./type";
 
-function createModel(options) {
-	return new Promise((resolve) => {
+function createModel(options: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions) {
+	return new Promise<Model>((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
 			resolve(model);
@@ -20,7 +22,7 @@ describe("CalculateRule", () => {
 				Choice: {
 					default: {
 						dependsOn: "Text",
-						function: function() { return (this ? this.Text : null); }
+						function: function() { return (this ? this.get("Text") : null); }
 					},
 					allowedValues: {
 						ignoreValidation: true,
@@ -40,5 +42,84 @@ describe("CalculateRule", () => {
 		p.Text = "x";
 
 		expect(consoleOutputs).toEqual(["Error encountered while running rule \"Test.Choice.Calculated\".", "Error: Cannot set Choice, \"x\" is not an allowed value."]);
+	});
+
+	describe("default value calculation", async () => {
+		let model: Model;
+		let TestEntity: Type;
+		beforeEach(async () => {
+			model = await createModel({
+				Test: {
+					Id: { type: String, identifier: true },
+					Name: {
+						type: String,
+						default: {
+							dependsOn: "Name2",
+							function() {
+								return this.get("Name2");
+							}
+						}
+					},
+					Name2: {
+						type: String,
+						default: "John Doe"
+					}
+				}
+			});
+			TestEntity = (model.getJsType("Test") as EntityType).meta;
+		});
+
+		describe("on new instance", () => {
+			it("can be based on other default value", async () => {
+				const entity = TestEntity.createSync({});
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBe("John Doe");
+			});
+
+			it("is overridden by non-null value provided during construction", async () => {
+				const entity = TestEntity.createSync({ Name: "New Name" });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBe("New Name");
+			});
+
+			it("is overridden by null value provided during construction", async () => {
+				const entity = TestEntity.createSync({ Name: null });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBeNull();
+			});
+		});
+
+		describe("on existing instance", () => {
+			it("can be based on other default value", async () => {
+				const entity = TestEntity.createSync({ Id: "1" });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBe("John Doe");
+			});
+
+			it("can be based on other default value", async () => {
+				const entity = TestEntity.createSync({ Id: "1" });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBe("John Doe");
+			});
+
+			it("is overridden by non-null value provided during construction", async () => {
+				const entity = TestEntity.createSync({ Id: "1", Name: "New Name" });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBe("New Name");
+			});
+
+			it("is overridden by null value provided during construction", async () => {
+				const entity = TestEntity.createSync({ Id: "1", Name: null });
+
+				expect(entity["Name2"]).toBe("John Doe");
+				expect(entity["Name"]).toBeNull();
+			});
+		});
 	});
 });
