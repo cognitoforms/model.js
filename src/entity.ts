@@ -205,6 +205,8 @@ export class Entity {
 					this.markPersisted();
 			};
 
+			// call markPersistedWhenIdAssigned using whenReady and after the promise resolves to ensure models with no async
+			// behavior produce the correct outcome upon returning from update()
 			context.whenReady(markPersistedWhenIdAssigned);
 			return context.ready.then(markPersistedWhenIdAssigned);
 		}
