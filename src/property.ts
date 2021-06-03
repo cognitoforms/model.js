@@ -919,14 +919,16 @@ export function Property$init(property: Property, obj: Entity, val: any): void {
 function Property$ensureInited(property: Property, obj: Entity): void {
 	// Determine if the property has been initialized with a value and initialize the property if necessary
 	if (!obj.__fields__.hasOwnProperty(property.name)) {
+		Property$pendingInit(obj, property, true);
+
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
 			Property$init(property, obj, Property$getInitialValue(property));
-		}
 
-		// Mark the property as pending initialization if it still has no underlying value to allow default calculation rules to run for it
-		if (obj.__fields__[property.name] === null)
-			Property$pendingInit(obj, property, true);
+			// Mark the property as pending initialization if it still has no underlying value to allow default calculation rules to run for it
+			if (obj.__fields__[property.name] === null)
+				Property$pendingInit(obj, property, true);
+		}
 	}
 }
 
