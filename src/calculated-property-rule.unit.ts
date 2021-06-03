@@ -71,21 +71,21 @@ describe("CalculateRule", () => {
 
 		describe("on new instance", () => {
 			it("can be based on other default value", async () => {
-				const entity = TestEntity.createSync({});
+				const entity = await TestEntity.create({});
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBe("John Doe");
 			});
 
 			it("is overridden by non-null value provided during construction", async () => {
-				const entity = TestEntity.createSync({ Name: "New Name" });
+				const entity = await TestEntity.create({ Name: "New Name" });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBe("New Name");
 			});
 
 			it("is overridden by null value provided during construction", async () => {
-				const entity = TestEntity.createSync({ Name: null });
+				const entity = await TestEntity.create({ Name: null });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBeNull();
@@ -94,28 +94,28 @@ describe("CalculateRule", () => {
 
 		describe("on existing instance", () => {
 			it("can be based on other default value", async () => {
-				const entity = TestEntity.createSync({ Id: "1" });
+				const entity = await TestEntity.create({ Id: "1" });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBe("John Doe");
 			});
 
 			it("can be based on other default value", async () => {
-				const entity = TestEntity.createSync({ Id: "1" });
+				const entity = await TestEntity.create({ Id: "1" });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBe("John Doe");
 			});
 
 			it("is overridden by non-null value provided during construction", async () => {
-				const entity = TestEntity.createSync({ Id: "1", Name: "New Name" });
+				const entity = await TestEntity.create({ Id: "1", Name: "New Name" });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBe("New Name");
 			});
 
 			it("is overridden by null value provided during construction", async () => {
-				const entity = TestEntity.createSync({ Id: "1", Name: null });
+				const entity = await TestEntity.create({ Id: "1", Name: null });
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBeNull();
