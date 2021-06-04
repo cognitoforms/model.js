@@ -840,73 +840,6 @@ export function Property$generateOwnProperty(property: Property, obj: Entity): v
 	});
 }
 
-// TODO: Get rid of `Property$_generateOwnPropertyWithClosure`...
-export function Property$generateOwnPropertyWithClosure(property: Property, obj: Entity): void {
-	let val: any = null;
-
-	let isInitialized = false;
-
-	var _ensureInited = function (): void {
-		if (!isInitialized) {
-			// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
-			if (!property.isCalculated) {
-				Property$pendingInit(obj, property, false);
-
-				val = Property$getInitialValue(property);
-
-				if (Array.isArray(val)) {
-					Property$subArrayEvents(obj, property, val as ObservableArray<any>);
-				}
-
-				// TODO: Account for static properties (obj is undefined)
-				(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property: property, newValue: val });
-			}
-
-			// Mark the property as pending initialization
-			Property$pendingInit(obj, property, true);
-
-			isInitialized = true;
-		}
-	};
-
-	Object.defineProperty(obj, property.name, {
-		configurable: false,
-		enumerable: true,
-		get: function () {
-			_ensureInited();
-
-			// Raise get events
-			(property.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(obj, { entity: obj, property, value: val });
-
-			return val;
-		},
-		set: function (newVal) {
-			_ensureInited();
-
-			if (Property$shouldSetValue(property, obj, val, newVal)) {
-				// Update lists as batch remove/add operations
-				if (property.isList) {
-					let currentArray = val as ObservableArray<any>;
-					currentArray.batchUpdate((array) => {
-						updateArray(array, newVal);
-					});
-				}
-				else {
-					let old = val;
-					val = newVal;
-
-					Property$pendingInit(obj, property, false);
-
-					// Do not raise change if the property has not been initialized.
-					if (old !== undefined) {
-						(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, { entity: obj, property, newValue: val, oldValue: old });
-					}
-				}
-			}
-		}
-	});
-}
-
 export function Property$pendingInit(obj: Entity, prop: Property, value: boolean = null): boolean | void {
 	let pendingInit: ObjectLookup<boolean>;
 
@@ -984,15 +917,17 @@ export function Property$init(property: Property, obj: Entity, val: any): void {
 }
 
 function Property$ensureInited(property: Property, obj: Entity): void {
-	// Determine if the property has been initialized with a value
-	// and initialize the property if necessary
+	// Determine if the property has been initialized with a value and initialize the property if necessary
 	if (!obj.__fields__.hasOwnProperty(property.name)) {
-		// Mark the property as pending initialization
 		Property$pendingInit(obj, property, true);
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
 			Property$init(property, obj, Property$getInitialValue(property));
+
+			// Mark the property as pending initialization if it still has no underlying value to allow default calculation rules to run for it
+			if (obj.__fields__[property.name] === null)
+				Property$pendingInit(obj, property, true);
 		}
 	}
 }

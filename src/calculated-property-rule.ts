@@ -32,14 +32,13 @@ export class CalculatedPropertyRule extends Rule {
 			if (options.property) {
 				property = typeof options.property === "string" ? rootType.getProperty(options.property) as Property : options.property as Property;
 
-				if (!options.isDefaultValue) {
-					// indicate that the rule is responsible for returning the value of the calculated property
-					options.returns = [property];
-				}
-				else {
+				if (options.isDefaultValue) {
 					// Ensure the default value rule runs on init of a new instance
 					(options as RuleInvocationOptions).onInitNew = true;
 				}
+
+				// indicate that the rule is responsible for returning the value of the calculated property
+				options.returns = [property];
 			}
 
 			if (!name) {
@@ -68,8 +67,8 @@ export class CalculatedPropertyRule extends Rule {
 		// register the rule with the target property
 		this.property.rules.push(this);
 
-		// mark the property as calculated if the rule runs on property access
-		if (this.invocationTypes & RuleInvocationType.PropertyGet)
+		// mark the property as calculated if the rule runs on property access and is not a default value calculation
+		if (!options.isDefaultValue && this.invocationTypes & RuleInvocationType.PropertyGet)
 			this.property.isCalculated = true;
 	}
 
