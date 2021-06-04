@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Added
+- default value calculations run for unspecified properties on existing entities
+
 ## [0.8.17] - 2021-05-13
 ### Added
 - model-level events for afterPropertySet and listChanged
