@@ -1,6 +1,6 @@
 import { ErrorConditionType } from "./condition-type";
 import { Entity } from "./entity";
-import { Property } from "./property";
+import { evaluateLabel, Property } from "./property";
 import { Condition } from "./condition";
 import { Format } from "./format";
 
@@ -22,7 +22,7 @@ export class FormatError {
 	}
 
 	createCondition(target: Entity, prop: Property): Condition {
-		return new Condition(FormatError.ConditionType, this.messageTemplate.replace("{property}", prop.label), target, this.format, [prop]);
+		return new Condition(FormatError.ConditionType, this.messageTemplate.replace("{property}", evaluateLabel(prop, target)), target, this.format, [prop]);
 	}
 
 	toString(): string {
