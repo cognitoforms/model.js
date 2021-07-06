@@ -1,17 +1,13 @@
 import { Entity } from "./entity";
 import { Property } from "./property";
 
-export type InitializationValueResolver = (instance: Entity, property: Property, value: any) => Promise<any>;
-
 export class InitializationContext {
 	private newDocument = false;
-	private valueResolver: InitializationValueResolver;
 	private tasks = new Set<Promise<any>>();
 	private waiting: (() => void)[] = [];
 
-	constructor(newDocument: boolean, valueResolver?: InitializationValueResolver) {
+	constructor(newDocument: boolean) {
 		this.newDocument = newDocument;
-		this.valueResolver = valueResolver;
 	}
 
 	/**
@@ -61,7 +57,7 @@ export class InitializationContext {
 	}
 
 	tryResolveValue(instance: Entity, property: Property, value: any) {
-		const task = this.valueResolver && this.valueResolver(instance, property, value);
+		const task = instance.serializer.resolveValue(instance, property, value);
 		if (task)
 			this.wait(task);
 		return task;
@@ -72,6 +68,6 @@ export class InitializationContext {
 	}
 
 	get ready() {
-		return new Promise(resolve => this.whenReady(resolve));
+		return new Promise<void>(resolve => this.whenReady(resolve));
 	}
 }

@@ -4,6 +4,8 @@ import { Property } from "./property";
 import { ObjectLookup, flatMap } from "./helpers";
 import { InitializationContext } from "./initilization-context";
 
+export type AsyncValueResolver = (instance: Entity, property: Property, value: any) => Promise<any> | void;
+
 export interface PropertySerializationResult {
 	key: string;
 	value: any;
@@ -70,6 +72,7 @@ export class EntitySerializer {
 	private _propertyConverters: PropertyConverter[] = [];
 	private _propertyInjectors = new Map<Type | string, PropertyInjector[]>();
 	private _propertyAliases = new Map<Type | string, ObjectLookup<string>>();
+	private _valueResolvers: AsyncValueResolver[] = [];
 	private static defaultPropertyConverter = new PropertyConverter();
 
 	/**
@@ -97,6 +100,10 @@ export class EntitySerializer {
 		let aliases = this._propertyAliases.get(type) || {};
 		aliases[alias] = propertyName;
 		this._propertyAliases.set(type, aliases);
+	}
+
+	registerValueResolver(resolver: AsyncValueResolver) {
+		this._valueResolvers.push(resolver);
 	}
 
 	/**
@@ -215,5 +222,13 @@ export class EntitySerializer {
 
 		propName = this.getPropertyAliases(context.meta.type)[propName];
 		return context.meta.type.getProperty(propName);
+	}
+
+	resolveValue(context: Entity, property: Property, value: any): Promise<any> | void {
+		for (const resolve of this._valueResolvers) {
+			const result = resolve(context, property, value);
+			if (result)
+				return result;
+		}
 	}
 }

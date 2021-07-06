@@ -8,7 +8,6 @@ import { RuleOptions, Rule } from "./rule";
 import { Format } from "./format";
 import { PropertyChain } from "./property-chain";
 import { PropertyPath } from "./property-path";
-import { InitializationContext, InitializationValueResolver } from "./initilization-context";
 
 export const Type$newIdPrefix = "+c";
 
@@ -78,38 +77,30 @@ export class Type {
 			this.extend(options);
 	}
 
-	get identifier() {
+	get identifier(): Property {
 		if (this._identifier)
 			return this._identifier;
 		return this.baseType ? this.baseType.identifier : null;
 	}
 
-	set identifier(val) {
+	set identifier(val: Property) {
 		this._identifier = val;
 	}
 
 	createSync(state: any): Entity {
-		// Attempt to fetch an existing instance if the state contains an Id property
 		const id = getIdFromState(this, state);
-		if (id) {
-			const instance = this.get(id);
-			if (instance) {
-				// Assign state to the existing object
-				instance.set(state);
-				return instance;
-			}
-			const Ctor = this.jstype as any;
-			// Construct an instance using the known id
-			return new Ctor(id, state);
-		}
-		// Construct a new instance without a known id
-		return new this.jstype(state);
+		if (id && this.get(id))
+			throw new Error(`Could not create instance of type '${this.fullName}' with identifier '${id}' because this object already exists.`);
+
+		const Ctor = this.jstype as any;
+		// Construct an instance using the known id if it is present
+		const instance = (id ? new Ctor(id, state) : new Ctor(state)) as Entity;
+		return instance;
 	}
 
-	create(state: any, valueResolver?: InitializationValueResolver): Promise<Entity> {
-		// Attempt to fetch an existing instance if the state contains an Id property
-		const { context, instance } = Type$createOrUpdate(this, state, valueResolver);
-		return new Promise(resolve => context.whenReady(() => resolve(instance)));
+	create(state: any): Promise<Entity> {
+		const instance = this.createSync(state);
+		return instance.initialized.then(() => instance);
 	}
 
 	/** Generates a unique id suitable for an instance in the current type hierarchy. */
@@ -194,7 +185,7 @@ export class Type {
 		}
 
 		obj.meta.id = newId;
-		obj.meta.isNew = false;
+		obj.markPersisted();
 
 		return obj;
 	}
@@ -492,36 +483,6 @@ export class Type {
 			}
 		});
 	}
-}
-
-export function Type$createOrUpdate(type: Type, state: any, contextOrResolver: InitializationValueResolver | InitializationContext) {
-	const id = getIdFromState(type, state);
-	const isNew = !id;
-	let context: InitializationContext;
-	if (contextOrResolver instanceof InitializationContext)
-		context = contextOrResolver;
-	else
-		context = new InitializationContext(isNew, contextOrResolver);
-
-	// We need to pause processing of callbacks to prevent publishing entity events while still processing
-	// the state graph
-	const instance = context.execute(() => {
-		let instance = id && type.get(id);
-		if (instance) {
-			// Assign state to the existing object
-			instance.updateWithContext(context, state);
-		}
-		else {
-			// Cast the jstype to any so we can call the internal constructor signature that takes a context
-			// We don't want to put the context on the public constructor interface
-			const Ctor = type.jstype as any;
-			// Construct an instance using the known id if it is present
-			instance = (id ? new Ctor(id, state, context) : new Ctor(state, context)) as Entity;
-		}
-		return instance;
-	});
-
-	return { context, instance };
 }
 
 export type Value = string | number | Date | boolean;
