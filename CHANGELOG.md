@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Changed
+- entity update/creation process to support async updates
+### Added
+- method to mark entity and it's sub-entities as persisted
 ## [0.8.19] - 2021-06-09
 ### Fixed
 - ensure tokenized labels are shown in format error messages
