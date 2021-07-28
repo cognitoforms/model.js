@@ -232,36 +232,39 @@ export class Entity {
 		if (isEntityType(prop.propertyType)) {
 			const ChildEntity = prop.propertyType;
 			if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
-				state.forEach((s, idx) => {
-					if (!(s instanceof ChildEntity))
-						s = this.serializer.deserialize(this, s, prop, this._context, false);
+				if (!state.length)
+					currentValue.splice(0);
+				else
+					state.forEach((s, idx) => {
+						if (!(s instanceof ChildEntity))
+							s = this.serializer.deserialize(this, s, prop, this._context, false);
 
-					// Undefined(IgnoreProperty) got assigned, so do not set the property
-					if (s === undefined)
-						return;
-					// Modifying/replacing existing list item
-					if (idx < currentValue.length) {
-						// If the item is a state object, create/update the entity using the state
-						if (!(s instanceof ChildEntity) && typeof s === "object") {
-							const listItem = currentValue[idx] as Entity;
-							// If the entity is a non-pooled type, update in place
-							// If the entity id matches the id in the state, update in place
-							if (!ChildEntity.meta.identifier || getIdFromState(ChildEntity.meta, s) === listItem.meta.id)
-								listItem.updateWithContext(this._context, s);
+						// Undefined(IgnoreProperty) got assigned, so do not set the property
+						if (s === undefined)
+							return;
+						// Modifying/replacing existing list item
+						if (idx < currentValue.length) {
+							// If the item is a state object, create/update the entity using the state
+							if (!(s instanceof ChildEntity) && typeof s === "object") {
+								const listItem = currentValue[idx] as Entity;
+								// If the entity is a non-pooled type, update in place
+								// If the entity id matches the id in the state, update in place
+								if (!ChildEntity.meta.identifier || getIdFromState(ChildEntity.meta, s) === listItem.meta.id)
+									listItem.updateWithContext(this._context, s);
+								else
+									currentValue.splice(idx, 1, Entity.createOrUpdate(ChildEntity.meta, s, this._context));
+							}
+							else if (s instanceof ChildEntity)
+								currentValue.splice(idx, 1, s);
 							else
-								currentValue.splice(idx, 1, Entity.createOrUpdate(ChildEntity.meta, s, this._context));
+								console.warn("Provided state,", s, ", is not valid for type " + ChildEntity.meta.fullName + "[].");
 						}
+						// Add a list item
 						else if (s instanceof ChildEntity)
-							currentValue.splice(idx, 1, s);
+							currentValue.push(s);
 						else
-							console.warn("Provided state,", s, ", is not valid for type " + ChildEntity.meta.fullName + "[].");
-					}
-					// Add a list item
-					else if (s instanceof ChildEntity)
-						currentValue.push(s);
-					else
-						currentValue.push(Entity.createOrUpdate(ChildEntity.meta, s, this._context));
-				});
+							currentValue.push(Entity.createOrUpdate(ChildEntity.meta, s, this._context));
+					});
 			}
 			else if (state instanceof ChildEntity)
 				value = state;
