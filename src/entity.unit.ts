@@ -402,6 +402,35 @@ describe("Entity", () => {
 			movie["Cast"].batchUpdate(() => updateArray(movie["Cast"], []));
 			expect(changehandler).not.toBeCalled();
 		});
+
+		it("can set an empty list", async () => {
+			const model = new Model({
+				Skill: {
+					Name: String,
+					Proficiency: {
+						default() { return null; },
+						type: Number
+					}
+				},
+				Person: {
+					Skills: {
+						type: "Skill[]",
+						default: () => [{
+							Name: "Climbing",
+							Proficiency: 4
+						},
+						{
+							Name: "Eating",
+							Proficiency: 4
+						}]
+					}
+				}
+			});
+			const instance = await model.types.Person.create({}) as any;
+			expect(instance.Skills.length).toBe(2);
+			instance.update({ Skills: [] });
+			expect(instance.Skills.length).toBe(0);
+		});
 	});
 
 	describe("formatting", () => {
