@@ -87,6 +87,20 @@ export class Type {
 		this._identifier = val;
 	}
 
+	createIfNotExists(state: any): Entity {
+		const id = getIdFromState(this, state);
+		if (id) {
+			const existing = this.get(id);
+			if (existing)
+				return existing;
+		}
+
+		const Ctor = this.jstype as any;
+		// Construct an instance using the known id if it is present
+		const instance = (id ? new Ctor(id, state) : new Ctor(state)) as Entity;
+		return instance;
+	}
+
 	createSync(state: any): Entity {
 		const id = getIdFromState(this, state);
 		if (id && this.get(id))

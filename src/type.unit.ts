@@ -108,4 +108,35 @@ describe("Type", () => {
 			expect(() => model.types.Entity.create({ Id: "x" })).toThrow(/already exists/);
 		});
 	});
+
+	describe("createIfNotExists", () => {
+		let model: Model;
+		beforeEach(() => {
+			model = new Model({
+				Entity: {
+					Id: { identifier: true, type: String },
+					Name: String,
+					Sibling: "Entity"
+				}
+			});
+		});
+
+		it("should create new instance if id is not known", () => {
+			const entity = model.types.Entity.createIfNotExists({ Id: "x", Name: "Test123" });
+			expect(entity.Id).toBe("x");
+			expect(entity.Name).toBe("Test123");
+		});
+
+		it("should create new instance if id is not provided", () => {
+			const entity = model.types.Entity.createIfNotExists({ Name: "Test123" });
+			expect(entity.Id).toBeNull();
+			expect(entity.Name).toBe("Test123");
+		});
+
+		it("should return known instance if id is known", () => {
+			const known = model.types.Entity.createSync({ Id: "x", Name: "Test123" });
+			expect(model.types.Entity.createIfNotExists({ Id: "x", Name: "New123" })).toBe(known);
+			expect(known.Name).toBe("Test123");
+		});
+	});
 });
