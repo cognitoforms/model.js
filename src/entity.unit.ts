@@ -221,6 +221,21 @@ describe("Entity", () => {
 			expect(movie.Budget.serialize()).toEqual(Budget1);
 		});
 
+		it("asynchronous property is initialized before initExisting event published ", async () => {
+			const Budget1 = { LineItems: [{ Label: "L1", Cost: 1000000 }] };
+
+			model.serializer.registerValueResolver((entity, prop, value) => {
+				if (prop.name === "Budget" && value === "BUDGET_1")
+					return Promise.resolve(Budget1);
+			});
+
+			Types.Movie.meta.initExisting.subscribe(({ entity: movie }) => {
+				expect(movie.Budget.serialize()).toEqual(Budget1);
+			});
+
+			await Types.Movie.meta.create({ ...Alien, Id: "1", Budget: "BUDGET_1" });
+		});
+
 		it("should support circular async value resolution", async () => {
 			const model = new Model({
 				Entity: {
