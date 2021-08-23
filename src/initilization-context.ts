@@ -30,9 +30,11 @@ export class InitializationContext {
 	wait(task: Promise<any>) {
 		this.tasks.add(task);
 		task.then(() => {
-			this.tasks.delete(task);
 			// process the queue asynchronously to allow additional tasks to be queued as a result of this one
-			Promise.resolve().then(() => this.processWaitingQueue());
+			Promise.resolve().then(() => {
+				this.tasks.delete(task);
+				this.processWaitingQueue();
+			});
 		});
 	}
 
