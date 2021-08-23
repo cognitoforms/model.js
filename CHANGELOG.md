@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- ensure async property values are initialized before publishing initExisting event
 ## [0.8.22] - 2021-08-04
 ### Added
 - Type.createIfNotExists
