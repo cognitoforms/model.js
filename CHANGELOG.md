@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- incorrect type for RuleOrMethodOptions.dependsOn
 ## [0.8.23] - 2021-08-24
 ### Fixed
 - ensure async property values are initialized before publishing initExisting event

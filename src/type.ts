@@ -436,11 +436,12 @@ export class Type {
 
 				// Rule Method
 				else if (isRuleMethod(member)) {
-					Type$generateMethod(this, this.jstype.prototype, name, member.function);
+					const { function: func, dependsOn } = member;
+					Type$generateMethod(this, this.jstype.prototype, name, func);
 					this.model.ready(() => {
 						new Rule(this, this.fullName + "." + name + "Rule", {
 							execute: (new Function(`return this.${name}();`)) as (this: Entity) => void,
-							onChangeOf: resolveDependsOn("get", member.dependsOn)
+							onChangeOf: resolveDependsOn("get", dependsOn)
 						}).register();
 					});
 				}
@@ -515,7 +516,7 @@ export interface TypeOptions {
 
 export interface RuleOrMethodOptions<TEntity extends Entity> {
 	function: (this: TEntity, ...args: any[]) => any;
-	dependsOn?: PropertyPath[];
+	dependsOn?: string;
 }
 
 export type RuleOrMethodFunctionOrOptions<EntityType extends Entity> = ((this: EntityType, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
