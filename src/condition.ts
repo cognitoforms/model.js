@@ -10,7 +10,7 @@ import { Format } from "./format";
 
 export class Condition {
 	type: ConditionType;
-	message: string;
+	_message: string | Function;
 	targets: ObservableArray<ConditionTarget>;
 	source: Rule | Format<any>;
 
@@ -21,7 +21,7 @@ export class Condition {
 		* @param target The root target entity the condition is associated with.
 		* @param properties The set of property paths specifying which properties and entities the condition should be attached to.
 		*/
-	constructor(type: ConditionType, message: string, target: Entity, source: Rule | Format<any>, properties: PropertyPath[] = []) {
+	constructor(type: ConditionType, message: string | Function, target: Entity, source: Rule | Format<any>, properties: PropertyPath[] = []) {
 		this.type = type;
 		this.message = message || (type ? type.message : undefined);
 		let targets = this.targets = ObservableArray.create<ConditionTarget>();
@@ -81,6 +81,17 @@ export class Condition {
 				}
 			}
 		}
+	}
+
+	get message(): string {
+		if (typeof(this._message) === "string")
+			return this._message;
+		else
+			return this._message();
+	}
+
+	set message(val: string | Function) {
+		this._message = val;
 	}
 
 	destroy(): void {
