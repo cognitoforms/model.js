@@ -23,7 +23,7 @@ export class Condition {
 		*/
 	constructor(type: ConditionType, message: string | Function, target: Entity, source: Rule | Format<any>, properties: PropertyPath[] = []) {
 		this.type = type;
-		this.message = message || (type ? type.message : undefined);
+		this._message = message || (type ? type.message : undefined);
 		let targets = this.targets = ObservableArray.create<ConditionTarget>();
 		this.source = source;
 
@@ -90,7 +90,7 @@ export class Condition {
 			return this._message();
 	}
 
-	set message(val: string | Function) {
+	set message(val: string) {
 		this._message = val;
 	}
 
