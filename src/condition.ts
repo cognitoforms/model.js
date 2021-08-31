@@ -10,7 +10,7 @@ import { Format } from "./format";
 
 export class Condition {
 	type: ConditionType;
-	_message: string | Function;
+	private _message: string | (() => string);
 	targets: ObservableArray<ConditionTarget>;
 	source: Rule | Format<any>;
 
@@ -21,7 +21,7 @@ export class Condition {
 		* @param target The root target entity the condition is associated with.
 		* @param properties The set of property paths specifying which properties and entities the condition should be attached to.
 		*/
-	constructor(type: ConditionType, message: string | Function, target: Entity, source: Rule | Format<any>, properties: PropertyPath[] = []) {
+	constructor(type: ConditionType, message: string | (() => string), target: Entity, source: Rule | Format<any>, properties: PropertyPath[] = []) {
 		this.type = type;
 		this._message = message || (type ? type.message : undefined);
 		let targets = this.targets = ObservableArray.create<ConditionTarget>();
