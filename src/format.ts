@@ -278,35 +278,47 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 		}
 
 		var result = "";
-		for (var index = 0; index < this.tokens.length; index++) {
-			var token = this.tokens[index];
-			if (token.prefix)
-				result = result + token.prefix;
-			if (token.path) {
-				var value = evalPath(obj, token.path);
-				if (value === undefined || value === null) {
-					value = "";
-				}
-				else if (token.format) {
-					let format: Format<any>;
-					if (token.format instanceof Format) {
-						format = token.format;
+		const convertTokens = (obj: T) => {
+			for (var index = 0; index < this.tokens.length; index++) {
+				var token = this.tokens[index];
+				if (token.prefix)
+					result = result + token.prefix;
+				if (token.path) {
+					var value = evalPath(obj, token.path);
+					if (value === undefined || value === null) {
+						value = "";
 					}
-					else if (typeof token.format === "string") {
-						format = token.format = obj.meta.type.model.getFormat<any>(value.constructor, token.format);
+					else if (token.format) {
+						let format: Format<any>;
+						if (token.format instanceof Format) {
+							format = token.format;
+						}
+						else if (typeof token.format === "string") {
+							format = token.format = obj.meta.type.model.getFormat<any>(value.constructor, token.format);
+						}
+						value = format.convert(value);
 					}
-					value = format.convert(value);
+
+					if (this.formatEval)
+						value = this.formatEval(value);
+
+					if (Array.isArray(value))
+						value = value.join(", ");
+
+					result = result + value;
 				}
-
-				if (this.formatEval)
-					value = this.formatEval(value);
-
-				if (Array.isArray(value))
-					value = value.join(", ");
-
-				result = result + value;
 			}
-		}
+		};
+
+		if (Array.isArray(obj))
+			obj.forEach((item, index)=>{
+				convertTokens(item);
+				if (index !== obj.length - 1)
+					result += ", ";
+			});
+		else
+			convertTokens(obj);
+
 		return result;
 	}
 
