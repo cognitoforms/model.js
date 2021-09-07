@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- converting entity list to string did not apply property format to list items
 ## [0.8.25] - 2021-09-01
 ### Fixed
 - fix stale format errors by making condition message a computed getter
