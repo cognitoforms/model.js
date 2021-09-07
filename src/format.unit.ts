@@ -53,7 +53,7 @@ describe("format", () => {
 				}
 			}
 		});
-		let form = await model.types.Form.create({});
+		let form = await model.types.Form.create({}) as any;
 		form.Text = "label1";
 		var val = model.types.Form.jstype.$Number.format.convertBack("test") as FormatError;
 		var error = val.createCondition(form, model.types.Form.jstype.$Number);
@@ -61,5 +61,31 @@ describe("format", () => {
 		expect(error.message).toBe("label1 must be formatted as #,###.");
 		form.Text = "label2";
 		expect(error.message).toBe("label2 must be formatted as #,###.");
+	});
+
+	test("list items are formatted using the list property format", async () => {
+		var model = new Model({
+			"Form": {
+				Table: {
+					label: "table",
+					type: "Form.Table[]",
+					format: "[Text2]",
+					default: () => [{
+						Text1: "Text1",
+						Text2: "Text2"
+					},
+					{
+						Text1: "Text1",
+						Text2: "Text2"
+					}]
+				}
+			},
+			"Form.Table": {
+				Text1: String,
+				Text2: String
+			}
+		});
+		let form = await model.types.Form.create({}) as any;
+		expect(form.toString("[Table]")).toBe("Text2, Text2");
 	});
 });
