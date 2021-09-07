@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.26] - 2021-09-07
 ### Fixed
 - converting entity list to string did not apply property format to list items
 ## [0.8.25] - 2021-09-01
