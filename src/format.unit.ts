@@ -63,7 +63,7 @@ describe("format", () => {
 		expect(error.message).toBe("label2 must be formatted as #,###.");
 	});
 
-	test("lists", async () => {
+	test("list items are formatted using the list property format", async () => {
 		var model = new Model({
 			"Form": {
 				Table: {
@@ -81,16 +81,8 @@ describe("format", () => {
 				}
 			},
 			"Form.Table": {
-				Text1: {
-					label: "Text1",
-					default: "Text1",
-					type: String
-				},
-				Text2: {
-					label: "Text2",
-					default: "Text1",
-					type: String
-				}
+				Text1: String,
+				Text2: String
 			}
 		});
 		let form = await model.types.Form.create({}) as any;
