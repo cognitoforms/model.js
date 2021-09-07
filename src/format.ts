@@ -277,8 +277,8 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 			return "";
 		}
 
-		var result = "";
-		const convertTokens = (obj: T) => {
+		const convertTokens = (obj: T): string => {
+			var result = "";
 			for (var index = 0; index < this.tokens.length; index++) {
 				var token = this.tokens[index];
 				if (token.prefix)
@@ -308,18 +308,13 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 					result = result + value;
 				}
 			}
+			return result;
 		};
 
 		if (Array.isArray(obj))
-			obj.forEach((item, index)=>{
-				convertTokens(item);
-				if (index !== obj.length - 1)
-					result += ", ";
-			});
+			return obj.map(item => convertTokens(item)).join(", ");
 		else
-			convertTokens(obj);
-
-		return result;
+			return convertTokens(obj);
 	}
 
 	convertFromString(): FormatError | T {
