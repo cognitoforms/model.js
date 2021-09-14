@@ -44,7 +44,6 @@ describe("Type", () => {
 
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			let parent = await model.types.Parent.create({ Child: "1" });
-			console.log("test after await");
 			expect((parent as any).Child.Sibling.Name).toBe("Sibling Name");
 		});
 

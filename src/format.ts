@@ -281,8 +281,6 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 			var result = "";
 			for (var index = 0; index < this.tokens.length; index++) {
 				var token = this.tokens[index];
-				if (token.prefix)
-					result = result + token.prefix;
 				if (token.path) {
 					var value = evalPath(obj, token.path);
 					if (value === undefined || value === null) {
@@ -305,8 +303,13 @@ export class ModelFormat<T extends Entity> extends Format<T> {
 					if (Array.isArray(value))
 						value = value.join(", ");
 
+					if (token.prefix && ((result !== "" && value !== "") || (index === 0 && value !== "")))
+						result = result + token.prefix;
+
 					result = result + value;
 				}
+				else if (token.prefix)
+					result = result + token.prefix;
 			}
 			return result;
 		};
