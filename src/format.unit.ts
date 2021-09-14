@@ -88,4 +88,40 @@ describe("format", () => {
 		let form = await model.types.Form.create({}) as any;
 		expect(form.toString("[Table]")).toBe("Text2, Text2");
 	});
+
+	test("Prefixes are not prepended if there is no value and result", async () => {
+		var model = new Model({
+			"Form": {
+				Name: {
+					label: "Name",
+					format: "[Prefix] [First] [MiddleInitial] [Last] [Suffix]",
+					type: "Name"
+				}
+			},
+			"Name": {
+				First: {
+				  label: "First",
+				  type: String
+				},
+				Last: {
+				  label: "Last",
+				  type: String
+				},
+				MiddleInitial: {
+				  label: "Middle Initial",
+				  type: String
+				},
+				Prefix: {
+				  label: "Prefix",
+				  type: String
+				},
+				Suffix: {
+				  label: "Suffix",
+				  type: String
+				}
+			  }
+		});
+		let form = await model.types.Form.create({ Name: { First: "John", Last: "Doe" } }) as any;
+		expect(form.toString("[Name]")).toBe("John Doe");
+	});
 });
