@@ -1,4 +1,5 @@
 import { FormatError } from "./format-error";
+import { CultureInfo } from "./globalization";
 import { Model } from "./model";
 import "./resource-en";
 
@@ -87,6 +88,66 @@ describe("format", () => {
 		});
 		let form = await model.types.Form.create({}) as any;
 		expect(form.toString("[Table]")).toBe("Text2, Text2");
+	});
+
+	describe("Number", () => {
+		let model: Model;
+		beforeEach(() => {
+			CultureInfo.setup();
+			model = new Model({
+				$culture: "en-US",
+				"Form": {
+					IntegerField: {
+						label: "Integer",
+						type: Number,
+						format: "N0"
+					},
+					DecimalField: {
+						label: "Decimal",
+						type: Number,
+						format: "N2"
+					},
+					PercentageField: {
+						label: "Percentage",
+						type: Number,
+						format: "P1"
+					}
+				}
+			});
+		});
+		test("can be formatted as an integer", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.IntegerField = 3.14;
+			expect(form.IntegerField).toBe(3.14);
+			expect(form.toString("[IntegerField]")).toBe("3");
+		});
+		test("can be parsed as an integer", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.IntegerField = model.types.Form.getProperty("IntegerField").format.convertBack(" 3 ");
+			expect(form.IntegerField).toBe(3);
+		});
+		test("can be formatted as a decimal", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.DecimalField = 3;
+			expect(form.DecimalField).toBe(3);
+			expect(form.toString("[DecimalField]")).toBe("3.00");
+		});
+		test("can be parsed as a decimal", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.DecimalField = model.types.Form.getProperty("DecimalField").format.convertBack(" 3.14 ");
+			expect(form.DecimalField).toBe(3.14);
+		});
+		test("can be formatted as a percentage", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.PercentageField = 0.2;
+			expect(form.PercentageField).toBe(0.2);
+			expect(form.toString("[PercentageField]")).toBe("20.0 %");
+		});
+		test("can be parsed as a percentage", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.PercentageField = model.types.Form.getProperty("PercentageField").format.convertBack(" 20 % ");
+			expect(form.PercentageField).toBe(0.20);
+		});
 	});
 
 	test("boolean values are formatted using a two-part boolean property format", async () => {
