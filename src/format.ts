@@ -64,9 +64,7 @@ export abstract class Format<T> {
 		}
 
 		if (typeof text === "string") {
-			text = text.trim();
-
-			if (text.length === 0) {
+			if (text.trim().length === 0) {
 				return null;
 			}
 		}
