@@ -414,10 +414,11 @@ export function createFormat<T>(model: Model, type: any, format: string): Format
 				}
 			},
 			convertBack: function (str: string): boolean | FormatError {
-				if (str.toLowerCase() === trueFormat.toLowerCase()) {
+				str = str.trim();
+				if (str.toLowerCase() === trueFormat.trim().toLowerCase()) {
 					return true;
 				}
-				else if (str.toLowerCase() === falseFormat.toLowerCase()) {
+				else if (str.toLowerCase() === falseFormat.trim().toLowerCase()) {
 					return false;
 				}
 				else {
