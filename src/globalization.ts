@@ -961,19 +961,8 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 
 	let num: number | string = Math.abs(number);
 
-	let prefix = "";
-	let suffix = "";
-
 	if (!format)
 		format = "D";
-	else {
-		const whitespaceMatch = /^(\s*)([^\s].*[^\s])(\s*)$/.exec(format);
-		if (whitespaceMatch) {
-			prefix = whitespaceMatch[1];
-			format = whitespaceMatch[2];
-			suffix = whitespaceMatch[3];
-		}
-	}
 
 	var precision = -1;
 	if (format.length > 1) precision = parseInt(format.slice(1), 10);
@@ -1047,7 +1036,7 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 		}
 	}
 
-	return prefix + ret + suffix;
+	return ret;
 }
 
 function toUpper(value: string) {
