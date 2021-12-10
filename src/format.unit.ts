@@ -88,4 +88,34 @@ describe("format", () => {
 		let form = await model.types.Form.create({}) as any;
 		expect(form.toString("[Table]")).toBe("Text2, Text2");
 	});
+
+	test("boolean values are formatted using a two-part boolean property format", async () => {
+		var model = new Model({
+			"Form": {
+				BooleanField: {
+					label: "Boolean",
+					type: Boolean,
+					format: "Yes ;No ",
+					default: false
+				}
+			}
+		});
+		let form = await model.types.Form.create({}) as any;
+		expect(form.toString("[BooleanField]")).toBe("No ");
+	});
+
+	test("boolean values can be parsed using the two-part boolean property format", async () => {
+		var model = new Model({
+			"Form": {
+				BooleanField: {
+					label: "Boolean",
+					type: Boolean,
+					format: "Yes ;No ",
+					default: false
+				}
+			}
+		});
+		let prop = model.types.Form.getProperty("BooleanField");
+		expect(prop.format.convertBack("Yes ")).toBe(true);
+	});
 });
