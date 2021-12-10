@@ -44,7 +44,7 @@ describe("CalculateRule", () => {
 		expect(consoleOutputs).toEqual(["Error encountered while running rule \"Test.Choice.Calculated\".", "Error: Cannot set Choice, \"x\" is not an allowed value."]);
 	});
 
-	describe("default value calculation", async () => {
+	describe("default value calculation", () => {
 		let model: Model;
 		let TestEntity: Type;
 		beforeEach(async () => {
