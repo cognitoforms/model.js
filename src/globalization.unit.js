@@ -47,8 +47,8 @@ describe("globalize", function () {
 		test("parseDate('hh:mm AM', 'CurrentCulture', 't')", () => {
 			expect(+parseDate("11:26 AM", CultureInfo.CurrentCulture, "t")).toBe(+(new Date(1970, 0, 1, 11, 26)));
 		});
-		test("parseDate('####-##-##', 'CurrentCulture', [' yyyy - MM - dd '])", () => {
-			expect(+parseDate(" 2019 - 02 - 13 ", CultureInfo.CurrentCulture, [" yyyy - MM - dd "])).toBe(+(new Date(2019, 1, 13)));
+		test("parseDate('####-##-##', 'CurrentCulture', ['yyyy-MM-dd'])", () => {
+			expect(+parseDate(" 2019-02-13 ", CultureInfo.CurrentCulture, ["yyyy-MM-dd"])).toBe(+(new Date(2019, 1, 13)));
 		});
 	});
 
