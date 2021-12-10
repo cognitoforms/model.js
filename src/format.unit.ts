@@ -56,8 +56,8 @@ describe("format", () => {
 		});
 		let form = await model.types.Form.create({}) as any;
 		form.Text = "label1";
-		var val = model.types.Form.jstype.$Number.format.convertBack("test") as FormatError;
-		var error = val.createCondition(form, model.types.Form.jstype.$Number);
+		var val = model.types.Form.getProperty("Number").format.convertBack("test") as FormatError;
+		var error = val.createCondition(form, model.types.Form.getProperty("Number"));
 
 		expect(error.message).toBe("label1 must be formatted as #,###.");
 		form.Text = "label2";
