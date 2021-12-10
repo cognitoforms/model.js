@@ -90,6 +90,68 @@ describe("format", () => {
 		expect(form.toString("[Table]")).toBe("Text2, Text2");
 	});
 
+	describe("Date", () => {
+		let model: Model;
+		beforeEach(() => {
+			CultureInfo.setup();
+			model = new Model({
+				$culture: "en-US",
+				"Form": {
+					DateTimeField: {
+						label: "Date / Time",
+						type: Date,
+						format: " M/d/yyyy h:mm tt "
+					},
+					DateField: {
+						label: "Date",
+						type: Date,
+						format: " M/d/yyyy "
+					},
+					TimeField: {
+						label: "Time",
+						type: Date,
+						format: " h:mm tt "
+					}
+				}
+			});
+		});
+		test("can be formatted as a date and time", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.DateTimeField = new Date(2021, 11, 10, 16, 38);
+			expect(form.toString("[DateTimeField]")).toBe(" 12/10/2021 4:38 PM ");
+		});
+		test("can be parsed as a date and time", async () => {
+			let form = await model.types.Form.create({}) as any;
+			let result = model.types.Form.getProperty("DateTimeField").format.convertBack(" 12/10/2021 4:38 PM ");
+			expect(result.constructor).toBe(Date);
+			form.DateTimeField = result;
+			expect(form.DateTimeField).toEqual(new Date(2021, 11, 10, 16, 38));
+		});
+		test("can be formatted as a date", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.DateField = new Date(2021, 11, 10);
+			expect(form.toString("[DateField]")).toBe(" 12/10/2021 ");
+		});
+		test("can be parsed as a date", async () => {
+			let form = await model.types.Form.create({}) as any;
+			var result = model.types.Form.getProperty("DateField").format.convertBack(" 12/10/2021 ");
+			expect(result.constructor).toBe(Date);
+			form.DateField = result;
+			expect(form.DateField).toEqual(new Date(2021, 11, 10));
+		});
+		test("can be formatted as a time", async () => {
+			let form = await model.types.Form.create({}) as any;
+			form.TimeField = new Date(1970, 0, 1, 16, 38);
+			expect(form.toString("[TimeField]")).toBe(" 4:38 PM ");
+		});
+		test("can be parsed as a time", async () => {
+			let form = await model.types.Form.create({}) as any;
+			let result = model.types.Form.getProperty("TimeField").format.convertBack(" 4:38 PM ");
+			form.TimeField = result;
+			expect(form.TimeField).toEqual(new Date(1970, 0, 1, 16, 38));
+		});
+	});
+
 	describe("Number", () => {
 		let model: Model;
 		beforeEach(() => {
