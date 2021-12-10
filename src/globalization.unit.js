@@ -75,8 +75,11 @@ describe("globalize", function () {
 			expect(formatNumber({ x: 5 }, "n1", CultureInfo.CurrentCulture)).toBeNull();
 		});
 
+		// TODO: Technically this behavior is not consistent with .NET number formatting behavior
 		test("whitespace is preserved", () => {
-			expect(formatNumber(3.14, " n1 ", CultureInfo.CurrentCulture)).toBe(" 3.1 ");
+			expect(() => {
+				return formatNumber(3.14, " n1 ", CultureInfo.CurrentCulture);
+			}).toThrowError("Sys.FormatException: Format specifier was invalid.");
 		});
 	});
 
