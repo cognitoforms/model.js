@@ -950,6 +950,7 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 			return number.toString();
 		}
 	}
+
 	var _percentPositivePattern = ["n %", "n%", "%n" ];
 	var _percentNegativePattern = ["-n %", "-n%", "-%n"];
 	var _numberNegativePattern = ["(n)", "-n", "- n", "n-", "n -"];
@@ -960,8 +961,19 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 
 	let num: number | string = Math.abs(number);
 
+	let prefix = "";
+	let suffix = "";
+
 	if (!format)
 		format = "D";
+	else {
+		const whitespaceMatch = /^(\s*)([^\s].*[^\s])(\s*)$/.exec(format);
+		if (whitespaceMatch) {
+			prefix = whitespaceMatch[1];
+			format = whitespaceMatch[2];
+			suffix = whitespaceMatch[3];
+		}
+	}
 
 	var precision = -1;
 	if (format.length > 1) precision = parseInt(format.slice(1), 10);
@@ -1035,7 +1047,7 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 		}
 	}
 
-	return ret;
+	return prefix + ret + suffix;
 }
 
 function toUpper(value: string) {
