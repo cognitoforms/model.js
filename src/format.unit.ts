@@ -115,6 +115,13 @@ describe("format", () => {
 				}
 			});
 		});
+		test("parses null or whitespace as null", async () => {
+			let form = await model.types.Form.create({}) as any;
+			let result = model.types.Form.getProperty("DateTimeField").format.convertBack(" ");
+			expect(result).toBeNull();
+			form.DateTimeField = result;
+			expect(form.DateTimeField).toBeNull();
+		});
 		test("can be formatted as a date and time", async () => {
 			let form = await model.types.Form.create({}) as any;
 			form.DateTimeField = new Date(2021, 11, 10, 16, 38);
@@ -177,6 +184,13 @@ describe("format", () => {
 				}
 			});
 		});
+		test("parses null or whitespace as null", async () => {
+			let form = await model.types.Form.create({}) as any;
+			let result = model.types.Form.getProperty("IntegerField").format.convertBack(" ");
+			expect(result).toBeNull();
+			form.IntegerField = result;
+			expect(form.IntegerField).toBeNull();
+		});
 		test("can be formatted as an integer", async () => {
 			let form = await model.types.Form.create({}) as any;
 			form.IntegerField = 3.14;
@@ -226,6 +240,13 @@ describe("format", () => {
 					}
 				}
 			});
+		});
+		test("parses null or whitespace as null", async () => {
+			let form = await model.types.Form.create({}) as any;
+			let result = model.types.Form.getProperty("BooleanField").format.convertBack(" ");
+			expect(result).toBeNull();
+			form.BooleanField = result;
+			expect(form.BooleanField).toBeNull();
 		});
 		test("values are formatted using a two-part boolean property format", async () => {
 			let form = await model.types.Form.create({}) as any;
