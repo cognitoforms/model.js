@@ -318,7 +318,6 @@ export function parseDate(value: string, cultureInfo: CultureInfo, formats?: str
 }
 
 function parseDateExact(value: string, format: string, cultureInfo: CultureInfo): Date {
-	value = value.trim();
 	var dtf = cultureInfo.dateTimeFormat;
 	var parseInfo = getDateParseRegExp(dtf, format);
 	var match = new RegExp(parseInfo.regExp).exec(value);
