@@ -402,6 +402,15 @@ export function createFormat<T>(model: Model, type: any, format: string): Format
 			nullFormat = formats.length > 2 ? formats[2] : "";
 		}
 
+		/**
+		 * Determines if the given string matches the given format option
+		 * @param str The text to check
+		 * @param formatValue The true or false format option
+		 */
+		const isFormatMatch = (str, formatValue) => {
+			return str.trim().toLowerCase() === formatValue.trim().toLowerCase();
+		};
+
 		return Format.create<boolean>(model, {
 			specifier: format,
 			convert: function (val: boolean): string {
@@ -416,15 +425,12 @@ export function createFormat<T>(model: Model, type: any, format: string): Format
 				}
 			},
 			convertBack: function (str: string): boolean | FormatError {
-				if (str.toLowerCase() === trueFormat.trim().toLowerCase()) {
+				if (isFormatMatch(str, trueFormat))
 					return true;
-				}
-				else if (str.toLowerCase() === falseFormat.trim().toLowerCase()) {
+				else if (isFormatMatch(str, falseFormat))
 					return false;
-				}
-				else {
+				else
 					return null;
-				}
 			}
 		}) as any;
 	}
