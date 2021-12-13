@@ -255,7 +255,7 @@ describe("format", () => {
 
 		test("boolean values can be parsed using the two-part boolean property format", async () => {
 			let prop = model.types.Form.getProperty("BooleanField");
-			expect(prop.format.convertBack("Yes ")).toBe(true);
+			expect(prop.format.convertBack(" Yes ")).toBe(true);
 		});
 	});
 });
