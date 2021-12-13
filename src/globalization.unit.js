@@ -23,6 +23,9 @@ describe("globalize", function () {
 		test("formatDate(date, 't', 'CurrentCulture')", () => {
 			expect(formatDate(new Date(2019, 1, 13, 11, 26, 34), "t", CultureInfo.CurrentCulture)).toBe("11:26 AM");
 		});
+		test("whitespace is preserved", () => {
+			expect(formatDate(new Date(2019, 1, 13, 11, 26, 34), " yyyy - MM - dd ", CultureInfo.CurrentCulture)).toBe(" 2019 - 02 - 13 ");
+		});
 	});
 
 	describe("parseDate", function () {
@@ -30,11 +33,9 @@ describe("globalize", function () {
 			expect(+parseDate("2/13/2019", CultureInfo.CurrentCulture)).toBe(+(new Date(2019, 1, 13)));
 		});
 		test("parseDate('####-##-##', 'CurrentCulture')", () => {
-			debugger;
 			expect(parseDate("2019-02-13", CultureInfo.CurrentCulture)).toBeNull();
 		});
 		test("parseDate('####-##-##', 'CurrentCulture', ['yyyy-MM-dd'])", () => {
-			debugger;
 			expect(+parseDate("2019-02-13", CultureInfo.CurrentCulture, ["yyyy-MM-dd"])).toBe(+(new Date(2019, 1, 13)));
 		});
 		test("parseDate('M/dd/yyyy hh:mm AM', 'CurrentCulture', 'g')", () => {
@@ -45,6 +46,9 @@ describe("globalize", function () {
 		});
 		test("parseDate('hh:mm AM', 'CurrentCulture', 't')", () => {
 			expect(+parseDate("11:26 AM", CultureInfo.CurrentCulture, "t")).toBe(+(new Date(1970, 0, 1, 11, 26)));
+		});
+		test("parseDate('####-##-##', 'CurrentCulture', ['yyyy-MM-dd'])", () => {
+			expect(+parseDate(" 2019-02-13 ", CultureInfo.CurrentCulture, ["yyyy-MM-dd"])).toBe(+(new Date(2019, 1, 13)));
 		});
 	});
 
@@ -70,6 +74,13 @@ describe("globalize", function () {
 		test("returns null given object", () => {
 			expect(formatNumber({ x: 5 }, "n1", CultureInfo.CurrentCulture)).toBeNull();
 		});
+
+		// TODO: Technically this behavior is not consistent with .NET number formatting behavior
+		test("whitespace is preserved", () => {
+			expect(() => {
+				return formatNumber(3.14, " n1 ", CultureInfo.CurrentCulture);
+			}).toThrowError("Sys.FormatException: Format specifier was invalid.");
+		});
 	});
 
 	describe("parseNumber", () => {
@@ -81,6 +92,9 @@ describe("globalize", function () {
 		});
 		test("parseNumber('#')", () => {
 			expect(parseNumber("3", "Number", CultureInfo.CurrentCulture)).toBe(3);
+		});
+		test("parseNumber(' # ')", () => {
+			expect(parseNumber(" 3 ", "Number", CultureInfo.CurrentCulture)).toBe(3);
 		});
 	});
 });

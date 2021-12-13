@@ -951,6 +951,7 @@ export function formatNumber(number: number, format: string, cultureInfo: Cultur
 			return number.toString();
 		}
 	}
+
 	var _percentPositivePattern = ["n %", "n%", "%n" ];
 	var _percentNegativePattern = ["-n %", "-n%", "-%n"];
 	var _numberNegativePattern = ["(n)", "-n", "- n", "n-", "n -"];
