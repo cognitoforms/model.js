@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Ensure that the Boolean formatter is not affected by whitespace when parsing input
 ## [0.8.27] - 2021-12-13
 ### Fixed
 - Ensure that the Boolean formatter is not affected by whitespace when parsing input
