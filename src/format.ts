@@ -64,7 +64,9 @@ export abstract class Format<T> {
 		}
 
 		if (typeof text === "string") {
-			if (text.trim().length === 0) {
+			text = text.trim();
+
+			if (text.length === 0) {
 				return null;
 			}
 		}
@@ -414,7 +416,6 @@ export function createFormat<T>(model: Model, type: any, format: string): Format
 				}
 			},
 			convertBack: function (str: string): boolean | FormatError {
-				str = str.trim();
 				if (str.toLowerCase() === trueFormat.trim().toLowerCase()) {
 					return true;
 				}
