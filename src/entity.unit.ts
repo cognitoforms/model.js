@@ -34,8 +34,16 @@ function resetModel() {
 			LineItems: "LineItem[]"
 		},
 		Address: {
+			Id: {
+				identifier: true,
+				type: String
+			},
+			AnotherEntity: "AnotherEntity",
 			City: String,
 			State: String
+		},
+		AnotherEntity: {
+			Data: String
 		},
 		Movie: {
 			Id: {
@@ -108,6 +116,42 @@ describe("Entity", () => {
 	let model: Model;
 	beforeEach(() => {
 		model = resetModel();
+	});
+
+	describe("23670 - Entity Async", () => {
+		it("initExisting event is published for entity A.B before entity A.B.C is fully initialized", async () => {
+			// Entity A => Movie
+			// Entity B => Director (which is a Person)
+			// Entity C => Address
+			// Entity D => Another Entity
+
+			model.serializer.registerValueResolver((instance, prop, value) => {
+				if (prop.name === "Director" && value === "1") {
+					// Async resolved child entity Director (B)
+					// Director has a non-identifying, "owned" entity with data 'Address' (C)
+					const directorState = {
+						...Alien.Director,
+						Id: "1",
+						Address: {
+							AnotherEntity: { Data: "Some Data" },
+							City: "Orlando",
+							State: "Florida"
+						}
+					};
+
+					return new Promise(resolve => setTimeout(() => resolve(directorState), 0));
+				}
+			});
+
+			// Subscribe to initExisting event for Entity B
+			Types.Person.meta.initExisting.subscribe(({ entity: person }) => {
+				expect(person.Address.City).not.toBeNull();
+				expect(person.Address.State).not.toBeNull();
+			});
+
+			// New Entity A
+			await Types.Movie.meta.create({ ...Alien, Director: "1" });
+		});
 	});
 
 	describe("construction", () => {
