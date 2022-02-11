@@ -143,14 +143,20 @@ describe("Entity", () => {
 				}
 			});
 
+			let addressCity: string = null;
+			let addressState: string = null;
+
 			// Subscribe to initExisting event for Entity B
 			Types.Person.meta.initExisting.subscribe(({ entity: person }) => {
-				expect(person.Address.City).not.toBeNull();
-				expect(person.Address.State).not.toBeNull();
+				addressCity = person.Address.City;
+				addressState = person.Address.State;
 			});
 
 			// New Entity A
 			await Types.Movie.meta.create({ ...Alien, Director: "1" });
+
+			expect(addressCity).not.toBeNull();
+			expect(addressState).not.toBeNull();
 		});
 	});
 
