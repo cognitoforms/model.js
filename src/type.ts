@@ -454,7 +454,7 @@ export class Type {
 					let property = this.getProperty(name);
 
 					// Add Property
-					if (!property || property.containingType !== member.type) {
+					if (!property || (member.type && property.propertyType !== member.type)) {
 						// Type & IsList
 						let isList = false;
 						if (typeof (member.type) === "string") {
