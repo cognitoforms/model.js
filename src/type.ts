@@ -335,10 +335,10 @@ export class Type {
 	}
 
 	get properties(): Property[] {
-		let propertiesArray: Property[] = [];
-		for (var type: Type = this; type != null; type = type.baseType) {
+		let propertiesArray: Property[] = Object.values(this.__properties__);
+		for (var type: Type = this.baseType; type != null; type = type.baseType) {
 			for (var propertyName in type.__properties__) {
-				if (type.__properties__.hasOwnProperty(propertyName)) {
+				if (!this.__properties__.hasOwnProperty(propertyName)) {
 					propertiesArray.push(type.__properties__[propertyName]);
 				}
 			}

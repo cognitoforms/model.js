@@ -44,7 +44,6 @@ describe("Type", () => {
 
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			let parent = await model.types.Parent.create({ Child: "1" });
-			console.log("test after await");
 			expect((parent as any).Child.Sibling.Name).toBe("Sibling Name");
 		});
 
@@ -140,6 +139,7 @@ describe("Type", () => {
 			expect(branch.meta.type.fullName).toBe("Branch");
 			expect(branch.Leaf.meta.type.fullName).toBe("Branch.Leaf");
 			expect(branch.Leaf.LeafId).toBe("1");
+			expect(branch.serialize()).toStrictEqual({ Id: 1, Leaf: { LeafId: "1" } });
 		});
 	});
 
