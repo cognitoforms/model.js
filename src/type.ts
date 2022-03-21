@@ -455,7 +455,7 @@ export class Type {
 
 					// Add Property
 					if (!property
-						|| (member.type && !isValueType(member.type) && !isValueType(property.propertyType) && property.propertyType.meta.fullName !== member.type)
+						|| (member.type && isEntityType(property.propertyType) && property.propertyType.meta.fullName !== member.type)
 						|| (member.type && isValueType(member.type) && isValueType(property.propertyType) && property.propertyType !== member.type)) {
 						// Type & IsList
 						let isList = false;
