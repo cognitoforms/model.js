@@ -335,7 +335,7 @@ export class Type {
 	}
 
 	get properties(): Property[] {
-		let propertiesObject: { [name: string]: Property } = this.__properties__;
+		let propertiesObject: { [name: string]: Property } = { ...this.__properties__ };
 		for (var type: Type = this.baseType; type != null; type = type.baseType) {
 			for (var propertyName in type.__properties__) {
 				if (!propertiesObject.hasOwnProperty(propertyName)) {
