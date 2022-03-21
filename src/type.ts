@@ -335,15 +335,15 @@ export class Type {
 	}
 
 	get properties(): Property[] {
-		let propertiesArray: Property[] = Object.values(this.__properties__);
+		let propertiesObject: { [name: string]: Property } = this.__properties__;
 		for (var type: Type = this.baseType; type != null; type = type.baseType) {
 			for (var propertyName in type.__properties__) {
-				if (!this.__properties__.hasOwnProperty(propertyName)) {
-					propertiesArray.push(type.__properties__[propertyName]);
+				if (!propertiesObject.hasOwnProperty(propertyName)) {
+					propertiesObject[propertyName] = type.__properties__[propertyName];
 				}
 			}
 		}
-		return propertiesArray;
+		return Object.values(propertiesObject);
 	}
 
 	addRule(optionsOrFunction: ((this: Entity) => void) | RuleOptions): Rule {
