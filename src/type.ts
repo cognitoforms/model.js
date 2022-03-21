@@ -335,15 +335,15 @@ export class Type {
 	}
 
 	get properties(): Property[] {
-		let propertiesArray: Property[] = [];
-		for (var type: Type = this; type != null; type = type.baseType) {
+		let propertiesObject: { [name: string]: Property } = { ...this.__properties__ };
+		for (var type: Type = this.baseType; type != null; type = type.baseType) {
 			for (var propertyName in type.__properties__) {
-				if (type.__properties__.hasOwnProperty(propertyName)) {
-					propertiesArray.push(type.__properties__[propertyName]);
+				if (!propertiesObject.hasOwnProperty(propertyName)) {
+					propertiesObject[propertyName] = type.__properties__[propertyName];
 				}
 			}
 		}
-		return propertiesArray;
+		return Object.values(propertiesObject);
 	}
 
 	addRule(optionsOrFunction: ((this: Entity) => void) | RuleOptions): Rule {
@@ -454,7 +454,9 @@ export class Type {
 					let property = this.getProperty(name);
 
 					// Add Property
-					if (!property) {
+					if (!property
+						|| (member.type && isEntityType(property.propertyType) && property.propertyType.meta.fullName !== member.type)
+						|| (member.type && isValueType(member.type) && isValueType(property.propertyType) && property.propertyType !== member.type)) {
 						// Type & IsList
 						let isList = false;
 						if (typeof (member.type) === "string") {

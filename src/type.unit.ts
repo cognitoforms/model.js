@@ -44,7 +44,6 @@ describe("Type", () => {
 
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			let parent = await model.types.Parent.create({ Child: "1" });
-			console.log("test after await");
 			expect((parent as any).Child.Sibling.Name).toBe("Sibling Name");
 		});
 
@@ -106,6 +105,41 @@ describe("Type", () => {
 
 			await model.types.Entity.create({ Id: "x" });
 			expect(() => model.types.Entity.create({ Id: "x" })).toThrow(/already exists/);
+		});
+
+		it("Extended properties have the correct type", async () => {
+			const model = new Model({
+				"Root.Leaf": {
+					LeafId: {
+						type: Number
+					}
+				},
+				Root: {
+					Id: {
+						type: Number
+					},
+					Leaf: {
+						type: "Root.Leaf"
+					}
+				},
+				"Branch.Leaf": {
+					$extends: "Root.Leaf",
+					LeafId: {
+						type: String
+					}
+				},
+				Branch: {
+					$extends: "Root",
+					Leaf: {
+						type: "Branch.Leaf"
+					}
+				}
+			});
+			const branch = await model.types.Branch.create({ Id: 1, Leaf: { LeafId: "1" } }) as any;
+			expect(branch.meta.type.fullName).toBe("Branch");
+			expect(branch.Leaf.meta.type.fullName).toBe("Branch.Leaf");
+			expect(branch.Leaf.LeafId).toBe("1");
+			expect(branch.serialize()).toStrictEqual({ Id: 1, Leaf: { LeafId: "1" } });
 		});
 	});
 
