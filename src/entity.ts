@@ -265,6 +265,7 @@ export class Entity {
 						else
 							currentValue.push(Entity.createOrUpdate(ChildEntity.meta, s, this._context));
 					});
+					// Remove excess items from the list
 					currentValue.splice(state.length);
 				}
 			}
