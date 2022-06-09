@@ -384,6 +384,32 @@ describe("Entity", () => {
 	});
 
 	describe("list", () => {
+		const PersonWithSkillsModel = {
+			Skill: {
+				Name: String,
+				Proficiency: {
+					default() { return null; },
+					type: Number
+				}
+			},
+			Person: {
+				Skills: {
+					Id: { identifier: true, type: String },
+					type: "Skill[]",
+					default: () => [{
+						Id: 1,
+						Name: "Climbing",
+						Proficiency: 4
+					},
+					{
+						Id: 2,
+						Name: "Eating",
+						Proficiency: 4
+					}]
+				}
+			}
+		};
+
 		it("can add/remove primitive items", () => {
 			const movie = new Types.Movie(Alien) as any;
 			const horror = "horror";
@@ -419,32 +445,20 @@ describe("Entity", () => {
 		});
 
 		it("can set an empty list", async () => {
-			const model = new Model({
-				Skill: {
-					Name: String,
-					Proficiency: {
-						default() { return null; },
-						type: Number
-					}
-				},
-				Person: {
-					Skills: {
-						type: "Skill[]",
-						default: () => [{
-							Name: "Climbing",
-							Proficiency: 4
-						},
-						{
-							Name: "Eating",
-							Proficiency: 4
-						}]
-					}
-				}
-			});
+			const model = new Model(PersonWithSkillsModel);
 			const instance = await model.types.Person.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [] });
 			expect(instance.Skills.length).toBe(0);
+		});
+
+		it("Updating a list with an array with less items does not leave extra items in the array", async () => {
+			const model = new Model(PersonWithSkillsModel);
+			const instance = await model.types.Person.create({}) as any;
+			const skillInstance = await model.types.Skill.create({ Name: "Surfing" }) as any;
+			expect(instance.Skills.length).toBe(2);
+			instance.update({ Skills: [skillInstance] }, null, true);
+			expect(instance.Skills.length).toBe(1);
 		});
 	});
 

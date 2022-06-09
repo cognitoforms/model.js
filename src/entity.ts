@@ -234,7 +234,7 @@ export class Entity {
 			if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
 				if (!state.length)
 					currentValue.splice(0);
-				else
+				else {
 					state.forEach((s, idx) => {
 						if (!(s instanceof ChildEntity))
 							s = this.serializer.deserialize(this, s, prop, this._context, false);
@@ -265,6 +265,9 @@ export class Entity {
 						else
 							currentValue.push(Entity.createOrUpdate(ChildEntity.meta, s, this._context));
 					});
+					// Remove excess items from the list
+					currentValue.splice(state.length);
+				}
 			}
 			else if (state instanceof ChildEntity)
 				value = state;
