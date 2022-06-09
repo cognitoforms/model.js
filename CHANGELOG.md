@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Remove excess items when updating an array with an array
+## [0.8.28] - 2021-12-13
+### Fixed
+- Ensure that the Boolean formatter is not affected by whitespace when parsing input
 ## [0.8.29] - 2022-03-21
 ### Added
 - Support for overriding inherited properties with a different type
