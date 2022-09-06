@@ -925,8 +925,9 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 		if (!property.isCalculated) {
 			Property$init(property, obj, Property$getInitialValue(property));
 
-			// Mark the property as pending initialization if it still has no underlying value to allow default calculation rules to run for it
-			if (obj.__fields__[property.name] === null)
+			const underlyingValue = obj.__fields__[property.name];
+			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it
+			if (underlyingValue === property.defaultValue || (property.isList && Array.isArray(underlyingValue) && underlyingValue.length === 0))
 				Property$pendingInit(obj, property, true);
 		}
 	}

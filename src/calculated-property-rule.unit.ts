@@ -63,6 +63,17 @@ describe("CalculateRule", () => {
 					Name2: {
 						type: String,
 						default: "John Doe"
+					},
+					Num: {
+						type: Number,
+						default: 5
+					},
+					Num2: {
+						type: Number,
+						default: {
+							dependsOn: "Num",
+							function() { return this.get("Num"); }
+						}
 					}
 				}
 			});
@@ -89,6 +100,18 @@ describe("CalculateRule", () => {
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBeNull();
+			});
+
+			describe("number property", () => {
+				it("is defaulted", async () => {
+					const entity = await TestEntity.create({});
+					expect(entity["Num"]).toBe(5);
+				});
+
+				it("is defaulted based on other defaulted property", async () => {
+					const entity = await TestEntity.create({});
+					expect(entity["Num2"]).toBe(5);
+				});
 			});
 		});
 

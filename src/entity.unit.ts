@@ -396,16 +396,18 @@ describe("Entity", () => {
 				Skills: {
 					Id: { identifier: true, type: String },
 					type: "Skill[]",
-					default: () => [{
-						Id: 1,
-						Name: "Climbing",
-						Proficiency: 4
-					},
-					{
-						Id: 2,
-						Name: "Eating",
-						Proficiency: 4
-					}]
+					default() {
+						return [{
+							Id: 1,
+							Name: "Climbing",
+							Proficiency: 4
+						},
+						{
+							Id: 2,
+							Name: "Eating",
+							Proficiency: 4
+						}];
+					}
 				}
 			}
 		};
