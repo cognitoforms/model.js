@@ -15,6 +15,8 @@ export class CalculatedPropertyRule extends Rule {
 	// Public settable properties that are simple values with no side-effects or logic
 	defaultIfError: any;
 
+	isDefaultValue: boolean;
+
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
 	private _calculateFn: string | ((this: Entity) => any);
@@ -56,6 +58,8 @@ export class CalculatedPropertyRule extends Rule {
 		// Public settable properties
 		this.defaultIfError = defaultIfError;
 
+		this.isDefaultValue = options.isDefaultValue;
+
 		// Backing fields for properties
 		if (calculateFn) Object.defineProperty(this, "_calculateFn", { enumerable: false, value: calculateFn, writable: true });
 
@@ -67,7 +71,29 @@ export class CalculatedPropertyRule extends Rule {
 			this.property.isCalculated = true;
 	}
 
-	execute(obj: Entity): void {
+	register() {
+		super.register();
+
+		// TODO: Restrict this to default values or apply to all calculation?
+		// Why is this here?
+		if (this.isDefaultValue) {
+			this.rootType.initExisting.subscribe((args) => {
+				// If property is initialized, run the calculation and throw away the result
+				const initialValue = args.entity.__fields__[this.property.name];
+				if (initialValue !== undefined) {
+					const calculateFn = this.ensureCalculateFn();
+
+					try {
+						calculateFn.call(args.entity);
+					}
+					catch (e) {
+					}
+				}
+			});
+		}
+	}
+
+	ensureCalculateFn() {
 		let calculateFn: (this: Entity) => any;
 
 		// Convert string functions into compiled functions on first execution
@@ -80,6 +106,12 @@ export class CalculatedPropertyRule extends Rule {
 		else {
 			calculateFn = this._calculateFn as (this: Entity) => any;
 		}
+
+		return calculateFn;
+	}
+
+	execute(obj: Entity): void {
+		const calculateFn = this.ensureCalculateFn();
 
 		// Calculate the new property value
 		var newValue;
