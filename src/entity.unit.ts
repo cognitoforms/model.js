@@ -48,6 +48,15 @@ function resetModel() {
 				format: "[FullName] [Salary]"
 			},
 			ReleaseDate: Date,
+			ReleaseYear: {
+				type: Number,
+				default() {
+					return this.ReleaseDate ? this.ReleaseDate.getFullYear() : null;
+				},
+				required() {
+					return !isNaN(this.ReleaseYear);
+				}
+			},
 			Genres: "String[]",
 			Credits: {
 				type: "Credits"
@@ -101,6 +110,7 @@ const Alien = {
 	],
 	Id: null,
 	ReleaseDate: null,
+	ReleaseYear: null,
 	Title: "Alien"
 };
 
@@ -379,6 +389,11 @@ describe("Entity", () => {
 				const movie = await Types.Movie.meta.create(state);
 
 				expect(movie.serialize()).toEqual(state);
+			});
+
+			it("sets value correctly when validation rule also present", async() => {
+				const movie = await Types.Movie.meta.create({ ReleaseDate: new Date() });
+				expect(movie.ReleaseYear).toBe(new Date().getFullYear());
 			});
 		});
 	});

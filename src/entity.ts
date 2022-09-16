@@ -66,16 +66,16 @@ export class Entity {
 			// Raise the initNew or initExisting event on this type and all base types
 			this.initialized = new Promise(resolve => {
 				context.whenReady(() => {
+					// Set values of new entity for provided properties
+					if (isNew && properties)
+						this.updateWithContext(context, properties);
+
 					for (let t = type; t; t = t.baseType) {
 						if (isNew)
 							(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
 						else
 							(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
 					}
-
-					// Set values of new entity for provided properties
-					if (isNew && properties)
-						this.updateWithContext(context, properties);
 
 					context.whenReady(resolve);
 				});
