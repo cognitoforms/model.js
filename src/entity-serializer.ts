@@ -42,14 +42,14 @@ export class PropertyConverter {
 	 * @param prop The current property being serialized.
 	 * @param value The value of the property on the entity currently being serialized.
 	 */
-	serialize(context: Entity, value: any, property: Property): PropertySerializationResult {
+	serialize(context: Entity, value: any, property: Property, settings: SerializationSettings): PropertySerializationResult {
 		const result = { key: property.name, value };
 		if (value) {
 			if (isEntityType(property.propertyType)) {
 				if (property.isList && Array.isArray(value))
-					result.value = value.map((ent: Entity) => ent.serialize());
+					result.value = value.map((ent: Entity) => ent.serialize(settings));
 				else
-					result.value = value.serialize();
+					result.value = value.serialize(settings);
 			}
 			else if (property.isList)
 				result.value = value.slice();
@@ -67,6 +67,18 @@ export class PropertyConverter {
 		return value;
 	}
 }
+
+export type SerializationSettings = {
+	// Controls whether or not to serialize properties using their alias instead of the model property name.
+	useAliases: boolean;
+	// Controls whether or not a property will be serialized even if a converter indicated it should be ignored.
+	force: boolean;
+};
+
+export const DefaultSerializationSettings: SerializationSettings = {
+	force: false,
+	useAliases: false
+};
 
 export class EntitySerializer {
 	private _propertyConverters: PropertyConverter[] = [];
@@ -99,6 +111,7 @@ export class EntitySerializer {
 	registerPropertyAlias(type: Type | string, alias: string, propertyName: string) {
 		let aliases = this._propertyAliases.get(type) || {};
 		aliases[alias] = propertyName;
+		aliases[propertyName] = alias;
 		this._propertyAliases.set(type, aliases);
 	}
 
@@ -127,29 +140,36 @@ export class EntitySerializer {
 		return injectors;
 	}
 
-	serializePropertyValue(entity: Entity, property: Property, value: any, force = false) {
+	serializePropertyValue(entity: Entity, property: Property, value: any, settings: SerializationSettings): PropertySerializationResult {
 		let converters = this._propertyConverters.filter(c => c.shouldConvert(entity, property));
-		if (converters) {
-			for (const converter of converters) {
-				const res = converter.serialize(entity, value, property);
-				if (!force || res !== IgnoreProperty)
-					return res;
+		const result = (() => {
+			if (converters) {
+				for (const converter of converters) {
+					const res = converter.serialize(entity, value, property, settings);
+					if (!settings.force || res !== IgnoreProperty)
+						return res;
+				}
 			}
-		}
-		return EntitySerializer.defaultPropertyConverter.serialize(entity, value, property);
+			return EntitySerializer.defaultPropertyConverter.serialize(entity, value, property, settings);
+		})();
+
+		if (result !== IgnoreProperty && settings.useAliases)
+			result.key = this.getPropertyAliases(property.containingType)[property.name] || result.key;
+
+		return result;
 	}
 
 	/**
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(entity: Entity): object {
+	serialize(entity: Entity, settings: SerializationSettings = DefaultSerializationSettings): object {
 		let result: object = {};
 		const type = entity.meta.type;
 		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
 			.concat(type.properties
 				.filter(p => !p.isCalculated && !p.isConstant)
-				.map(prop => this.serializePropertyValue(entity, prop, prop.value(entity))))
+				.map(prop => this.serializePropertyValue(entity, prop, entity.__fields__[prop.name], settings)))
 			.forEach(pair => {
 				if (pair && pair !== IgnoreProperty) {
 					if (result.hasOwnProperty(pair.key))
