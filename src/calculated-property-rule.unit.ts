@@ -1,4 +1,3 @@
-import { EntityConstructor, EntityConstructorForType } from "./entity";
 import { Model, ModelLocalizationOptions, ModelNamespaceOption, ModelOptions } from "./model";
 
 import "./resource-en";
