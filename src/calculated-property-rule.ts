@@ -1,6 +1,6 @@
-import { Rule, RuleInvocationOptions, RuleOptions } from "./rule";
+import { Rule, RuleOptions } from "./rule";
 import { Type } from "./type";
-import { Property, Property$init, Property$pendingInit, PropertyRuleOptions } from "./property";
+import { Property, Property$init, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
 import { ObservableArray, updateArray } from "./observable-array";
 import { RuleInvocationType } from "./rule-invocation-type";
@@ -102,10 +102,6 @@ export class CalculatedPropertyRule extends Rule {
 
 		// modify list properties to match the calculated value instead of overwriting the property
 		if (this.property.isList) {
-			// calculated lists need to be initialized to prevent infinite recursion when trying to get the current value below
-			if (Property$pendingInit(obj, this.property))
-				Property$init(this.property, obj, []);
-
 			// re-calculate the list values
 			var newList = newValue;
 
