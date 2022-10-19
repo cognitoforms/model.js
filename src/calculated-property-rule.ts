@@ -102,7 +102,7 @@ export class CalculatedPropertyRule extends Rule {
 
 		// modify list properties to match the calculated value instead of overwriting the property
 		if (this.property.isList) {
-			// calculated lists need to be initialized to prevent infinite recursion when trying to get the current value
+			// calculated lists need to be initialized to prevent infinite recursion when trying to get the current value below
 			if (Property$pendingInit(obj, this.property))
 				Property$init(this.property, obj, []);
 
