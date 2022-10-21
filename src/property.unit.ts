@@ -25,28 +25,52 @@ describe("Property", () => {
 		expect(instance.Skills[0].Proficiency).toBe(4);
 	});
 
-	test("calculated list", async () => {
-		const model = new Model({
-			Test: {
-				Max: Number,
-				Nums: {
-					type: "Number[]",
-					get: {
-						function() {
-							const list = [];
-							for (let i = 0; i < this.Max; i++)
-								list.push(i+1);
-							return list;
-						},
-						dependsOn: "Max"
+	describe("calculated list", async () => {
+		let model;
+		beforeEach(() => {
+			model = new Model({
+				Test: {
+					Id: { identifier: true, type: String },
+					Len: {
+						type: Number,
+						default: {
+							function() {
+								return this.Nums.length;
+							},
+							dependsOn: "Nums"
+						}
+					},
+					Max: Number,
+					Nums: {
+						type: "Number[]",
+						get: {
+							function() {
+								const list = [];
+								for (let i = 0; i < this.Max; i++)
+									list.push(i+1);
+								return list;
+							},
+							dependsOn: "Max"
+						}
 					}
 				}
-			}
+			});
 		});
-		const test = await model.types.Test.create({}) as any;
-		expect(test.Nums.length).toBe(0);
-		test.Max = 3;
-		expect(test.Nums.length).toBe(3);
+
+		it("works", async () => {
+			const test = await model.types.Test.create({}) as any;
+			expect(test.Nums.length).toBe(0);
+			expect(test.Len).toBe(0);
+			test.Max = 3;
+			expect(test.Nums.length).toBe(3);
+			expect(test.Len).toBe(3);
+		});
+
+		it("does not publish change events for initial calculation", async () => {
+			const test = await model.types.Test.create({ Id: "test", Max: 2, Len: 10 }) as any;
+			expect(test.Nums.length).toBe(2);
+			expect(test.Len).toBe(10);
+		});
 	});
 
 	test("calculated list based on overridden property", async () => {

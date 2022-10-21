@@ -1,6 +1,6 @@
 import { Rule, RuleOptions } from "./rule";
 import { Type } from "./type";
-import { Property, PropertyRuleOptions } from "./property";
+import { Property, Property$init, Property$pendingInit, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
 import { ObservableArray, updateArray } from "./observable-array";
 import { RuleInvocationType } from "./rule-invocation-type";
@@ -102,11 +102,16 @@ export class CalculatedPropertyRule extends Rule {
 
 		// modify list properties to match the calculated value instead of overwriting the property
 		if (this.property.isList) {
+			const wasPendingInit = Property$pendingInit(obj, this.property) as boolean;
+
+			if (wasPendingInit)
+				Property$init(this.property, obj, []);
+
 			// re-calculate the list values
-			var newList = newValue;
+			const newList = newValue;
 
 			// compare the new list to the old one to see if changes were made
-			var curList = this.property.value(obj) as ObservableArray<any>;
+			const curList = this.property.value(obj) as ObservableArray<any>;
 
 			if (newList.length === curList.length) {
 				var noChanges = true;
@@ -124,9 +129,10 @@ export class CalculatedPropertyRule extends Rule {
 			}
 
 			// update the current list so observers will receive the change events
+			// events will not be raised if this is the initial calculation of the list
 			curList.batchUpdate((array) => {
 				updateArray(array, newList);
-			});
+			}, !wasPendingInit);
 		}
 		else {
 			// Otherwise, just set the property to the new value
