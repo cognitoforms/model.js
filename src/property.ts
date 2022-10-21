@@ -921,7 +921,7 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 	if (!obj.__fields__.hasOwnProperty(property.name)) {
 		Property$pendingInit(obj, property, true);
 
-		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule. Lists must always be initialized however.
+		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
 			Property$init(property, obj, Property$getInitialValue(property));
 
