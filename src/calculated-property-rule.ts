@@ -102,37 +102,36 @@ export class CalculatedPropertyRule extends Rule {
 
 		// modify list properties to match the calculated value instead of overwriting the property
 		if (this.property.isList) {
-			const wasPendingInit = Property$pendingInit(obj, this.property) as boolean;
-
-			if (wasPendingInit)
-				Property$init(this.property, obj, []);
-
-			// re-calculate the list values
 			const newList = newValue;
 
-			// compare the new list to the old one to see if changes were made
-			const curList = this.property.value(obj) as ObservableArray<any>;
+			// ensure the initial calculation of the list does not raise change events
+			if (Property$pendingInit(obj, this.property))
+				Property$init(this.property, obj, newList);
+			else {
+				// compare the new list to the old one to see if changes were made
+				const curList = this.property.value(obj) as ObservableArray<any>;
 
-			if (newList.length === curList.length) {
-				var noChanges = true;
+				if (newList.length === curList.length) {
+					var noChanges = true;
 
-				for (var i = 0; i < newList.length; ++i) {
-					if (newList[i] !== curList[i]) {
-						noChanges = false;
-						break;
+					for (var i = 0; i < newList.length; ++i) {
+						if (newList[i] !== curList[i]) {
+							noChanges = false;
+							break;
+						}
+					}
+
+					if (noChanges) {
+						return;
 					}
 				}
 
-				if (noChanges) {
-					return;
-				}
+				// update the current list so observers will receive the change events
+				// events will not be raised if this is the initial calculation of the list
+				curList.batchUpdate((array) => {
+					updateArray(array, newList);
+				});
 			}
-
-			// update the current list so observers will receive the change events
-			// events will not be raised if this is the initial calculation of the list
-			curList.batchUpdate((array) => {
-				updateArray(array, newList);
-			}, !wasPendingInit);
 		}
 		else {
 			// Otherwise, just set the property to the new value
