@@ -68,6 +68,7 @@ describe("PropertyChain", () => {
 		// Create multiple Persons (will just sit in memory)
 		// The effect is more pronounced when there are a large number of objects in memory.
 		for (let i = 0; i < 1000; i++) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const person = new Person({ Name: "Dude Man" });
 		}
 
