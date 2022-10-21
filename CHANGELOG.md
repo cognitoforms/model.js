@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.33] - 2022-10-21
 ### Fixed
 - prevent infinite recursion for calculated list properties
 ## [0.8.32] - 2022-09-22
