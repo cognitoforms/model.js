@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.8.33] - 2022-10-21
+### Fixed
+- prevent infinite recursion for calculated list properties
+## [0.8.32] - 2022-09-22
+### Changed
+- publish entity init events after setting properties during construction
 ## [0.8.31] - 2022-09-06
 ### Changed
 - Do not run default calculation rules until property access

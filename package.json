@@ -1,5 +1,5 @@
 {
-  "version": "0.8.31",
+  "version": "0.8.33",
   "name": "@cognitoforms/model.js",
   "license": "MIT",
   "main": "lib/index.js",

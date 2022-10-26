@@ -6,3 +6,4 @@ bin/
 .vscode/
 *.bak
 *.tgz
+.env
