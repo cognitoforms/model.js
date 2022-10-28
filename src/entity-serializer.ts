@@ -70,9 +70,9 @@ export class PropertyConverter {
 
 export type SerializationSettings = {
 	// Controls whether or not to serialize properties using their alias instead of the model property name.
-	useAliases: boolean;
+	useAliases?: boolean;
 	// Controls whether or not a property will be serialized even if a converter indicated it should be ignored.
-	force: boolean;
+	force?: boolean;
 };
 
 export const DefaultSerializationSettings: SerializationSettings = {
@@ -153,7 +153,7 @@ export class EntitySerializer {
 			return EntitySerializer.defaultPropertyConverter.serialize(entity, value, property, settings);
 		})();
 
-		if (result !== IgnoreProperty && settings.useAliases)
+		if (result && result !== IgnoreProperty && settings.useAliases)
 			result.key = this.getPropertyAliases(property.containingType)[property.name] || result.key;
 
 		return result;
