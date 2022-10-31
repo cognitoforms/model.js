@@ -321,10 +321,51 @@ describe("Entity", () => {
 		});
 	});
 
-	it("can be serialized", () => {
-		const movie = new Types.Movie(Alien);
+	describe("serialize", () => {
+		it("can be serialized", () => {
+			const movie = new Types.Movie(Alien);
 
-		expect(movie.serialize()).toEqual(Alien);
+			expect(movie.serialize()).toEqual(Alien);
+		});
+
+		it("can be serialized with aliases", () => {
+			const movie = new Types.Movie(Alien);
+			const aliases = [
+				{ type: "Movie", alias: "T", propertyName: "Title" },
+				{ type: "Movie", alias: "RY", propertyName: "ReleaseYear" },
+				{ type: "Movie", alias: "RD", propertyName: "ReleaseDate" },
+				{ type: "Movie", alias: "D", propertyName: "Director" },
+				{ type: "Movie", alias: "G", propertyName: "Genres" },
+				{ type: "Movie", alias: "A", propertyName: "Actors" },
+				{ type: "Movie", alias: "B", propertyName: "Budget" },
+				{ type: "Movie", alias: "I", propertyName: "Id" }
+			];
+			aliases.forEach(element => {
+				movie.serializer.registerPropertyAlias(element.type, element.alias, element.propertyName);
+			});
+			const expectedAlien = {
+				Cast: [],
+				Credits: null,
+				B: null,
+				D: {
+					FirstName: "Ridley",
+					Id: null,
+					LastName: "Scott",
+					Movie: null,
+					Salary: null,
+					Address: null
+				},
+				G: [
+					"science fiction",
+					"action"
+				],
+				I: null,
+				RD: null,
+				RY: null,
+				T: "Alien"
+			};
+			expect(movie.serialize({ useAliases: true })).toEqual(expectedAlien);
+		});
 	});
 
 	describe("default value", () => {
