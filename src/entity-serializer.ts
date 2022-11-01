@@ -169,7 +169,7 @@ export class EntitySerializer {
 		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
 			.concat(type.properties
 				.filter(p => !p.isCalculated && !p.isConstant)
-				.map(prop => this.serializePropertyValue(entity, prop, entity.__fields__[prop.name], settings)))
+				.map(prop => this.serializePropertyValue(entity, prop, prop.value(entity), settings)))
 			.forEach(pair => {
 				if (pair && pair !== IgnoreProperty) {
 					if (result.hasOwnProperty(pair.key))
