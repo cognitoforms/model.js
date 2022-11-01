@@ -373,13 +373,13 @@ describe("Entity", () => {
 				Test: {
 					A: {
 						type: String,
-						default: 'a default'
+						default: "a default"
 					}
 				}
 			});
 
 			const instance = new defaultModel.Test();
-			expect(instance.serialize()).toEqual({"A": 'a default'});
+			expect(instance.serialize()).toEqual({"A": "a default"});
 		});
 	});
 
