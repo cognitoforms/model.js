@@ -55,7 +55,8 @@ function resetModel() {
 				},
 				required() {
 					return !isNaN(this.ReleaseYear);
-				}
+				},
+				dependsOn: "ReleaseDate",
 			},
 			Genres: "String[]",
 			Credits: {
@@ -365,6 +366,20 @@ describe("Entity", () => {
 				T: "Alien"
 			};
 			expect(movie.serialize({ useAliases: true })).toEqual(expectedAlien);
+		});
+
+		it("default values are run when serializing", async () => {
+			const defaultModel  = new Model({
+				Test: {
+					A: {
+						type: String,
+						default: 'a default'
+					}
+				}
+			});
+
+			const instance = new defaultModel.Test();
+			expect(instance.serialize()).toEqual({"A": 'a default'});
 		});
 	});
 
