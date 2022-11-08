@@ -220,33 +220,6 @@ export class Type {
 		return obj;
 	}
 
-	forget(id: string, exactTypeOnly: boolean = false): void {
-		if (!id) {
-			throw new Error(`Method "${this.fullName}.meta.forget()" was called without a valid id argument.`);
-		}
-
-		const removeKey = (type: Type, key: string) => {
-			var obj = type.__pool__[key];
-			var objIndex = type.__known__.findIndex(e => e === obj);
-
-			// If exactTypeOnly is specified, don't return sub-types.
-			if (obj && exactTypeOnly === true && obj.meta.type !== type) {
-				throw new Error(`The entity with id='${id}' is expected to be of type '${type.fullName}' but found type '${obj.meta.type.fullName}'.`);
-			}
-
-			type.__known__.splice(objIndex, 1);
-			delete type.__pool__[key];
-		};
-
-		var key = id.toLowerCase();
-		if (exactTypeOnly)
-			removeKey(this, key);
-		else
-			for (var t: Type = this; t; t = t.baseType) {
-				removeKey(t, key);
-			}
-	}
-
 	// Gets an array of all objects of this type that have been registered.
 	// The returned array is observable and collection changed events will be raised
 	// when new objects are registered.
