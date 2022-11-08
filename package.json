@@ -53,8 +53,8 @@
     "rimraf": "^3.0.0",
     "tslib": "^1.9.3",
     "typescript": "^3.3.3",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0",
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.12",
     "webpack-env": "^0.8.0"
   }
 }
