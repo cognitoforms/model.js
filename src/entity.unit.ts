@@ -56,7 +56,7 @@ function resetModel() {
 				required() {
 					return !isNaN(this.ReleaseYear);
 				},
-				dependsOn: "ReleaseDate",
+				dependsOn: "ReleaseDate"
 			},
 			Genres: "String[]",
 			Credits: {
@@ -369,7 +369,7 @@ describe("Entity", () => {
 		});
 
 		it("default values are run when serializing", async () => {
-			const defaultModel  = new Model({
+			const defaultModel = new Model({
 				Test: {
 					A: {
 						type: String,
@@ -379,7 +379,7 @@ describe("Entity", () => {
 			});
 
 			const instance = new defaultModel.Test();
-			expect(instance.serialize()).toEqual({"A": "a default"});
+			expect(instance.serialize()).toEqual({ "A": "a default" });
 		});
 	});
 
@@ -464,6 +464,7 @@ describe("Entity", () => {
 				}
 			},
 			Person: {
+				Id: { identifier: true, type: String },
 				Skills: {
 					Id: { identifier: true, type: String },
 					type: "Skill[]",
@@ -532,6 +533,16 @@ describe("Entity", () => {
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [skillInstance] }, null, true);
 			expect(instance.Skills.length).toBe(1);
+		});
+
+		it("only runs default rule for list properties onInitNew", async () => {
+			const model = new Model(PersonWithSkillsModel);
+			let instance = await model.types.Person.create({}) as any;
+			expect(instance.Skills.length).toBe(2);
+			instance = await model.types.Person.create({ Skills: [] }) as any;
+			expect(instance.Skills.length).toBe(2);
+			instance = await model.types.Person.create({ Id: "test", Skills: [] }) as any;
+			expect(instance.Skills.length).toBe(0);
 		});
 	});
 
