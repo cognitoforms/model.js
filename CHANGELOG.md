@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.36] - 2022-11-10
 ### Fixed
 - only run default rule for list properties onInitNew
 ## [0.8.35] - 2022-11-01
