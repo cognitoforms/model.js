@@ -541,7 +541,7 @@ describe("Entity", () => {
 			expect(instance.Skills.length).toBe(2);
 			instance = await model.types.Person.create({ Skills: [] }) as any;
 			expect(instance.Skills.length).toBe(2);
-			instance = await model.types.Person.create({ Id: "test", Skills: [] }) as any;
+			instance = await model.types.Person.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(0);
 		});
 	});
