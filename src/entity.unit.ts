@@ -554,7 +554,7 @@ describe("Entity", () => {
 			const skillsChanged = jest.fn();
 			model.types["Person"].getProperty("Skills").changed.subscribe(skillsChanged);
 
-			let instance = await model.types.Person.create({}) as any;
+			const instance = await model.types.Person.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 
 			expect(skillsChanged).toBeCalledTimes(1);
