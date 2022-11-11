@@ -14,6 +14,7 @@ export class CalculatedPropertyRule extends Rule {
 
 	// Public settable properties that are simple values with no side-effects or logic
 	defaultIfError: any;
+	private isDefaultValue: boolean;
 
 	// Backing fields for properties that are settable and also derived from
 	// other data, calculated in some way, or cannot simply be changed
@@ -34,6 +35,7 @@ export class CalculatedPropertyRule extends Rule {
 
 				if (options.isDefaultValue && property.isList)
 					(options as RuleInvocationOptions).onInitNew = true;
+
 				// indicate that the rule is responsible for returning the value of the calculated property
 				options.returns = [property];
 			}
@@ -57,6 +59,8 @@ export class CalculatedPropertyRule extends Rule {
 
 		// Public settable properties
 		this.defaultIfError = defaultIfError;
+
+		this.isDefaultValue = !!options.isDefaultValue;
 
 		// Backing fields for properties
 		if (calculateFn) Object.defineProperty(this, "_calculateFn", { enumerable: false, value: calculateFn, writable: true });
@@ -107,7 +111,8 @@ export class CalculatedPropertyRule extends Rule {
 			const newList = newValue;
 
 			// ensure the initial calculation of the list does not raise change events
-			if (Property$pendingInit(obj, this.property))
+			// defaulting a list property should raise change events
+			if (!this.isDefaultValue && Property$pendingInit(obj, this.property))
 				Property$init(this.property, obj, newList);
 			else {
 				// compare the new list to the old one to see if changes were made
