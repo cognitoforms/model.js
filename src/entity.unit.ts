@@ -537,12 +537,27 @@ describe("Entity", () => {
 
 		it("only runs default rule for list properties onInitNew", async () => {
 			const model = new Model(PersonWithSkillsModel);
+
 			let instance = await model.types.Person.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
+
 			instance = await model.types.Person.create({ Skills: [] }) as any;
 			expect(instance.Skills.length).toBe(2);
+
 			instance = await model.types.Person.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(0);
+		});
+
+		it("triggers property change when default calculation runs for list", async () => {
+			const model = new Model(PersonWithSkillsModel);
+
+			const skillsChanged = jest.fn();
+			model.types["Person"].getProperty("Skills").changed.subscribe(skillsChanged);
+
+			const instance = await model.types.Person.create({}) as any;
+			expect(instance.Skills.length).toBe(2);
+
+			expect(skillsChanged).toBeCalledTimes(1);
 		});
 	});
 
