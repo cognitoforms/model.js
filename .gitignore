@@ -4,6 +4,7 @@ dist/src/
 dist/
 @types/
 lib/
+esm/
 out/
 build/
 obj/
