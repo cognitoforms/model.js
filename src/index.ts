@@ -7,7 +7,6 @@ export * from "./property-path";
 export * from "./entity";
 export * from "./object-meta";
 export * from "./format";
-export * from "./initilization-context";
 export * from "./observable-array";
 
 // Conditions, etc.
