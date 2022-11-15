@@ -1,6 +1,6 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
-import { Entity, EntityConstructorForType } from "./entity";
+import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { updateArray } from "./observable-array";
@@ -691,6 +691,25 @@ describe("Entity", () => {
 					expect(movie.Director.Address.meta.isNew).toBeTruthy();
 				});
 			});
+		});
+	});
+
+	describe("isEntity", () => {
+		it("returns true if the argument is an instance of an entity, otherwise false", () => {
+			// When given an entity, `isEntity` will return true and "cast" the object to type Entity
+			const person: any = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" });
+			if (isEntity(person))
+				expect(person.meta.type.fullName).toBe("Person");
+			else
+				expect(isEntity(person)).toBe(true);
+
+			expect(isEntity("foo")).toBeFalsy();
+			expect(isEntity(42)).toBeFalsy();
+			expect(isEntity({})).toBeFalsy();
+			expect(isEntity(person.meta)).toBeFalsy();
+			expect(isEntity(person.meta.type)).toBeFalsy();
+			expect(isEntity(person.meta.type.jstype)).toBeFalsy();
+			expect(isEntity(model)).toBeFalsy();
 		});
 	});
 });
