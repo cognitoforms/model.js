@@ -5,7 +5,7 @@ import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
-
+import { DefaultSerializationSettings } from "./entity-serializer";
 export class Entity {
 	static ctorDepth: number = 0;
 
@@ -342,8 +342,8 @@ export class Entity {
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(): object {
-		return this.serializer.serialize(this);
+	serialize(settings = DefaultSerializationSettings): object {
+		return this.serializer.serialize(this, settings);
 	}
 
 	markPersisted() {

@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [0.8.37] - 2022-11-11
+### Fixed
+- raise property change when default calculation rule runs for list
+## [0.8.36] - 2022-11-10
+### Fixed
+- only run default rule for list properties onInitNew
+## [0.8.35] - 2022-11-01
+### Fixed
+- use property getter during serialization to ensure default values are serialized
+## [0.8.34] - 2022-10-31
+### Added
+- support serialization of entities using property aliases
 ## [0.8.33] - 2022-10-21
 ### Fixed
 - prevent infinite recursion for calculated list properties

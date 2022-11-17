@@ -55,7 +55,8 @@ function resetModel() {
 				},
 				required() {
 					return !isNaN(this.ReleaseYear);
-				}
+				},
+				dependsOn: "ReleaseDate"
 			},
 			Genres: "String[]",
 			Credits: {
@@ -321,10 +322,65 @@ describe("Entity", () => {
 		});
 	});
 
-	it("can be serialized", () => {
-		const movie = new Types.Movie(Alien);
+	describe("serialize", () => {
+		it("can be serialized", () => {
+			const movie = new Types.Movie(Alien);
 
-		expect(movie.serialize()).toEqual(Alien);
+			expect(movie.serialize()).toEqual(Alien);
+		});
+
+		it("can be serialized with aliases", () => {
+			const movie = new Types.Movie(Alien);
+			const aliases = [
+				{ type: "Movie", alias: "T", propertyName: "Title" },
+				{ type: "Movie", alias: "RY", propertyName: "ReleaseYear" },
+				{ type: "Movie", alias: "RD", propertyName: "ReleaseDate" },
+				{ type: "Movie", alias: "D", propertyName: "Director" },
+				{ type: "Movie", alias: "G", propertyName: "Genres" },
+				{ type: "Movie", alias: "A", propertyName: "Actors" },
+				{ type: "Movie", alias: "B", propertyName: "Budget" },
+				{ type: "Movie", alias: "I", propertyName: "Id" }
+			];
+			aliases.forEach(element => {
+				movie.serializer.registerPropertyAlias(element.type, element.alias, element.propertyName);
+			});
+			const expectedAlien = {
+				Cast: [],
+				Credits: null,
+				B: null,
+				D: {
+					FirstName: "Ridley",
+					Id: null,
+					LastName: "Scott",
+					Movie: null,
+					Salary: null,
+					Address: null
+				},
+				G: [
+					"science fiction",
+					"action"
+				],
+				I: null,
+				RD: null,
+				RY: null,
+				T: "Alien"
+			};
+			expect(movie.serialize({ useAliases: true })).toEqual(expectedAlien);
+		});
+
+		it("default values are run when serializing", async () => {
+			const defaultModel = new Model({
+				Test: {
+					A: {
+						type: String,
+						default: "a default"
+					}
+				}
+			});
+
+			const instance = new defaultModel.Test();
+			expect(instance.serialize()).toEqual({ "A": "a default" });
+		});
 	});
 
 	describe("default value", () => {
@@ -408,6 +464,7 @@ describe("Entity", () => {
 				}
 			},
 			Person: {
+				Id: { identifier: true, type: String },
 				Skills: {
 					Id: { identifier: true, type: String },
 					type: "Skill[]",
@@ -476,6 +533,31 @@ describe("Entity", () => {
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [skillInstance] }, null, true);
 			expect(instance.Skills.length).toBe(1);
+		});
+
+		it("only runs default rule for list properties onInitNew", async () => {
+			const model = new Model(PersonWithSkillsModel);
+
+			let instance = await model.types.Person.create({}) as any;
+			expect(instance.Skills.length).toBe(2);
+
+			instance = await model.types.Person.create({ Skills: [] }) as any;
+			expect(instance.Skills.length).toBe(2);
+
+			instance = await model.types.Person.create({ Id: "test" }) as any;
+			expect(instance.Skills.length).toBe(0);
+		});
+
+		it("triggers property change when default calculation runs for list", async () => {
+			const model = new Model(PersonWithSkillsModel);
+
+			const skillsChanged = jest.fn();
+			model.types["Person"].getProperty("Skills").changed.subscribe(skillsChanged);
+
+			const instance = await model.types.Person.create({}) as any;
+			expect(instance.Skills.length).toBe(2);
+
+			expect(skillsChanged).toBeCalledTimes(1);
 		});
 	});
 
