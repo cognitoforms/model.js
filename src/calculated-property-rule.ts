@@ -74,11 +74,17 @@ export class CalculatedPropertyRule extends Rule {
 	register() {
 		super.register();
 
-		// TODO: Restrict this to default values or apply to all calculation?
-		// Why is this here?
 		if (this.isDefaultValue) {
+			// Ensure that a default value rule will run if a calculation that it depends on is changed.
+			// A property with a default value rule may have a persisted value, in which case it will
+			// not run unless one of its predicates fires a change event. A calculation will not fire
+			// a change event the first time it runs if it didn't previously have a value, which may
+			// be the case for existing instances if the calculation is never accessed (ex: a hidden field).
+			// So, in order to ensure that the default rule's calculated predicates fire a change event,
+			// we must ensure that the calculation is accessed when the object is initialized.
 			this.rootType.initExisting.subscribe((args) => {
-				// If property is initialized, run the calculation and throw away the result
+				// If the property is initialized (i.e. it has an initial persisted value),
+				// run the calculation and throw away the result.
 				const initialValue = args.entity.__fields__[this.property.name];
 				if (initialValue !== undefined) {
 					const calculateFn = this.ensureCalculateFn();
