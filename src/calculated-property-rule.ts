@@ -89,10 +89,8 @@ export class CalculatedPropertyRule extends Rule {
 				// run the calculation and throw away the result.
 				const initialValue = args.entity.__fields__[this.property.name];
 				if (initialValue !== undefined) {
-					const calculateFn = this.ensureCalculateFn();
-
 					try {
-						calculateFn.call(args.entity);
+						this.calculateFn.call(args.entity);
 					}
 					catch (e) {
 					}
@@ -101,7 +99,7 @@ export class CalculatedPropertyRule extends Rule {
 		}
 	}
 
-	ensureCalculateFn() {
+	get calculateFn() {
 		let calculateFn: (this: Entity) => any;
 
 		// Convert string functions into compiled functions on first execution
@@ -119,16 +117,14 @@ export class CalculatedPropertyRule extends Rule {
 	}
 
 	execute(obj: Entity): void {
-		const calculateFn = this.ensureCalculateFn();
-
 		// Calculate the new property value
 		var newValue;
 		if (this.defaultIfError === undefined) {
-			newValue = calculateFn.call(obj);
+			newValue = this.calculateFn.call(obj);
 		}
 		else {
 			try {
-				newValue = calculateFn.call(obj);
+				newValue = this.calculateFn.call(obj);
 			}
 			catch (e) {
 				newValue = this.defaultIfError;
