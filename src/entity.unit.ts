@@ -546,6 +546,13 @@ describe("Entity", () => {
 
 			instance = await model.types.Person.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(0);
+
+			instance = await model.types.Person.create({ Skills: [{
+				Id: 1,
+				Name: "Climbing",
+				Proficiency: 4
+			}] }) as any;
+			expect(instance.Skills.length).toBe(1);
 		});
 
 		it("triggers property change when default calculation runs for list", async () => {
