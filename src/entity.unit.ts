@@ -546,8 +546,11 @@ describe("Entity", () => {
 
 			instance = await model.types.Person.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(0);
+		});
 
-			instance = await model.types.Person.create({ Skills: [{
+		it("does not run default rule for list properties onInitNew when the property has a value", async () => {
+			const model = new Model(PersonWithSkillsModel);
+			const instance = await model.types.Person.create({ Skills: [{
 				Id: 1,
 				Name: "Climbing",
 				Proficiency: 4
