@@ -217,6 +217,37 @@ export class Property implements PropertyPath {
 				this.changed.subscribe(function(e) { options.set.call(this, e.newValue); });
 			}
 
+			// Init
+			if (options.init !== undefined) {
+				let initFn: (this: Entity) => any;
+				if (isPropertyValueFunction<any>(options.init)) {
+					initFn = options.init;
+				}
+				else if (isValue(options.init) || isValueArray(options.init)) {
+					initFn = () => options.init;
+				}
+				else {
+					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
+				}
+
+				const property = this;
+
+				new Rule(targetType, null, {
+					onInitNew: true,
+					execute() {
+						if (!property.isInited(this))
+							this.update(property.name, initFn.call(this));
+					}
+				}).register();
+
+				new Rule(targetType, null, {
+					returns: [property],
+					execute() {
+						this.update(property.name, initFn.call(this));
+					}
+				}).register();
+			}
+
 			// Default
 			if (options.default !== undefined) {
 				if (isPropertyValueFunction<any>(options.default)) {
@@ -624,6 +655,8 @@ export interface PropertyOptions {
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
+
+	init?: PropertyValueFunction<any> | Value | Value[];
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	allowedValues?: PropertyValueFunction<any[]> | AllowedValuesFunctionAndOptions<any[]> | Value[];

@@ -1,6 +1,6 @@
 import { Rule, RuleInvocationOptions, RuleOptions } from "./rule";
 import { Type } from "./type";
-import { Property, Property$init, Property$pendingInit, PropertyRuleOptions } from "./property";
+import { Property, Property$init, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
 import { ObservableArray, updateArray } from "./observable-array";
 import { RuleInvocationType } from "./rule-invocation-type";
@@ -112,15 +112,11 @@ export class CalculatedPropertyRule extends Rule {
 
 			// ensure the initial calculation of the list does not raise change events
 			// defaulting a list property should raise change events
-			if (!this.isDefaultValue && Property$pendingInit(obj, this.property))
+			if (!this.isDefaultValue && !this.property.isInited(obj))
 				Property$init(this.property, obj, newList);
 			else {
 				// compare the new list to the old one to see if changes were made
 				const curList = this.property.value(obj) as ObservableArray<any>;
-
-				// Prevent overwriting the current value with the default value
-				if (this.isDefaultValue && curList.length > 0)
-					return;
 
 				if (newList.length === curList.length) {
 					var noChanges = true;

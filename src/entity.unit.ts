@@ -548,16 +548,6 @@ describe("Entity", () => {
 			expect(instance.Skills.length).toBe(0);
 		});
 
-		it("does not run default rule for list properties onInitNew when the property has a value", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({ Skills: [{
-				Id: 1,
-				Name: "Climbing",
-				Proficiency: 4
-			}] }) as any;
-			expect(instance.Skills.length).toBe(1);
-		});
-
 		it("triggers property change when default calculation runs for list", async () => {
 			const model = new Model(PersonWithSkillsModel);
 
