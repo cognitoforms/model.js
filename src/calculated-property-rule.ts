@@ -148,10 +148,6 @@ export class CalculatedPropertyRule extends Rule {
 				// compare the new list to the old one to see if changes were made
 				const curList = this.property.value(obj) as ObservableArray<any>;
 
-				// Prevent overwriting the current value with the default value
-				if (this.isDefaultValue && curList.length > 0)
-					return;
-
 				if (newList.length === curList.length) {
 					var noChanges = true;
 
