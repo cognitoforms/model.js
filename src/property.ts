@@ -647,6 +647,7 @@ export interface PropertyOptions {
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
 
+	/** A function used to obtain the value with which to initialize this property. The function is called only once, and is not reactive as a rule would be. */
 	init?: PropertyValueFunction<any>;
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
