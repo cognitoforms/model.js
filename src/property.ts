@@ -215,7 +215,14 @@ export class Property implements PropertyPath {
 
 			// Set
 			if (typeof options.set === "function") {
+				const property = this;
 				this.changed.subscribe(function(e) { options.set.call(this, e.newValue); });
+				new Rule(targetType, null, {
+					onInit: true,
+					execute() {
+						options.set.call(this, property.value(this));
+					}
+				}).register();
 			}
 
 			// Init
