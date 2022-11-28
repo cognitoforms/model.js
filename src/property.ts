@@ -228,15 +228,10 @@ export class Property implements PropertyPath {
 			// Init
 			if (options.init !== undefined) {
 				let initFn: (this: Entity) => any;
-				if (isPropertyValueFunction<any>(options.init)) {
+				if (isPropertyValueFunction<any>(options.init))
 					initFn = options.init;
-				}
-				else if (isValue(options.init) || isValueArray(options.init)) {
-					initFn = () => options.init;
-				}
-				else {
+				else
 					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
-				}
 
 				const property = this;
 				this.initializer = function () {
@@ -652,7 +647,7 @@ export interface PropertyOptions {
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
 
-	init?: PropertyValueFunction<any> | Value | Value[];
+	init?: PropertyValueFunction<any>;
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	allowedValues?: PropertyValueFunction<any[]> | AllowedValuesFunctionAndOptions<any[]> | Value[];
