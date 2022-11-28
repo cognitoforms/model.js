@@ -26,6 +26,7 @@ export class Property implements PropertyPath {
 	readonly isList: boolean;
 
 	constant: any;
+	initializer: (this: Entity) => any;
 	label: string;
 	labelSource: PropertyPath;
 	helptext: string;
@@ -231,21 +232,9 @@ export class Property implements PropertyPath {
 				}
 
 				const property = this;
-
-				new Rule(targetType, null, {
-					onInitNew: true,
-					execute() {
-						if (!property.isInited(this))
-							this.update(property.name, initFn.call(this));
-					}
-				}).register();
-
-				new Rule(targetType, null, {
-					returns: [property],
-					execute() {
-						this.update(property.name, initFn.call(this));
-					}
-				}).register();
+				this.initializer = function () {
+					return targetType.model.serializer.deserialize(this, initFn.call(this), property, new InitializationContext(true));
+				};
 			}
 
 			// Default
@@ -918,12 +907,14 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 	});
 }
 
-function Property$getInitialValue(property: Property): any {
+function Property$getInitialValue(property: Property, obj: Entity): any {
 	// Constant
 	if (property.isConstant)
 		return typeof property.constant === "function" ? (property.constant = property.constant()) : property.constant;
 
-	var val = property.defaultValue;
+	var val = property.initializer
+		? property.initializer.call(obj)
+		: property.defaultValue;
 
 	if (Array.isArray(val)) {
 		val = ObservableArray.ensureObservable(val as any[]);
@@ -956,7 +947,7 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
-			Property$init(property, obj, Property$getInitialValue(property));
+			Property$init(property, obj, Property$getInitialValue(property, obj));
 
 			const underlyingValue = obj.__fields__[property.name];
 			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it
