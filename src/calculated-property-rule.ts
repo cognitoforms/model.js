@@ -73,7 +73,33 @@ export class CalculatedPropertyRule extends Rule {
 			this.property.isCalculated = true;
 	}
 
-	execute(obj: Entity): void {
+	register() {
+		super.register();
+
+		if (this.isDefaultValue) {
+			// Ensure that a default value rule will run if a calculation that it depends on is changed.
+			// A property with a default value rule may have a persisted value, in which case it will
+			// not run unless one of its predicates fires a change event. A calculation will not fire
+			// a change event the first time it runs if it didn't previously have a value, which may
+			// be the case for existing instances if the calculation is never accessed (ex: a hidden field).
+			// So, in order to ensure that the default rule's calculated predicates fire a change event,
+			// we must ensure that the calculation is accessed when the object is initialized.
+			this.rootType.initExisting.subscribe((args) => {
+				// If the property is initialized (i.e. it has an initial persisted value),
+				// run the calculation and throw away the result.
+				const initialValue = args.entity.__fields__[this.property.name];
+				if (initialValue !== undefined) {
+					try {
+						this.calculateFn.call(args.entity);
+					}
+					catch (e) {
+					}
+				}
+			});
+		}
+	}
+
+	get calculateFn() {
 		let calculateFn: (this: Entity) => any;
 
 		// Convert string functions into compiled functions on first execution
@@ -87,14 +113,18 @@ export class CalculatedPropertyRule extends Rule {
 			calculateFn = this._calculateFn as (this: Entity) => any;
 		}
 
+		return calculateFn;
+	}
+
+	execute(obj: Entity): void {
 		// Calculate the new property value
 		var newValue;
 		if (this.defaultIfError === undefined) {
-			newValue = calculateFn.call(obj);
+			newValue = this.calculateFn.call(obj);
 		}
 		else {
 			try {
-				newValue = calculateFn.call(obj);
+				newValue = this.calculateFn.call(obj);
 			}
 			catch (e) {
 				newValue = this.defaultIfError;

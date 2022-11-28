@@ -73,6 +73,21 @@ describe("CalculateRule", () => {
 							dependsOn: "Num",
 							function() { return this.get("Num"); }
 						}
+					},
+					Text: String,
+					CalculatedText: {
+						type: String,
+						get: {
+							dependsOn: "Text",
+							function() { return this.get("Text"); }
+						}
+					},
+					DefaultedText: {
+						type: String,
+						default: {
+							dependsOn: "CalculatedText",
+							function() { return this.get("CalculatedText"); }
+						}
 					}
 				}
 			});
@@ -141,6 +156,15 @@ describe("CalculateRule", () => {
 
 				expect(entity["Name2"]).toBe("John Doe");
 				expect(entity["Name"]).toBeNull();
+			});
+
+			it("updates when a dependent calculation changes", async () => {
+				const entity = await TestEntity.create({ Id: "1", Text: null, DefaultedText: null });
+
+				entity.update({ Text: "abc" });
+
+				expect(entity["CalculatedText"]).toBe("abc");
+				expect(entity["DefaultedText"]).toBe("abc");
 			});
 		});
 	});

@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 ### Added
 - `init` model extension option - used to control initialization of property
+## [0.8.38] - 2022-11-28
 ### Fixed
-- Prevent overwriting the current value when defaulting lists
+- Ensure that a change to a calculation triggers default calculations that depend on it
 ## [0.8.37] - 2022-11-11
 ### Fixed
 - raise property change when default calculation rule runs for list
