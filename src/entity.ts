@@ -415,3 +415,7 @@ export interface EntityChangeEventArgs {
 	oldValue?: any;
 	newValue: any;
 }
+
+export function isEntity(obj): obj is Entity {
+	return obj && obj.meta && obj.meta.type && obj.meta.type.jstype && isEntityType(obj.meta.type.jstype);
+}
