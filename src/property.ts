@@ -26,6 +26,7 @@ export class Property implements PropertyPath {
 	readonly isList: boolean;
 
 	constant: any;
+	initializer: (this: Entity) => any;
 	label: string;
 	labelSource: PropertyPath;
 	helptext: string;
@@ -214,7 +215,28 @@ export class Property implements PropertyPath {
 
 			// Set
 			if (typeof options.set === "function") {
-				this.changed.subscribe(function(e) { options.set.call(this, e.newValue); });
+				const property = this;
+				new Rule(targetType, null, {
+					onInit: true,
+					onChangeOf: [this],
+					execute() {
+						options.set.call(this, property.value(this));
+					}
+				}).register();
+			}
+
+			// Init
+			if (options.init !== undefined) {
+				let initFn: (this: Entity) => any;
+				if (isPropertyValueFunction<any>(options.init))
+					initFn = options.init;
+				else
+					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
+
+				const property = this;
+				this.initializer = function () {
+					return targetType.model.serializer.deserialize(this, initFn.call(this), property, new InitializationContext(true));
+				};
 			}
 
 			// Default
@@ -625,6 +647,12 @@ export interface PropertyOptions {
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
 
+	/** A function used to obtain the value with which to initialize this property.
+	 * The function is called only once, and is not reactive as a rule would be.
+	 * Does not overwrite a property value provided during construction of the containing entity.
+	 */
+	init?: PropertyValueFunction<any>;
+
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	allowedValues?: PropertyValueFunction<any[]> | AllowedValuesFunctionAndOptions<any[]> | Value[];
 
@@ -885,12 +913,14 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 	});
 }
 
-function Property$getInitialValue(property: Property): any {
+function Property$getInitialValue(property: Property, obj: Entity): any {
 	// Constant
 	if (property.isConstant)
 		return typeof property.constant === "function" ? (property.constant = property.constant()) : property.constant;
 
-	var val = property.defaultValue;
+	var val = property.initializer
+		? property.initializer.call(obj)
+		: property.defaultValue;
 
 	if (Array.isArray(val)) {
 		val = ObservableArray.ensureObservable(val as any[]);
@@ -923,7 +953,7 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
-			Property$init(property, obj, Property$getInitialValue(property));
+			Property$init(property, obj, Property$getInitialValue(property, obj));
 
 			const underlyingValue = obj.__fields__[property.name];
 			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it
