@@ -53,97 +53,111 @@ describe("Property", () => {
 	});
 
 	describe("init", () => {
-		it("initializes value property", async () => {
-			const model = new Model({
-				Person: {
-					Name: {
-						type: String,
-						init() {
-							return "Test";
+		describe("value property", () => {
+			let valuePropModel: Model;
+
+			beforeEach(() => {
+				valuePropModel = new Model({
+					Person: {
+						Name: {
+							type: String,
+							init() {
+								return "Test";
+							}
 						}
 					}
-				}
+				});
 			});
-			const instance = await model.types.Person.create({}) as any;
-			expect(instance.Name).toBe("Test");
+
+			it("initializes value property", async () => {
+				const instance = await valuePropModel.types.Person.create({}) as any;
+				expect(instance.Name).toBe("Test");
+			});
+
+			it("does nothing if value property already initialized", async () => {
+				const instance = await valuePropModel.types.Person.create({ Name: "John" }) as any;
+				expect(instance.Name).toBe("John");
+			});
 		});
 
-		it("initializes value list property", async () => {
-			const model = new Model({
-				Person: {
-					Skills: {
-						type: "String[]",
-						init() {
-							return ["X", "Y"];
+		describe("value list property", () => {
+			let valueListModel: Model;
+			beforeEach(() => {
+				valueListModel = new Model({
+					Person: {
+						Skills: {
+							type: "String[]",
+							init() {
+								return ["X", "Y"];
+							}
 						}
 					}
-				}
+				});
 			});
-			const instance = await model.types.Person.create({}) as any;
-			expect(instance.serialize().Skills).toEqual(["X", "Y"]);
+
+			it("initializes", async () => {
+				const instance = await valueListModel.types.Person.create({}) as any;
+				expect(instance.serialize().Skills).toEqual(["X", "Y"]);
+			});
+
+			it("does nothing if already initialized", async () => {
+				const instance = await valueListModel.types.Person.create({ Skills: [] }) as any;
+				expect(instance.serialize().Skills).toEqual([]);
+			});
 		});
 
-		it("initializes reference property", async () => {
-			const model = new Model({
-				Person: {
-					Skill: {
-						type: "Skill",
-						init() {
-							return { Name: "Skill 1" };
+		describe("reference property", () => {
+			let refPropModel: Model;
+			beforeEach(() => {
+				refPropModel = new Model({
+					Person: {
+						Skill: {
+							type: "Skill",
+							init() {
+								return { Name: "Skill 1" };
+							}
 						}
-					}
-				},
-				Skill: { Name: String }
+					},
+					Skill: { Name: String }
+				});
 			});
-			const instance = await model.types.Person.create({}) as any;
-			expect(instance.Skill.Name).toBe("Skill 1");
+
+			it("initializes", async () => {
+				const instance = await refPropModel.types.Person.create({}) as any;
+				expect(instance.Skill.Name).toBe("Skill 1");
+			});
+
+			it("does nothing if already initialized", async () => {
+				const instance = await refPropModel.types.Person.create({ Skill: { Name: "Custom Skill" } }) as any;
+				expect(instance.Skill.Name).toBe("Custom Skill");
+			});
 		});
 
-		it("initializes reference list property", async () => {
-			const model = new Model({
-				Person: {
-					Skills: {
-						type: "Skill[]",
-						init() {
-							return [{ Name: "Skill 1" }, { Name: "Skill 2" }];
+		describe("reference list property", () => {
+			let refListModel: Model;
+			beforeEach(() => {
+				refListModel = new Model({
+					Person: {
+						Skills: {
+							type: "Skill[]",
+							init() {
+								return [{ Name: "Skill 1" }, { Name: "Skill 2" }];
+							}
 						}
-					}
-				},
-				Skill: { Name: String }
+					},
+					Skill: { Name: String }
+				});
 			});
-			const instance = await model.types.Person.create({}) as any;
-			expect(instance.serialize().Skills).toMatchObject([{ Name: "Skill 1" }, { Name: "Skill 2" }]);
-		});
 
-		it("does nothing if value property already initialized", async () => {
-			const model = new Model({
-				Person: {
-					Name: {
-						type: String,
-						init() {
-							return "Test";
-						}
-					}
-				}
+			it("initializes", async () => {
+				const instance = await refListModel.types.Person.create({}) as any;
+				expect(instance.serialize().Skills).toMatchObject([{ Name: "Skill 1" }, { Name: "Skill 2" }]);
 			});
-			const instance = await model.types.Person.create({ Name: "John" }) as any;
-			expect(instance.Name).toBe("John");
-		});
 
-		it("does nothing if reference list already initialized", async () => {
-			const model = new Model({
-				Person: {
-					Skills: {
-						type: "Skill[]",
-						init() {
-							return [{ Name: "Skill 1" }, { Name: "Skill 2" }];
-						}
-					}
-				},
-				Skill: { Name: String }
+			it("does nothing if already initialized", async () => {
+				const instance = await refListModel.types.Person.create({ Skills: [] }) as any;
+				expect(instance.serialize().Skills).toMatchObject([]);
 			});
-			const instance = await model.types.Person.create({ Skills: [] }) as any;
-			expect(instance.serialize().Skills).toMatchObject([]);
 		});
 	});
 });
