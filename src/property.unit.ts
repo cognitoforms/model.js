@@ -25,6 +25,33 @@ describe("Property", () => {
 		expect(instance.Skills[0].Proficiency).toBe(4);
 	});
 
+	describe("set", () => {
+		let model: Model;
+		let fn: jest.Mock;
+		beforeEach(() => {
+			fn = jest.fn();
+			model = new Model({
+				Person: {
+					Name: {
+						type: String,
+						set: fn
+					}
+				}
+			});
+		});
+
+		it("function runs on property change", async () => {
+			const instance = await model.types.Person.create({}) as any;
+			instance.Name = "test";
+			expect(fn).toBeCalledWith("test");
+		});
+
+		it("function runs on property init", async () => {
+			(await model.types.Person.create({}));
+			expect(fn).toBeCalledWith(null);
+		});
+	});
+
 	describe("init", () => {
 		it("initializes value property", async () => {
 			const model = new Model({
