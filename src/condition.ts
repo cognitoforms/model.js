@@ -39,6 +39,8 @@ export class Condition {
 				// we don't want to construct ConditionTargets as we're processing the path because we may not have gathered all targeted properties,
 				// and the constructor triggers change on the entity meta's conditions list, which should be in a correct state before publishing the event
 				path.each(target, (entity, property) => {
+					if (property !== path.lastProperty)
+						return;
 					// see if a target already exists for the current instance
 					let targetInfo = targetInfos.find(t => t.entity === entity);
 
@@ -50,7 +52,7 @@ export class Condition {
 					// otherwise, just ensure it references the current step
 					else if (!targetInfo.properties.includes(property))
 						targetInfo.properties.push(property);
-				}, path.lastProperty);
+				});
 
 				// construct the ConditionTargets here now that we've gathered all information
 				targets.push(...targetInfos.map(i => new ConditionTarget(this, i.entity, i.properties)));
