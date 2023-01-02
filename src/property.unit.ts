@@ -1,5 +1,8 @@
 /* eslint-disable no-new */
+import { Entity } from "./entity";
+import { IgnoreProperty, PropertyConverter, PropertySerializationResult } from "./entity-serializer";
 import { Model } from "./model";
+import { Property } from "./property";
 
 describe("Property", () => {
 	it("can have a constant value", async () => {
@@ -134,6 +137,22 @@ describe("Property", () => {
 		});
 
 		describe("reference list property", () => {
+			class IgnorePropertyConverter extends PropertyConverter {
+				readonly propertyName: string;
+				constructor(propertyName: string) {
+					super();
+					this.propertyName = propertyName;
+				}
+				shouldConvert(context: Entity, prop: Property): boolean {
+					if (prop.name === this.propertyName)
+						return true;
+					return false;
+				}
+				serialize(): PropertySerializationResult {
+					return IgnoreProperty;
+				}
+			}
+
 			let refListModel: Model;
 			beforeEach(() => {
 				refListModel = new Model({
@@ -141,12 +160,34 @@ describe("Property", () => {
 						Skills: {
 							type: "Skill[]",
 							init() {
-								return [{ Name: "Skill 1" }, { Name: "Skill 2" }];
+								return [{ Owner: this, Name: "Skill 1" }, { Owner: this, Name: "Skill 2" }];
 							}
 						}
 					},
-					Skill: { Name: String }
+					Skill: {
+						Name: String,
+						Id: {
+							type: String,
+							default() {
+								return this.meta.id;
+							}
+						},
+						Owner: {
+							type: "Person"
+						},
+						ItemNumber: {
+							type: Number,
+							default: {
+								dependsOn: "Owner.Skills",
+								function() {
+									return this.Owner ? this.Owner.Skills.indexOf(this) + 1 : -1;
+								}
+							}
+						}
+					}
 				});
+
+				refListModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Owner"));
 			});
 
 			it("initializes", async () => {
@@ -157,6 +198,11 @@ describe("Property", () => {
 			it("does nothing if already initialized", async () => {
 				const instance = await refListModel.types.Person.create({ Skills: [] }) as any;
 				expect(instance.serialize().Skills).toMatchObject([]);
+			});
+
+			it("can be used to establish a back-reference", async () => {
+				const instance = await refListModel.types.Person.create({ Skills: [{ Name: "Skill 3" }, { Name: "Skill 4" }] }) as any;
+				expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Name: "Skill 4", ItemNumber: 2 }]);
 			});
 		});
 	});
