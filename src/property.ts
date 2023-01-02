@@ -919,6 +919,7 @@ function Property$getInitialValue(property: Property): any {
 
 	if (Array.isArray(val)) {
 		val = ObservableArray.ensureObservable(val as any[]);
+
 		// Override the default toString on arrays so that we get a comma-delimited list
 		// TODO: Implement toString on observable list?
 		// val.toString = Property$_arrayToString.bind(val);
