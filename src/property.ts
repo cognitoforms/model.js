@@ -910,7 +910,7 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 	});
 }
 
-function Property$getInitialValue(property: Property, obj: Entity): any {
+function Property$getInitialValue(property: Property): any {
 	// Constant
 	if (property.isConstant)
 		return typeof property.constant === "function" ? (property.constant = property.constant()) : property.constant;
@@ -947,7 +947,7 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
-			Property$init(property, obj, Property$getInitialValue(property, obj));
+			Property$init(property, obj, Property$getInitialValue(property));
 			if (property.initializer)
 				obj.update(property.name, property.initializer.call(obj));
 
