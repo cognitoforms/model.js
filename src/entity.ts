@@ -6,6 +6,7 @@ import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
 import { DefaultSerializationSettings } from "./entity-serializer";
+
 export class Entity {
 	static ctorDepth: number = 0;
 

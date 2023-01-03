@@ -233,10 +233,7 @@ export class Property implements PropertyPath {
 				else
 					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
 
-				const property = this;
-				this.initializer = function () {
-					return targetType.model.serializer.deserialize(this, initFn.call(this), property, new InitializationContext(true));
-				};
+				this.initializer = initFn;
 			}
 
 			// Default
@@ -913,14 +910,12 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 	});
 }
 
-function Property$getInitialValue(property: Property, obj: Entity): any {
+function Property$getInitialValue(property: Property): any {
 	// Constant
 	if (property.isConstant)
 		return typeof property.constant === "function" ? (property.constant = property.constant()) : property.constant;
 
-	var val = property.initializer
-		? property.initializer.call(obj)
-		: property.defaultValue;
+	var val = property.defaultValue;
 
 	if (Array.isArray(val)) {
 		val = ObservableArray.ensureObservable(val as any[]);
@@ -953,7 +948,9 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
-			Property$init(property, obj, Property$getInitialValue(property, obj));
+			Property$init(property, obj, Property$getInitialValue(property));
+			if (property.initializer)
+				obj.update(property.name, property.initializer.call(obj));
 
 			const underlyingValue = obj.__fields__[property.name];
 			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it

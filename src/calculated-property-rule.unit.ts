@@ -169,7 +169,7 @@ describe("CalculateRule", () => {
 		});
 	});
 
-	describe("calculated list", async () => {
+	describe("calculated list", () => {
 		let model;
 		beforeEach(() => {
 			model = new Model({
