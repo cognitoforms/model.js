@@ -191,4 +191,131 @@ describe("Back-reference properties", () => {
 			expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Name: "Skill 4", ItemNumber: 2 }]);
 		});
 	});
+
+	describe("with deeply nested objects", () => {
+		let deeplyNestedModel: Model;
+		beforeEach(() => {
+			const modelOptions = {
+				Root: {
+					SectionA: {
+						type: "SectionA",
+						set: function() { return ensureChildProperties(this, "SectionA"); },
+						init() {
+							return deeplyNestedModel.types["SectionA"].createIfNotExists({});
+						}
+					}
+				},
+				SectionA: {
+					Text: { type: String, required: true },
+					Root: {
+						type: "Root"
+					},
+					SectionB: {
+						type: "SectionB",
+						set: function() { return ensureChildProperties(this, "SectionB"); },
+						init() {
+							return deeplyNestedModel.types["SectionB"].createIfNotExists({});
+						}
+					}
+				},
+				SectionB: {
+					Text: { type: String, required: true },
+					Root: {
+						type: "Root"
+					},
+					Parent: {
+						type: "SectionA"
+					},
+					SectionC: {
+						type: "SectionC",
+						set: function() { return ensureChildProperties(this, "SectionC"); },
+						init() {
+							return deeplyNestedModel.types["SectionC"].createIfNotExists({});
+						}
+					}
+				},
+				SectionC: {
+					Text: { type: String, required: true },
+					Root: {
+						type: "Root"
+					},
+					Parent: {
+						type: "SectionB"
+					},
+					SectionD: {
+						type: "SectionD",
+						set: function() { return ensureChildProperties(this, "SectionD"); },
+						init() {
+							return deeplyNestedModel.types["SectionD"].createIfNotExists({});
+						}
+					}
+				},
+				SectionD: {
+					Text: { type: String, required: true },
+					Root: {
+						type: "Root"
+					},
+					Parent: {
+						type: "SectionC"
+					}
+				}
+			};
+
+			function addSection(typeName: string, parentTypeName: string) {
+				modelOptions[parentTypeName][typeName] = {
+					type: typeName,
+					set: function() { return ensureChildProperties(this, typeName); },
+					init() {
+						return deeplyNestedModel.types[typeName].createIfNotExists({});
+					}
+				};
+				modelOptions[typeName] = {
+					Text: { type: String, required: true },
+					Root: {
+						type: "Root"
+					},
+					Parent: {
+						type: parentTypeName
+					}
+				};
+			}
+
+			addSection("SectionD", "SectionC");
+			addSection("SectionE", "SectionD");
+			addSection("SectionF", "SectionE");
+			addSection("SectionG", "SectionF");
+			addSection("SectionH", "SectionG");
+			addSection("SectionI", "SectionH");
+			addSection("SectionJ", "SectionI");
+			addSection("SectionK", "SectionJ");
+			addSection("SectionL", "SectionK");
+			addSection("SectionM", "SectionL");
+			addSection("SectionN", "SectionM");
+			addSection("SectionO", "SectionN");
+			addSection("SectionP", "SectionO");
+			addSection("SectionQ", "SectionP");
+			addSection("SectionR", "SectionQ");
+			addSection("SectionS", "SectionR");
+			addSection("SectionT", "SectionS");
+			addSection("SectionU", "SectionT");
+			addSection("SectionV", "SectionU");
+			addSection("SectionW", "SectionV");
+			addSection("SectionX", "SectionW");
+			addSection("SectionY", "SectionX");
+			addSection("SectionZ", "SectionY");
+
+			deeplyNestedModel = new Model(modelOptions);
+
+			deeplyNestedModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Root"));
+			deeplyNestedModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Parent"));
+			deeplyNestedModel.serializer.registerPropertyConverter(new InitializeBackReferencesConverter("Root", "Parent"));
+		});
+
+		it.only("can be established via property initializers", async () => {
+			const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
+			const instance = await deeplyNestedModel.types.Root.create({}) as any;
+			expect(instance.SectionA.Text).toBe(null);
+			expect(consoleWarn).not.toBeCalled();
+		});
+	});
 });
