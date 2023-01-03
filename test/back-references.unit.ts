@@ -91,7 +91,7 @@ describe("Back-reference properties", () => {
 						type: "Skill",
 						set: function() { return ensureChildProperties(this, "Skill"); },
 						init() {
-							return refPropModel.types["Skill"].createIfNotExists({});
+							return refPropModel.types["Skill"].createIfNotExists({ Name: "Skill 1" });
 						}
 					}
 				},
@@ -143,8 +143,8 @@ describe("Back-reference properties", () => {
 		it("can be established via property initializers", async () => {
 			const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
 			const instance = await refPropModel.types.Person.create({}) as any;
-			expect(instance.Skill.Name).toBe(null);
 			expect(consoleWarn).not.toBeCalled();
+			expect(instance.Skill.Name).toBe("Skill 1");
 		});
 	});
 
