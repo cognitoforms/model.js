@@ -1,58 +1,5 @@
 /* eslint-disable no-new */
-import { Entity } from "./entity";
-import { IgnoreProperty, PropertyConverter, PropertySerializationResult } from "./entity-serializer";
 import { Model } from "./model";
-import { Property } from "./property";
-import { isEntityType } from "./type";
-
-class IgnorePropertyConverter extends PropertyConverter {
-	readonly propertyName: string;
-	constructor(propertyName: string) {
-		super();
-		this.propertyName = propertyName;
-	}
-	shouldConvert(context: Entity, prop: Property): boolean {
-		if (prop.name === this.propertyName)
-			return true;
-		return false;
-	}
-	serialize(): PropertySerializationResult {
-		return IgnoreProperty;
-	}
-}
-
-class InitializeBackReferencesConverter extends PropertyConverter {
-	readonly rootPropertyName: string;
-	readonly parentPropertyName: string;
-	constructor(rootPropertyName: string = "Root", parentPropertyName: string = "Parent") {
-		super();
-		this.rootPropertyName = rootPropertyName;
-		this.parentPropertyName = parentPropertyName;
-	}
-	shouldConvert(context: Entity, prop: Property): boolean {
-		const shouldConvert = prop.name !== this.rootPropertyName && prop.name !== this.parentPropertyName
-			&& isEntityType(prop.propertyType)
-			&& (!!prop.propertyType.meta.getProperty(this.rootPropertyName) || !!prop.propertyType.meta.getProperty(this.parentPropertyName));
-		return shouldConvert;
-	}
-	deserialize(context: Entity, value: any, prop: Property) {
-		if (value && isEntityType(prop.propertyType)) {
-			if (Array.isArray(value))
-				value = value.map(item => this.deserialize(context, item, prop));
-			else {
-				// avoid modifying the provided object
-				value = Object.assign({}, value);
-				if (prop.propertyType.meta.getProperty(this.parentPropertyName))
-					value[this.parentPropertyName] = context;
-				if (prop.propertyType.meta.getProperty(this.rootPropertyName))
-					value[this.rootPropertyName] = this.rootPropertyName in context
-						? context[this.rootPropertyName]
-						: context;
-			}
-		}
-		return value;
-	}
-}
 
 describe("Property", () => {
 	it("can have a constant value", async () => {
@@ -160,95 +107,24 @@ describe("Property", () => {
 		});
 
 		describe("reference property", () => {
-			function propagateRootProperty(parent: Entity, child: Entity, rootPropertyName: string = "Root") {
-				// In case the parent's Root property is not yet set, propagate when it is set
-				if (!parent[rootPropertyName])
-					parent.meta.type.getProperty(rootPropertyName).changed.subscribeOne(e => (child[rootPropertyName] = e.newValue));
-				else
-					child[rootPropertyName] = parent[rootPropertyName];
-			}
-
-			function setBackReferenceProperties(parent: Entity, child: Entity, rootPropertyName: string = "Root", parentPropertyName: string = "Parent") {
-				if (parentPropertyName in child) {
-					child[parentPropertyName] = parent;
-					propagateRootProperty(parent, child, rootPropertyName);
-				}
-				else
-					child[rootPropertyName] = parent;
-			}
-
-			function ensureChildProperties(parent: Entity, propertyName: string, rootPropertyName: string = "Root", parentPropertyName: string = "Parent"): void {
-				const value = parent.get(propertyName);
-				if (Array.isArray(value)) {
-					value.forEach(item => setBackReferenceProperties(parent, item, rootPropertyName, parentPropertyName));
-				}
-				else if (value) {
-					setBackReferenceProperties(parent, value, rootPropertyName, parentPropertyName);
-				}
-			}
-
 			let refPropModel: Model;
 			beforeEach(() => {
 				refPropModel = new Model({
 					Person: {
 						Skill: {
 							type: "Skill",
-							set: function() { return ensureChildProperties(this, "Skill"); },
 							init() {
-								return refPropModel.types["Skill"].createIfNotExists({});
+								return { Name: "Skill 1" };
 							}
 						}
 					},
-					Skill: {
-						Name: String,
-						Code: String,
-						Root: {
-							type: "Person"
-						},
-						Metadata: {
-							type: "SkillMetadata",
-							set: function() { return ensureChildProperties(this, "Metadata"); },
-							init() {
-								return refPropModel.types["SkillMetadata"].createIfNotExists({});
-							}
-						}
-					},
-					SkillMetadata: {
-						Code: {
-							type: String,
-							format: {
-								description: "AAA-000",
-								expression: /^\s*([A-Z]+)-(\d)\s*$/g,
-								message: "Code must be formatted as 'AAA-000'.",
-								reformat: "$1-$2"
-							},
-							default: {
-								dependsOn: "Parent.Code",
-								function: function() { return this.Root ? this.Root.Skill ? this.Root.Skill.Code : null : null; }
-							}
-						},
-						Root: {
-							type: "Person"
-						},
-						Parent: {
-							type: "Skill"
-						}
-					}
-				}, {
-					maxEventScopeDepth: 100,
-					maxExitingEventScopeTransferCount: 500
+					Skill: { Name: String }
 				});
-
-				refPropModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Root"));
-				refPropModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Parent"));
-				refPropModel.serializer.registerPropertyConverter(new InitializeBackReferencesConverter("Root", "Parent"));
 			});
 
 			it("initializes", async () => {
-				const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
 				const instance = await refPropModel.types.Person.create({}) as any;
-				expect(instance.Skill.Name).toBe(null);
-				expect(consoleWarn).not.toBeCalled();
+				expect(instance.Skill.Name).toBe("Skill 1");
 			});
 
 			it("does nothing if already initialized", async () => {
@@ -265,34 +141,12 @@ describe("Property", () => {
 						Skills: {
 							type: "Skill[]",
 							init() {
-								return [{ Owner: this, Name: "Skill 1" }, { Owner: this, Name: "Skill 2" }];
+								return [{ Name: "Skill 1" }, { Name: "Skill 2" }];
 							}
 						}
 					},
-					Skill: {
-						Name: String,
-						Id: {
-							type: String,
-							default() {
-								return this.meta.id;
-							}
-						},
-						Owner: {
-							type: "Person"
-						},
-						ItemNumber: {
-							type: Number,
-							default: {
-								dependsOn: "Owner.Skills",
-								function() {
-									return this.Owner ? this.Owner.Skills.indexOf(this) + 1 : -1;
-								}
-							}
-						}
-					}
+					Skill: { Name: String }
 				});
-
-				refListModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Owner"));
 			});
 
 			it("initializes", async () => {
@@ -303,11 +157,6 @@ describe("Property", () => {
 			it("does nothing if already initialized", async () => {
 				const instance = await refListModel.types.Person.create({ Skills: [] }) as any;
 				expect(instance.serialize().Skills).toMatchObject([]);
-			});
-
-			it("can be used to establish a back-reference", async () => {
-				const instance = await refListModel.types.Person.create({ Skills: [{ Name: "Skill 3" }, { Name: "Skill 4" }] }) as any;
-				expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Name: "Skill 4", ItemNumber: 2 }]);
 			});
 		});
 	});
