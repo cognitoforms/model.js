@@ -313,7 +313,7 @@ describe("Back-reference properties", () => {
 			deeplyNestedModel.serializer.registerPropertyConverter(new InitializeBackReferencesConverter("Root", "Parent"));
 		});
 
-		it.only("can be established via property initializers", async () => {
+		it("can be established via property initializers", async () => {
 			const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {});
 			const instance = await deeplyNestedModel.types.Root.create({}) as any;
 			expect(instance.SectionA.Text).toBe(null);
