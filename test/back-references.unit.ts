@@ -5,6 +5,8 @@ import { Model } from "../src/model";
 import { Property } from "../src/property";
 import { isEntityType } from "../src/type";
 
+require("../src/resource-en");
+
 class IgnorePropertyConverter extends PropertyConverter {
 	readonly propertyName: string;
 	constructor(propertyName: string) {
