@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Changed
+- change property initialization to use update after establishing a default property value
 ## [0.8.40] - 2022-12-14
 ### Fixed
 - condition not applied to correct targets involving nested properties
