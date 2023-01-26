@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-## [Unreleased]
+## [0.8.42] - 2023-01-26
 ### Fixed
 - error: "Cannot read properties of null (reading 'ready')" when using async resolver and initializers
 ## [0.8.41] - 2023-01-03
