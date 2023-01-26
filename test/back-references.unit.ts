@@ -1,87 +1,11 @@
 /* eslint-disable no-new */
-import { Entity } from "../src/entity";
-import { IgnoreProperty, PropertyConverter, PropertySerializationResult } from "../src/entity-serializer";
 import { Model } from "../src/model";
-import { Property } from "../src/property";
-import { isEntityType } from "../src/type";
+import { ensureChildProperties } from "./utils";
+import { IgnorePropertyConverter } from "./ignore-property-converter";
+import { InitializeBackReferencesConverter } from "./initialize-back-references-converter";
+import { IdReferencePropertyConverter } from "./id-reference-property-converter";
 
 require("../src/resource-en");
-
-class IgnorePropertyConverter extends PropertyConverter {
-	readonly propertyName: string;
-	constructor(propertyName: string) {
-		super();
-		this.propertyName = propertyName;
-	}
-	shouldConvert(context: Entity, prop: Property): boolean {
-		if (prop.name === this.propertyName)
-			return true;
-		return false;
-	}
-	serialize(): PropertySerializationResult {
-		return IgnoreProperty;
-	}
-}
-
-class InitializeBackReferencesConverter extends PropertyConverter {
-	readonly rootPropertyName: string;
-	readonly parentPropertyName: string;
-	constructor(rootPropertyName: string = "Root", parentPropertyName: string = "Parent") {
-		super();
-		this.rootPropertyName = rootPropertyName;
-		this.parentPropertyName = parentPropertyName;
-	}
-	shouldConvert(context: Entity, prop: Property): boolean {
-		const shouldConvert = prop.name !== this.rootPropertyName && prop.name !== this.parentPropertyName
-			&& isEntityType(prop.propertyType)
-			&& (!!prop.propertyType.meta.getProperty(this.rootPropertyName) || !!prop.propertyType.meta.getProperty(this.parentPropertyName));
-		return shouldConvert;
-	}
-	deserialize(context: Entity, value: any, prop: Property) {
-		if (value && isEntityType(prop.propertyType)) {
-			if (Array.isArray(value))
-				value = value.map(item => this.deserialize(context, item, prop));
-			else {
-				// avoid modifying the provided object
-				value = Object.assign({}, value);
-				if (prop.propertyType.meta.getProperty(this.parentPropertyName))
-					value[this.parentPropertyName] = context;
-				if (prop.propertyType.meta.getProperty(this.rootPropertyName))
-					value[this.rootPropertyName] = this.rootPropertyName in context
-						? context[this.rootPropertyName]
-						: context;
-			}
-		}
-		return value;
-	}
-}
-
-function propagateRootProperty(parent: Entity, child: Entity, rootPropertyName: string = "Root") {
-	// In case the parent's Root property is not yet set, propagate when it is set
-	if (!parent[rootPropertyName])
-		parent.meta.type.getProperty(rootPropertyName).changed.subscribeOne(e => (child[rootPropertyName] = e.newValue));
-	else
-		child[rootPropertyName] = parent[rootPropertyName];
-}
-
-function setBackReferenceProperties(parent: Entity, child: Entity, rootPropertyName: string = "Root", parentPropertyName: string = "Parent") {
-	if (parentPropertyName in child) {
-		child[parentPropertyName] = parent;
-		propagateRootProperty(parent, child, rootPropertyName);
-	}
-	else
-		child[rootPropertyName] = parent;
-}
-
-function ensureChildProperties(parent: Entity, propertyName: string, rootPropertyName: string = "Root", parentPropertyName: string = "Parent"): void {
-	const value = parent.get(propertyName);
-	if (Array.isArray(value)) {
-		value.forEach(item => setBackReferenceProperties(parent, item, rootPropertyName, parentPropertyName));
-	}
-	else if (value) {
-		setBackReferenceProperties(parent, value, rootPropertyName, parentPropertyName);
-	}
-}
 
 describe("Back-reference properties", () => {
 	describe("from a reference property", () => {
@@ -185,12 +109,12 @@ describe("Back-reference properties", () => {
 				}
 			});
 
-			refListModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Owner"));
+			refListModel.serializer.registerPropertyConverter(new IdReferencePropertyConverter("Owner"));
 		});
 
 		it("can be established via property initializers", async () => {
 			const instance = await refListModel.types.Person.create({ Skills: [{ Name: "Skill 3" }, { Name: "Skill 4" }] }) as any;
-			expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Name: "Skill 4", ItemNumber: 2 }]);
+			expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Owner: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Owner: "+c1", Name: "Skill 4", ItemNumber: 2 }]);
 		});
 	});
 

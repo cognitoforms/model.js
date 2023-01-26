@@ -212,11 +212,13 @@ export class Entity {
 			return context.ready.then(markPersistedWhenIdAssigned);
 		}
 
+		const context = this._context;
+
 		// Set the specified properties
 		for (let [propName, state] of Entity.getSortedPropertyData(properties)) {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop && !prop.isCalculated && !prop.isConstant) {
-				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
+				const valueResolution = context.tryResolveValue(this, prop, state);
 				if (valueResolution)
 					valueResolution.then(asyncState => this.setProp(prop, asyncState));
 				else
@@ -224,7 +226,7 @@ export class Entity {
 			}
 		}
 
-		return this._context.ready;
+		return context.ready;
 	}
 
 	private setProp(prop: Property, state: any) {
