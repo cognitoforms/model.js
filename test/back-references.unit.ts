@@ -3,6 +3,7 @@ import { Model } from "../src/model";
 import { ensureChildProperties } from "./utils";
 import { IgnorePropertyConverter } from "./ignore-property-converter";
 import { InitializeBackReferencesConverter } from "./initialize-back-references-converter";
+import { IdReferencePropertyConverter } from "./id-reference-property-converter";
 
 require("../src/resource-en");
 
@@ -108,12 +109,12 @@ describe("Back-reference properties", () => {
 				}
 			});
 
-			refListModel.serializer.registerPropertyConverter(new IgnorePropertyConverter("Owner"));
+			refListModel.serializer.registerPropertyConverter(new IdReferencePropertyConverter("Owner"));
 		});
 
 		it("can be established via property initializers", async () => {
 			const instance = await refListModel.types.Person.create({ Skills: [{ Name: "Skill 3" }, { Name: "Skill 4" }] }) as any;
-			expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Name: "Skill 4", ItemNumber: 2 }]);
+			expect(instance.serialize().Skills).toMatchObject([{ Id: "+c1", Owner: "+c1", Name: "Skill 3", ItemNumber: 1 }, { Id: "+c2", Owner: "+c1", Name: "Skill 4", ItemNumber: 2 }]);
 		});
 	});
 
