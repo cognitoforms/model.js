@@ -4,6 +4,7 @@ import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { updateArray } from "./observable-array";
+import { createEventObject } from "./events";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -318,6 +319,37 @@ describe("Entity", () => {
 				new Types.Movie(Alien);
 
 				expect(changed).toBeCalled();
+			});
+		});
+
+		describe("entity change event", () => {
+			test("is called when value property is changed", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Person.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Person.meta.getProperty("FirstName");
+				instance.changed.subscribe(changed);
+				property.value(instance, "Joe");
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					oldValue: "Ridley",
+					newValue: "Joe"
+				}));
+			});
+
+			test("is called when value list property is changed", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Movie.meta.getProperty("Genres");
+				instance.changed.subscribe(changed);
+				instance.Genres.batchUpdate(() => {
+					instance.Genres.push("fantasy");
+				});
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					newValue: expect.arrayContaining(["fantasy"])
+				}));
 			});
 		});
 	});
