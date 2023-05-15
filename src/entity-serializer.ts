@@ -216,6 +216,8 @@ export class EntitySerializer {
 				value = data;
 			else if (data instanceof Object)
 				value = resolveEntity(ChildEntity, data);
+			else
+				value = data;
 		}
 
 		// Value List
