@@ -296,7 +296,7 @@ describe("Entity", () => {
 			test("value list property", async () => {
 				const changed = jest.fn();
 				Types.Movie.meta.getProperty("Genres").changed.subscribe(changed);
-				await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott", Genres: ["fantasy"] });
 
 				expect(changed).not.toBeCalled();
 			});
