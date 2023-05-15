@@ -160,6 +160,7 @@ export class ObservableArray<ItemType> {
 
 export interface ArrayChangedEventArgs<ItemType> {
 	changes: ArrayChange<ItemType>[];
+	additionalArgs?: any;
 }
 
 export enum ArrayChangeType {
@@ -213,8 +214,8 @@ export class ObservableArrayImplementation<ItemType> extends Array<ItemType> imp
 	/**
 	 * Begin queueing changes to the array, make changes in the given callback function, then stop queueing and raise events
 	 */
-	batchUpdate(fn: (array: ObservableArray<ItemType>) => void): void {
-		ObservableArray$batchUpdate.call(this, fn);
+	batchUpdate(fn: (array: ObservableArray<ItemType>) => void, additionalArgs?: any): void {
+		ObservableArray$batchUpdate.call(this, fn, additionalArgs);
 	}
 
 	/**
@@ -337,15 +338,15 @@ export function ObservableArray$overrideNativeMethods<ItemType>(this: ItemType[]
 /**
  * Begin queueing changes to the array, make changes in the given callback function, then stop queueing and raise events
  */
-export function ObservableArray$batchUpdate<ItemType>(this: ObservableArray<ItemType>, fn: (array: ObservableArray<ItemType>) => void): void {
+export function ObservableArray$batchUpdate<ItemType>(this: ObservableArray<ItemType>, fn: (array: ObservableArray<ItemType>) => void, additionalArgs?: any): void {
 	this.__aob__.startQueueingChanges();
 	try {
 		fn(this);
-		this.__aob__.stopQueueingChanges(true);
+		this.__aob__.stopQueueingChanges(true, additionalArgs);
 	}
 	finally {
 		if (this.__aob__._isQueuingChanges) {
-			this.__aob__.stopQueueingChanges(false);
+			this.__aob__.stopQueueingChanges(false, additionalArgs);
 		}
 	}
 }
@@ -524,7 +525,9 @@ export class ArrayObserver<ItemType> {
 		this._isQueuingChanges = false;
 	}
 
-	raiseEvents(changes: ArrayChange<ItemType>[] | ArrayChange<ItemType>): void {
+	raiseEvents(changes: ArrayChange<ItemType>[], additionalArgs?: any): void;
+	raiseEvents(changes: ArrayChange<ItemType>): void;
+	raiseEvents(changes: ArrayChange<ItemType>[] | ArrayChange<ItemType>, additionalArgs?: any): void {
 		if (this._isQueuingChanges) {
 			if (!this._queuedChanges) {
 				this._queuedChanges = [];
@@ -538,10 +541,10 @@ export class ArrayObserver<ItemType> {
 		}
 		else if (Array.isArray(changes)) {
 			if (changes.length)
-				this.changed.publish(this.array, { changes: changes });
+				this.changed.publish(this.array, { changes, additionalArgs });
 		}
 		else {
-			this.changed.publish(this.array, { changes: [changes] });
+			this.changed.publish(this.array, { changes: [changes], additionalArgs });
 		}
 	}
 
@@ -552,10 +555,10 @@ export class ArrayObserver<ItemType> {
 		}
 	}
 
-	stopQueueingChanges(raiseEvents: boolean): void {
+	stopQueueingChanges(raiseEvents: boolean, additionalArgs: any = null): void {
 		this._isQueuingChanges = false;
 		if (raiseEvents) {
-			this.raiseEvents(this._queuedChanges);
+			this.raiseEvents(this._queuedChanges, additionalArgs);
 			delete this._queuedChanges;
 		}
 	}

@@ -899,14 +899,14 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 			return;
 
 		// NOTE: oldValue is not currently implemented for lists
-		var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue: array };
+		var eventArgs = { entity: obj, property, newValue: array };
 
-		(eventArgs as any)["changes"] = args.changes;
-		(eventArgs as any)["collectionChanged"] = true;
+		// Assign additional collection change event arguments to the property change event
+		var additionalArgs = { changes: args.changes, collectionChanged: true, ...args.additionalArgs };
 
-		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
-		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, eventArgs);
-		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
+		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 	});
 }
 
@@ -1014,7 +1014,7 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 	}
 }
 
-function Property$setValue(property: Property, obj: Entity, currentValue: any, newValue: any, additionalArgs: any = null): void {
+function Property$setValue(property: Property, obj: Entity, currentValue: any, newValue: any, additionalArgs: any = {}): void {
 	// Update lists as batch remove/add operations
 	if (property.isList) {
 		let currentArray = currentValue as ObservableArray<any>;
@@ -1042,10 +1042,10 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 
 		// Do not raise change if the property has not been initialized.
 		if (oldValue !== undefined) {
-			var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue, oldValue };
-			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue, oldValue });
-			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, additionalArgs ? merge(eventArgs, additionalArgs) : eventArgs);
-			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, oldValue, newValue });
+			var eventArgs = { entity: obj, property, newValue, oldValue };
+			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 		}
 	}
 }

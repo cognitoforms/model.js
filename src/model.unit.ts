@@ -1,5 +1,6 @@
 import { createEventObject } from "./events";
 import { Model, normalize } from "./model";
+import { ArrayChangeType } from "./observable-array";
 import "./resource-en";
 
 describe("normalize", () => {
@@ -106,7 +107,18 @@ describe("Global Events", () => {
 			var p = new TestModel();
 			p.List.push("test");
 
-			expect(mockFn).toBeCalledWith(createEventObject({ entity: p, property: model.types["Test"].properties[1], newValue: p.List }));
+			expect(mockFn).toBeCalledWith(createEventObject({
+				entity: p,
+				property: model.types["Test"].properties[1],
+				newValue: p.List,
+				collectionChanged: true,
+				changes: expect.arrayContaining([{
+					type: ArrayChangeType.add,
+					startIndex: 0,
+					endIndex: 0,
+					items: ["test"]
+				}])
+			}));
 		});
 	});
 });

@@ -3,7 +3,7 @@ import { Model } from "./model";
 import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
-import { updateArray } from "./observable-array";
+import { ArrayChangeType, updateArray } from "./observable-array";
 import { createEventObject } from "./events";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
@@ -337,6 +337,21 @@ describe("Entity", () => {
 				}));
 			});
 
+			test("is called with additional arguments when specified for a property change", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Person.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Person.meta.getProperty("FirstName");
+				instance.changed.subscribe(changed);
+				property.value(instance, "Joe", { test: 42 });
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					oldValue: "Ridley",
+					newValue: "Joe",
+					test: 42
+				}));
+			});
+
 			test("is called when value list property is changed", async () => {
 				const changed = jest.fn();
 				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
@@ -348,7 +363,43 @@ describe("Entity", () => {
 				expect(changed).toBeCalledWith(createEventObject({
 					entity: instance,
 					property,
-					newValue: expect.arrayContaining(["fantasy"])
+					newValue: expect.arrayContaining(["fantasy"]),
+					collectionChange: true,
+					changes: expect.arrayContaining([
+						{
+							type: ArrayChangeType.add,
+							startIndex: 0,
+							endIndex: 0,
+							items: expect.arrayContaining(["fantasy"])
+						}
+					])
+				}));
+			});
+
+			test("is called with additional arguments when specified for a list change", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Movie.meta.getProperty("Genres");
+				instance.changed.subscribe(changed);
+				instance.Genres.batchUpdate(() => {
+					instance.Genres.push("fantasy");
+				}, {
+					test: 42
+				});
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					newValue: expect.arrayContaining(["fantasy"]),
+					collectionChange: true,
+					changes: expect.arrayContaining([
+						{
+							type: ArrayChangeType.add,
+							startIndex: 0,
+							endIndex: 0,
+							items: expect.arrayContaining(["fantasy"])
+						}
+					]),
+					test: 42
 				}));
 			});
 		});
