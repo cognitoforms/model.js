@@ -69,38 +69,44 @@ describe("settings", () => {
 });
 
 describe("Global Events", () => {
-	it("After property set", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.afterPropertySet.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("afterPropertySet", async () => {
+		it("is called after a property set on any entity", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.afterPropertySet.subscribe(mockFn);
+			const TestModel = model.getJsType("Test");
 
-		var p = new TestModel();
-		p.PropertyOne = "test";
+			var p = new TestModel();
+			p.PropertyOne = "test";
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, newValue: "test", oldValue: null, property: model.types["Test"].properties[0] }));
+			expect(mockFn).toBeCalledWith(createEventObject({ entity: p, newValue: "test", oldValue: null, property: model.types["Test"].properties[0] }));
+		});
 	});
 
-	it("Entity registered", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.entityRegistered.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("entityRegistered", async () => {
+		it("is called when any entity is created and registered", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.entityRegistered.subscribe(mockFn);
+			const TestModel = model.getJsType("Test");
 
-		var p = new TestModel();
+			var p = new TestModel();
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p }));
+			expect(mockFn).toBeCalledWith(createEventObject({ entity: p }));
+		});
 	});
 
-	it("List changed", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.listChanged.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("listChanged", async () => {
+		it("is called when a list property is changed on any entity", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.listChanged.subscribe(mockFn);
+			const TestModel = model.getJsType("Test");
 
-		var p = new TestModel();
-		p.List.push("test");
+			var p = new TestModel();
+			p.List.push("test");
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, property: model.types["Test"].properties[1], newValue: p.List }));
+			expect(mockFn).toBeCalledWith(createEventObject({ entity: p, property: model.types["Test"].properties[1], newValue: p.List }));
+		});
 	});
 });
