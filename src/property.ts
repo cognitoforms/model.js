@@ -1014,7 +1014,7 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 	}
 }
 
-function Property$setValue(property: Property, obj: Entity, currentValue: any, newValue: any, additionalArgs: any = {}): void {
+function Property$setValue(property: Property, obj: Entity, currentValue: any, newValue: any, additionalArgs: any = null): void {
 	// Update lists as batch remove/add operations
 	if (property.isList) {
 		let currentArray = currentValue as ObservableArray<any>;
