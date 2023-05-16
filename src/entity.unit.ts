@@ -356,15 +356,16 @@ describe("Entity", () => {
 				const changed = jest.fn();
 				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
 				const property = Types.Movie.meta.getProperty("Genres");
+				const genres = instance.Genres;
 				instance.changed.subscribe(changed);
-				instance.Genres.batchUpdate(() => {
-					instance.Genres.push("fantasy");
+				genres.batchUpdate(() => {
+					genres.push("fantasy");
 				});
 				expect(changed).toBeCalledWith(createEventObject({
 					entity: instance,
 					property,
 					newValue: expect.arrayContaining(["fantasy"]),
-					collectionChange: true,
+					collectionChanged: true,
 					changes: expect.arrayContaining([
 						{
 							type: ArrayChangeType.add,
@@ -380,9 +381,10 @@ describe("Entity", () => {
 				const changed = jest.fn();
 				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
 				const property = Types.Movie.meta.getProperty("Genres");
+				const genres = instance.Genres;
 				instance.changed.subscribe(changed);
-				instance.Genres.batchUpdate(() => {
-					instance.Genres.push("fantasy");
+				genres.batchUpdate(() => {
+					genres.push("fantasy");
 				}, {
 					test: 42
 				});
@@ -390,7 +392,7 @@ describe("Entity", () => {
 					entity: instance,
 					property,
 					newValue: expect.arrayContaining(["fantasy"]),
-					collectionChange: true,
+					collectionChanged: true,
 					changes: expect.arrayContaining([
 						{
 							type: ArrayChangeType.add,
