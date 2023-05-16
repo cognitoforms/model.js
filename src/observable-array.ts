@@ -11,7 +11,7 @@ export interface ObservableArray<ItemType> extends Array<ItemType> {
 	/**
 	 * Begin queueing changes to the array, make changes in the given callback function, then stop queueing and raise events
 	 */
-	batchUpdate(fn: (array: ObservableArray<ItemType>) => void): void;
+	batchUpdate(fn: (array: ObservableArray<ItemType>) => void, additionalArgs?: any): void;
 
 }
 
@@ -214,7 +214,7 @@ export class ObservableArrayImplementation<ItemType> extends Array<ItemType> imp
 	/**
 	 * Begin queueing changes to the array, make changes in the given callback function, then stop queueing and raise events
 	 */
-	batchUpdate(fn: (array: ObservableArray<ItemType>) => void, additionalArgs?: any): void {
+	batchUpdate(fn: (array: ObservableArray<ItemType>) => void, additionalArgs: any = null): void {
 		ObservableArray$batchUpdate.call(this, fn, additionalArgs);
 	}
 
@@ -338,7 +338,7 @@ export function ObservableArray$overrideNativeMethods<ItemType>(this: ItemType[]
 /**
  * Begin queueing changes to the array, make changes in the given callback function, then stop queueing and raise events
  */
-export function ObservableArray$batchUpdate<ItemType>(this: ObservableArray<ItemType>, fn: (array: ObservableArray<ItemType>) => void, additionalArgs?: any): void {
+export function ObservableArray$batchUpdate<ItemType>(this: ObservableArray<ItemType>, fn: (array: ObservableArray<ItemType>) => void, additionalArgs: any = null): void {
 	this.__aob__.startQueueingChanges();
 	try {
 		fn(this);
