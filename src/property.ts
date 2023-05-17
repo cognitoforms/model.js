@@ -999,9 +999,6 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 	if (property.isConstant) {
 		throw new Error("Constant properties cannot be modified.");
 	}
-	else if (property.isList) {
-		throw new Error("Property set on lists is not permitted.");
-	}
 	else {
 		// compare values so that this check is accurate for primitives
 		var oldValue = (old === undefined || old === null) ? old : old.valueOf();
