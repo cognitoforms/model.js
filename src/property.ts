@@ -1017,7 +1017,7 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		let currentArray = currentValue as ObservableArray<any>;
 		currentArray.batchUpdate((array) => {
 			updateArray(array, newValue);
-		});
+		}, additionalArgs);
 	}
 	else {
 		let oldValue = currentValue;

@@ -358,9 +358,7 @@ describe("Entity", () => {
 				const property = Types.Movie.meta.getProperty("Genres");
 				const genres = instance.Genres;
 				instance.changed.subscribe(changed);
-				genres.batchUpdate(() => {
-					genres.push("fantasy");
-				});
+				property.value(instance, genres.concat(["fantasy"]));
 				expect(changed).toBeCalledWith(createEventObject({
 					entity: instance,
 					property,
@@ -381,13 +379,9 @@ describe("Entity", () => {
 				const changed = jest.fn();
 				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
 				const property = Types.Movie.meta.getProperty("Genres");
-				const genres = instance.Genres;
+				const genres = (instance as any).Genres;
 				instance.changed.subscribe(changed);
-				genres.batchUpdate(() => {
-					genres.push("fantasy");
-				}, {
-					test: 42
-				});
+				property.value(instance, genres.concat(["fantasy"]), { test: 42 });
 				expect(changed).toBeCalledWith(createEventObject({
 					entity: instance,
 					property,
