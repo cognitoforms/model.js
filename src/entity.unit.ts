@@ -5,6 +5,7 @@ import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { ArrayChangeType, updateArray } from "./observable-array";
 import { createEventObject } from "./events";
+import { Property$pendingInit } from "./property";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -162,6 +163,21 @@ describe("Entity", () => {
 		it("cannot initialize constant properties", () => {
 			const person = new Types.Person({ Species: "Homo erectus" });
 			expect(person.Species).toBe("Homo sapiens");
+		});
+
+		it("cannot initialize reference properties to undefined", () => {
+			const person = Types.Person.meta.createSync({ Id: "1", Movie: undefined });
+			const movieProp = Types.Person.meta.getProperty("Movie");
+			expect(Property$pendingInit(person, movieProp)).toBe(true);
+			expect(person.Movie).toBe(null);
+			// expect(Property$pendingInit(person, movieProp)).toBe(false);
+		});
+
+		it("can initialize reference properties to null", () => {
+			const person = Types.Person.meta.createSync({ Id: "1", Movie: null });
+			const movieProp = Types.Person.meta.getProperty("Movie");
+			expect(Property$pendingInit(person, movieProp)).toBe(false);
+			expect(person.Movie).toBe(null);
 		});
 
 		it("provides a way to wait for initialization to complete", async () => {
