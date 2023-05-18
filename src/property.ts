@@ -891,22 +891,19 @@ export function Property$pendingInit(obj: Entity, prop: Property, value: boolean
 
 function Property$subArrayEvents(obj: Entity, property: Property, array: ObservableArray<any>): void {
 	array.changed.subscribe(function (args) {
-		// NOTE: property change should be broadcast before rules are run so that if
-		// any rule causes a roundtrip to the server these changes will be available
-		// TODO: Implement notifyListChanged?
-		// property.containingType.model.notifyListChanged(target, property, changes);
+		// Don't raise a no-op list change event
 		if (!args.changes.length)
 			return;
 
 		// NOTE: oldValue is not currently implemented for lists
-		var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue: array };
+		var eventArgs = { entity: obj, property, newValue: array };
 
-		(eventArgs as any)["changes"] = args.changes;
-		(eventArgs as any)["collectionChanged"] = true;
+		// Assign additional collection change event arguments to the property change event
+		var additionalArgs = { changes: args.changes, collectionChanged: true, ...args.additionalArgs };
 
-		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
-		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, eventArgs);
-		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
+		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 	});
 }
 
@@ -999,9 +996,6 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 	if (property.isConstant) {
 		throw new Error("Constant properties cannot be modified.");
 	}
-	else if (property.isList) {
-		throw new Error("Property set on lists is not permitted.");
-	}
 	else {
 		// compare values so that this check is accurate for primitives
 		var oldValue = (old === undefined || old === null) ? old : old.valueOf();
@@ -1020,7 +1014,7 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		let currentArray = currentValue as ObservableArray<any>;
 		currentArray.batchUpdate((array) => {
 			updateArray(array, newValue);
-		});
+		}, additionalArgs);
 	}
 	else {
 		let oldValue = currentValue;
@@ -1042,10 +1036,10 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 
 		// Do not raise change if the property has not been initialized.
 		if (oldValue !== undefined) {
-			var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue, oldValue };
-			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue, oldValue });
-			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, additionalArgs ? merge(eventArgs, additionalArgs) : eventArgs);
-			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, oldValue, newValue });
+			var eventArgs = { entity: obj, property, newValue, oldValue };
+			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 		}
 	}
 }
