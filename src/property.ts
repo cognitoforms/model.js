@@ -891,10 +891,7 @@ export function Property$pendingInit(obj: Entity, prop: Property, value: boolean
 
 function Property$subArrayEvents(obj: Entity, property: Property, array: ObservableArray<any>): void {
 	array.changed.subscribe(function (args) {
-		// NOTE: property change should be broadcast before rules are run so that if
-		// any rule causes a roundtrip to the server these changes will be available
-		// TODO: Implement notifyListChanged?
-		// property.containingType.model.notifyListChanged(target, property, changes);
+		// Don't raise a no-op list change event
 		if (!args.changes.length)
 			return;
 
