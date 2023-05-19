@@ -71,7 +71,7 @@ describe("settings", () => {
 });
 
 describe("Global Events", () => {
-	describe("afterPropertySet", async () => {
+	describe("afterPropertySet", () => {
 		it("is called after a property set on any entity", async () => {
 			const model = createModel();
 			const mockFn = jest.fn();
@@ -99,7 +99,7 @@ describe("Global Events", () => {
 		});
 	});
 
-	describe("entityRegistered", async () => {
+	describe("entityRegistered", () => {
 		it("is called when any entity is created and registered", async () => {
 			const model = createModel();
 			const mockFn = jest.fn();
@@ -112,7 +112,7 @@ describe("Global Events", () => {
 		});
 	});
 
-	describe("listChanged", async () => {
+	describe("listChanged", () => {
 		it("is called when a list property is changed on any entity", async () => {
 			const model = createModel();
 			const mockFn = jest.fn();
