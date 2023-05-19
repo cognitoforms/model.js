@@ -10,11 +10,12 @@
         "**/.git": true,
         "**/.DS_Store": true,
         "**/node_modules": true,
-        "@types": true,
-        "lib": true,
-        "out": true,
-        "bin": true,
-        "obj": true,
-        "dist": true,
+        "@types/": true,
+        "lib/": true,
+        "esm/": true,
+        "out/": true,
+        "bin/": true,
+        "obj/": true,
+        "dist/": true,
     }
 }
