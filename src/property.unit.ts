@@ -2,6 +2,7 @@
 import { createEventObject } from "./events";
 import { Model } from "./model";
 import { ArrayChangeType } from "./observable-array";
+import { Property$pendingInit } from "./property";
 
 describe("Property", () => {
 	it("can have a constant value", async () => {
@@ -66,6 +67,12 @@ describe("Property", () => {
 							init() {
 								return "Test";
 							}
+						},
+						Name2: {
+							type: String,
+							init() {
+								return null;
+							}
 						}
 					}
 				});
@@ -79,6 +86,25 @@ describe("Property", () => {
 			it("does nothing if value property already initialized", async () => {
 				const instance = await valuePropModel.types.Person.create({ Name: "John" }) as any;
 				expect(instance.Name).toBe("John");
+			});
+
+			it("sets pendingInit to false after initialization", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Name");
+				expect(instance.Name).toBe("Test");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			// BUG: Currently, pendingInit is set to true if the value is the property's default, even if it has an initializer.
+			// An initializer implies that it is responsible for initializing the property. Also, it should be mutually
+			// exclusive with behavior that would leverage pending init (ex: calculation rules).
+			it.skip("sets pendingInit to false after initialization the property's default value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Name2");
+				expect(instance.Name2).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(false);
 			});
 		});
 
@@ -432,6 +458,171 @@ describe("Property", () => {
 						test: 42
 					})
 				);
+			});
+		});
+	});
+
+	describe("pendingInit", () => {
+		describe("value property", () => {
+			let valuePropModel: Model;
+
+			beforeAll(() => {
+				valuePropModel = new Model({
+					Person: {
+						Id: {
+							type: String,
+							identifier: true
+						},
+						Name: {
+							type: String
+						}
+					}
+				});
+			});
+
+			it("is true for a new object without a provided value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Name");
+				expect(instance.Name).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+
+			it("is false for a new object with a provided value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ Name: "Test" }) as any;
+				const property = Person.getProperty("Name");
+				expect(instance.Name).toBe("Test");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for an existing object with a value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ Id: "3", Name: "Test" }) as any;
+				const property = Person.getProperty("Name");
+				expect(instance.Name).toBe("Test");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is true for an existing object without a value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ Id: "4" }) as any;
+				const property = Person.getProperty("Name");
+				expect(instance.Name).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+		});
+
+		describe("calculated value property", () => {
+			let calcValuePropModel: Model;
+
+			beforeAll(() => {
+				calcValuePropModel = new Model({
+					Person: {
+						Id: {
+							type: String,
+							identifier: true
+						},
+						Name: {
+							type: String
+						},
+						Email: {
+							type: String,
+							get: {
+								dependsOn: "Name",
+								function() { return this.Name ? (this.Name.toLowerCase() + "@example.com") : null; }
+							}
+						}
+					}
+				});
+			});
+
+			// BUG: Rule code "Defer change notification until the scope of work has completed"
+			// actually forces calculation by accessing the property.
+			it.skip("is true for a new object until it is accessed", async () => {
+				const Person = calcValuePropModel.types.Person;
+				const instance = await Person.create({ Name: "Test" }) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Email).toBe("test@example.com");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			// NOTE: Used as a stand-in for skipped test "is true for a new object until it is accessed" above
+			it("is false for a new object after it is accessed", async () => {
+				const Person = calcValuePropModel.types.Person;
+				const instance = await Person.create({ Name: "Test" }) as any;
+				const property = Person.getProperty("Email");
+				expect(instance.Email).toBe("test@example.com");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is true for an existing object until it is accessed", async () => {
+				const Person = calcValuePropModel.types.Person;
+				const instance = await Person.create({ Id: "3", Name: "Test" }) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Email).toBe("test@example.com");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+		});
+
+		describe("defaulted value property", () => {
+			let defaultedValuePropModel: Model;
+
+			beforeAll(() => {
+				defaultedValuePropModel = new Model({
+					Person: {
+						Id: {
+							type: String,
+							identifier: true
+						},
+						Name: {
+							type: String
+						},
+						Email: {
+							type: String,
+							default: {
+								dependsOn: "Name",
+								function() { return this.Name ? (this.Name.toLowerCase() + "@example.com") : null; }
+							}
+						}
+					}
+				});
+			});
+
+			it("is true for a new object without a provided value until accessed", async () => {
+				const Person = defaultedValuePropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Email).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for a new object with a provided value", async () => {
+				const Person = defaultedValuePropModel.types.Person;
+				const instance = await Person.create({ Name: "Test", Email: "test.user@example.com" }) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Email).toBe("test.user@example.com");
+			});
+
+			it("is false for an existing object with a value", async () => {
+				const Person = defaultedValuePropModel.types.Person;
+				const instance = await Person.create({ Id: "3", Name: "Test", Email: "test.user@example.com" }) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Email).toBe("test.user@example.com");
+			});
+
+			it("is true for an existing object without a value until accessed", async () => {
+				const Person = defaultedValuePropModel.types.Person;
+				const instance = await Person.create({ Id: "4" }) as any;
+				const property = Person.getProperty("Email");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Email).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(false);
 			});
 		});
 	});
