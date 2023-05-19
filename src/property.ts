@@ -896,6 +896,8 @@ export function Property$pendingInit(obj: Entity, prop: Property, value: boolean
 
 function Property$subArrayEvents(obj: Entity, property: Property, array: ObservableArray<any>): void {
 	array.changed.subscribe(function (args) {
+		Property$pendingInit(obj, property, false);
+
 		// Don't raise a no-op list change event
 		if (!args.changes.length)
 			return;
@@ -1018,9 +1020,16 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 	// Update lists as batch remove/add operations
 	if (property.isList) {
 		let currentArray = currentValue as ObservableArray<any>;
+
+		let updates = 0;
 		currentArray.batchUpdate((array) => {
-			updateArray(array, newValue);
+			updates = updateArray(array, newValue, true).length;
 		}, additionalArgs);
+
+		// If there were no updates (ex: array was previously an empty array and newValue is also an empty array),
+		// then set pendingInit to false here, since the array change event handler would not have fired
+		if (updates === 0)
+			Property$pendingInit(obj, property, false);
 	}
 	else {
 		let oldValue = currentValue;

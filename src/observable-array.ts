@@ -608,8 +608,9 @@ function observableSplice(arr: any[], events: any[], index: number, removeCount:
 	}
 }
 
-export function updateArray(array: any[], values: any[] /*, trackEvents */): any[] {
-	var trackEvents: boolean = arguments[2];
+export function updateArray(array: any[], values: any[]): void;
+export function updateArray(array: any[], values: any[], trackEvents: true): any[];
+export function updateArray(array: any[], values: any[], trackEvents: boolean = false): any[] | void {
 	var events: any[] = trackEvents ? [] : null;
 	var pointer = 0;
 	var srcSeek = 0;
@@ -642,5 +643,6 @@ export function updateArray(array: any[], values: any[] /*, trackEvents */): any
 
 	observableSplice(array, events, pointer, srcSeek - pointer, values.slice(pointer, Math.max(tgtSeek, values.length)));
 
-	return events;
+	if (trackEvents)
+		return events;
 }

@@ -510,6 +510,72 @@ describe("Property", () => {
 			});
 		});
 
+		describe("list property", () => {
+			let listPropModel: Model;
+
+			beforeAll(() => {
+				listPropModel = new Model({
+					Person: {
+						Id: {
+							type: String,
+							identifier: true
+						},
+						Skills: {
+							type: "String[]"
+						}
+					}
+				});
+			});
+
+			it("is true for a new object without a provided value", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+
+			it("is false for a new object with a provided value", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({ Skills: ["Skill 0"] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 0"]));
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for a new object with a provided value of an empty array", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({ Skills: [] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for an existing object with a value", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({ Id: "4", Skills: ["Skill 0"] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 0"]));
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for an existing object with a value of an empty array", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({ Id: "5", Skills: [] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is true for an existing object without a value", async () => {
+				const Person = listPropModel.types.Person;
+				const instance = await Person.create({ Id: "6" }) as any;
+				const property = Person.getProperty("Skills");
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+		});
+
 		describe("calculated value property", () => {
 			let calcValuePropModel: Model;
 
@@ -619,6 +685,77 @@ describe("Property", () => {
 				const property = Person.getProperty("Email");
 				expect(Property$pendingInit(instance, property)).toBe(true);
 				expect(instance.Email).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+		});
+
+		describe("defaulted list property", () => {
+			let defaultedListPropModel: Model;
+
+			beforeAll(() => {
+				defaultedListPropModel = new Model({
+					Person: {
+						Id: {
+							type: String,
+							identifier: true
+						},
+						Skills: {
+							type: "String[]",
+							default: {
+								function() { return ["Skill 1", "Skill 2"]; }
+							}
+						}
+					}
+				});
+			});
+
+			it("is true for a new object without a provided value until accessed", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 1", "Skill 2"]));
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for a new object with a provided value", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({ Name: "Test", Skills: ["Skill 0"] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 0"]));
+			});
+
+			it("is false for a new object with an empty array", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({ Name: "Test", Skills: [] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+			});
+
+			it("is false for an existing object with a value", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({ Id: "4", Name: "Test", Skills: ["Skill 0"] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 0"]));
+			});
+
+			it("is false for an existing object with an empty array", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({ Id: "5", Name: "Test", Skills: [] }) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(false);
+				expect(instance.Skills).toEqual(expect.arrayContaining([]));
+			});
+
+			it("is true for an existing object without a value until accessed", async () => {
+				const Person = defaultedListPropModel.types.Person;
+				const instance = await Person.create({ Id: "6" }) as any;
+				const property = Person.getProperty("Skills");
+				expect(Property$pendingInit(instance, property)).toBe(true);
+				expect(instance.Skills).toEqual(expect.arrayContaining(["Skill 1", "Skill 2"]));
 				expect(Property$pendingInit(instance, property)).toBe(false);
 			});
 		});
