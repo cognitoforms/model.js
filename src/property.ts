@@ -26,6 +26,7 @@ export class Property implements PropertyPath {
 	readonly isList: boolean;
 
 	constant: any;
+	initializer: (this: Entity) => any;
 	label: string;
 	labelSource: PropertyPath;
 	helptext: string;
@@ -214,7 +215,25 @@ export class Property implements PropertyPath {
 
 			// Set
 			if (typeof options.set === "function") {
-				this.changed.subscribe(function(e) { options.set.call(this, e.newValue); });
+				const property = this;
+				new Rule(targetType, null, {
+					onInit: true,
+					onChangeOf: [this],
+					execute() {
+						options.set.call(this, property.value(this));
+					}
+				}).register();
+			}
+
+			// Init
+			if (options.init !== undefined) {
+				let initFn: (this: Entity) => any;
+				if (isPropertyValueFunction<any>(options.init))
+					initFn = options.init;
+				else
+					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
+
+				this.initializer = initFn;
 			}
 
 			// Default
@@ -630,6 +649,12 @@ export interface PropertyOptions {
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
 
+	/** A function used to obtain the value with which to initialize this property.
+	 * The function is called only once, and is not reactive as a rule would be.
+	 * Does not overwrite a property value provided during construction of the containing entity.
+	 */
+	init?: PropertyValueFunction<any>;
+
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	allowedValues?: PropertyValueFunction<any[]> | AllowedValuesFunctionAndOptions<any[]> | Value[];
 
@@ -871,22 +896,19 @@ export function Property$pendingInit(obj: Entity, prop: Property, value: boolean
 
 function Property$subArrayEvents(obj: Entity, property: Property, array: ObservableArray<any>): void {
 	array.changed.subscribe(function (args) {
-		// NOTE: property change should be broadcast before rules are run so that if
-		// any rule causes a roundtrip to the server these changes will be available
-		// TODO: Implement notifyListChanged?
-		// property.containingType.model.notifyListChanged(target, property, changes);
+		// Don't raise a no-op list change event
 		if (!args.changes.length)
 			return;
 
 		// NOTE: oldValue is not currently implemented for lists
-		var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue: array };
+		var eventArgs = { entity: obj, property, newValue: array };
 
-		(eventArgs as any)["changes"] = args.changes;
-		(eventArgs as any)["collectionChanged"] = true;
+		// Assign additional collection change event arguments to the property change event
+		var additionalArgs = { changes: args.changes, collectionChanged: true, ...args.additionalArgs };
 
-		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
-		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, eventArgs);
-		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: array });
+		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 	});
 }
 
@@ -929,6 +951,8 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
 			Property$init(property, obj, Property$getInitialValue(property));
+			if (property.initializer)
+				obj.update(property.name, property.initializer.call(obj));
 
 			const underlyingValue = obj.__fields__[property.name];
 			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it
@@ -977,9 +1001,6 @@ function Property$shouldSetValue(property: Property, obj: Entity, old: any, val:
 	if (property.isConstant) {
 		throw new Error("Constant properties cannot be modified.");
 	}
-	else if (property.isList) {
-		throw new Error("Property set on lists is not permitted.");
-	}
 	else {
 		// compare values so that this check is accurate for primitives
 		var oldValue = (old === undefined || old === null) ? old : old.valueOf();
@@ -998,7 +1019,7 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		let currentArray = currentValue as ObservableArray<any>;
 		currentArray.batchUpdate((array) => {
 			updateArray(array, newValue);
-		});
+		}, additionalArgs);
 	}
 	else {
 		let oldValue = currentValue;
@@ -1020,10 +1041,10 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 
 		// Do not raise change if the property has not been initialized.
 		if (oldValue !== undefined) {
-			var eventArgs: PropertyChangeEventArgs = { entity: obj, property, newValue, oldValue };
-			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue, oldValue });
-			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, additionalArgs ? merge(eventArgs, additionalArgs) : eventArgs);
-			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, oldValue, newValue });
+			var eventArgs = { entity: obj, property, newValue, oldValue };
+			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
+			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 		}
 	}
 }
