@@ -622,6 +622,11 @@ export interface PropertyOptions {
 	label?: string;
 
 	/**
+	 * Whether the property is an identifier for the type
+	 */
+	identifier?: boolean;
+
+	/**
 	 * The optional path to use for the source of the property's label, if it contains format tokens
 	 */
 	labelSource?: string;
