@@ -630,17 +630,22 @@ describe("Entity", () => {
 			expect(instance.Skills.length).toBe(1);
 		});
 
-		it("only runs default rule for list properties onInitNew", async () => {
+		it("runs default rule for list property for new instance with no property value in initial state", async () => {
 			const model = new Model(PersonWithSkillsModel);
-
-			let instance = await model.types.Person.create({}) as any;
+			const instance = await model.types.Person.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
+		});
 
-			instance = await model.types.Person.create({ Skills: [] }) as any;
-			expect(instance.Skills.length).toBe(2);
-
-			instance = await model.types.Person.create({ Id: "test" }) as any;
+		it("does not runs default rule for list property for new object with empty list in initial state", async () => {
+			const model = new Model(PersonWithSkillsModel);
+			const instance = await model.types.Person.create({ Skills: [] }) as any;
 			expect(instance.Skills.length).toBe(0);
+		});
+
+		it("runs default rule for list property for existing object with no property value in initial state", async () => {
+			const model = new Model(PersonWithSkillsModel);
+			const instance = await model.types.Person.create({ Id: "test" }) as any;
+			expect(instance.Skills.length).toBe(2);
 		});
 
 		it("triggers property change when default calculation runs for list", async () => {
