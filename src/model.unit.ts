@@ -1,5 +1,7 @@
+import { Entity, EntityConstructorForType } from "./entity";
 import { createEventObject } from "./events";
 import { Model, normalize } from "./model";
+import { ArrayChangeType } from "./observable-array";
 import "./resource-en";
 
 describe("normalize", () => {
@@ -30,17 +32,17 @@ describe("normalize", () => {
 	});
 });
 
+interface Test extends Entity {
+	PropertyOne: string;
+	List: string[];
+}
+
 function createModel(config = {}) {
 	return new Model({
 		Test: {
 			PropertyOne: String,
-			List: "Test2[]"
+			List: "String[]"
 
-		},
-		Test2: {
-			Text: {
-				type: String
-			}
 		}
 	}, config);
 }
@@ -69,38 +71,95 @@ describe("settings", () => {
 });
 
 describe("Global Events", () => {
-	it("After property set", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.afterPropertySet.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("afterPropertySet", async () => {
+		it("is called after a property set on any entity", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.afterPropertySet.subscribe(mockFn);
+			const Test = model.getJsType("Test") as EntityConstructorForType<Test>;
 
-		var p = new TestModel();
-		p.PropertyOne = "test";
+			var entity = new Test();
+			var property = Test.meta.getProperty("PropertyOne");
+			entity.PropertyOne = "test";
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, newValue: "test", oldValue: null, property: model.types["Test"].properties[0] }));
+			expect(mockFn).toBeCalledWith(createEventObject({ entity, newValue: "test", oldValue: null, property }));
+		});
+
+		it("is called with additional arguments when specified for a property change", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.afterPropertySet.subscribe(mockFn);
+			const Test = model.getJsType("Test") as EntityConstructorForType<Test>;
+
+			var entity = new Test();
+			var property = Test.meta.getProperty("PropertyOne");
+			property.value(entity, "test", { test: 42 });
+
+			expect(mockFn).toBeCalledWith(createEventObject({ entity, newValue: "test", oldValue: null, property: property, test: 42 }));
+		});
 	});
 
-	it("Entity registered", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.entityRegistered.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("entityRegistered", async () => {
+		it("is called when any entity is created and registered", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.entityRegistered.subscribe(mockFn);
+			const Test = model.getJsType("Test") as EntityConstructorForType<Test>;
 
-		var p = new TestModel();
+			var entity = new Test();
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p }));
+			expect(mockFn).toBeCalledWith(createEventObject({ entity }));
+		});
 	});
 
-	it("List changed", async () => {
-		const model = createModel();
-		const mockFn = jest.fn();
-		model.listChanged.subscribe(mockFn);
-		const TestModel = model.getJsType("Test");
+	describe("listChanged", async () => {
+		it("is called when a list property is changed on any entity", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.listChanged.subscribe(mockFn);
+			const Test = model.getJsType("Test") as EntityConstructorForType<Test>;
 
-		var p = new TestModel();
-		p.List.push("test");
+			var entity = new Test();
+			var property = Test.meta.getProperty("List");
+			entity.List.push("test");
 
-		expect(mockFn).toBeCalledWith(createEventObject({ entity: p, property: model.types["Test"].properties[1], newValue: p.List }));
+			expect(mockFn).toBeCalledWith(createEventObject({
+				entity,
+				property,
+				newValue: entity.List,
+				collectionChanged: true,
+				changes: expect.arrayContaining([{
+					type: ArrayChangeType.add,
+					startIndex: 0,
+					endIndex: 0,
+					items: ["test"]
+				}])
+			}));
+		});
+
+		it("is called with additional arguments when specified for a list change", async () => {
+			const model = createModel();
+			const mockFn = jest.fn();
+			model.listChanged.subscribe(mockFn);
+			const Test = model.getJsType("Test") as EntityConstructorForType<Test>;
+
+			var entity = new Test();
+			var property = Test.meta.getProperty("List");
+			property.value(entity, entity.List.concat(["test"]), { test: 42 });
+
+			expect(mockFn).toBeCalledWith(createEventObject({
+				entity,
+				property,
+				newValue: entity.List,
+				collectionChanged: true,
+				changes: expect.arrayContaining([{
+					type: ArrayChangeType.add,
+					startIndex: 0,
+					endIndex: 0,
+					items: ["test"]
+				}]),
+				test: 42
+			}));
+		});
 	});
 });

@@ -3,6 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Changed
+- Support passing additional args to all change events
+- Allow "setting" list properties via the `property.value()` method
+### Fixed
+- Dont' ignore null value for reference property in initial entity state
+## [0.8.42] - 2023-01-26
+### Fixed
+- error: "Cannot read properties of null (reading 'ready')" when using async resolver and initializers
+## [0.8.41] - 2023-01-03
+### Changed
+- change property initialization to use update after establishing a default property value
+## [0.8.40] - 2022-12-14
+### Fixed
+- condition not applied to correct targets involving nested properties
+## [0.8.39] - 2022-11-29
+### Added
+- `init` model extension option - used to control initialization of property
+### Changed
+- run `set` function on property init
+## [0.8.38] - 2022-11-28
+### Fixed
+- Ensure that a change to a calculation triggers default calculations that depend on it
 ## [0.8.37] - 2022-11-11
 ### Fixed
 - raise property change when default calculation rule runs for list

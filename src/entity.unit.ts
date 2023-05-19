@@ -1,9 +1,11 @@
 /* eslint-disable no-new */
 import { Model } from "./model";
-import { Entity, EntityConstructorForType } from "./entity";
+import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
-import { updateArray } from "./observable-array";
+import { ArrayChangeType, updateArray } from "./observable-array";
+import { createEventObject } from "./events";
+import { Property$pendingInit } from "./property";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 
@@ -163,6 +165,21 @@ describe("Entity", () => {
 			expect(person.Species).toBe("Homo sapiens");
 		});
 
+		it("cannot initialize reference properties to undefined", () => {
+			const person = Types.Person.meta.createSync({ Id: "1", Movie: undefined });
+			const movieProp = Types.Person.meta.getProperty("Movie");
+			expect(Property$pendingInit(person, movieProp)).toBe(true);
+			expect(person.Movie).toBe(null);
+			// expect(Property$pendingInit(person, movieProp)).toBe(false);
+		});
+
+		it("can initialize reference properties to null", () => {
+			const person = Types.Person.meta.createSync({ Id: "1", Movie: null });
+			const movieProp = Types.Person.meta.getProperty("Movie");
+			expect(Property$pendingInit(person, movieProp)).toBe(false);
+			expect(person.Movie).toBe(null);
+		});
+
 		it("provides a way to wait for initialization to complete", async () => {
 			const Budget1 = { LineItems: [{ Label: "L1", Cost: 1000000 }] };
 			model.serializer.registerValueResolver((entity, prop, value) => {
@@ -296,7 +313,7 @@ describe("Entity", () => {
 			test("value list property", async () => {
 				const changed = jest.fn();
 				Types.Movie.meta.getProperty("Genres").changed.subscribe(changed);
-				await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott", Genres: ["fantasy"] });
 
 				expect(changed).not.toBeCalled();
 			});
@@ -318,6 +335,84 @@ describe("Entity", () => {
 				new Types.Movie(Alien);
 
 				expect(changed).toBeCalled();
+			});
+		});
+
+		describe("entity change event", () => {
+			test("is called when value property is changed", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Person.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Person.meta.getProperty("FirstName");
+				instance.changed.subscribe(changed);
+				property.value(instance, "Joe");
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					oldValue: "Ridley",
+					newValue: "Joe"
+				}));
+			});
+
+			test("is called with additional arguments when specified for a property change", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Person.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Person.meta.getProperty("FirstName");
+				instance.changed.subscribe(changed);
+				property.value(instance, "Joe", { test: 42 });
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					oldValue: "Ridley",
+					newValue: "Joe",
+					test: 42
+				}));
+			});
+
+			test("is called when value list property is changed", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Movie.meta.getProperty("Genres");
+				const genres = instance.Genres;
+				instance.changed.subscribe(changed);
+				property.value(instance, genres.concat(["fantasy"]));
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					newValue: expect.arrayContaining(["fantasy"]),
+					collectionChanged: true,
+					changes: expect.arrayContaining([
+						{
+							type: ArrayChangeType.add,
+							startIndex: 0,
+							endIndex: 0,
+							items: expect.arrayContaining(["fantasy"])
+						}
+					])
+				}));
+			});
+
+			test("is called with additional arguments when specified for a list change", async () => {
+				const changed = jest.fn();
+				const instance = await Types.Movie.meta.create({ Id: "1", FirstName: "Ridley", LastName: "Scott" });
+				const property = Types.Movie.meta.getProperty("Genres");
+				const genres = (instance as any).Genres;
+				instance.changed.subscribe(changed);
+				property.value(instance, genres.concat(["fantasy"]), { test: 42 });
+				expect(changed).toBeCalledWith(createEventObject({
+					entity: instance,
+					property,
+					newValue: expect.arrayContaining(["fantasy"]),
+					collectionChanged: true,
+					changes: expect.arrayContaining([
+						{
+							type: ArrayChangeType.add,
+							startIndex: 0,
+							endIndex: 0,
+							items: expect.arrayContaining(["fantasy"])
+						}
+					]),
+					test: 42
+				}));
 			});
 		});
 	});
@@ -691,6 +786,25 @@ describe("Entity", () => {
 					expect(movie.Director.Address.meta.isNew).toBeTruthy();
 				});
 			});
+		});
+	});
+
+	describe("isEntity", () => {
+		it("returns true if the argument is an instance of an entity, otherwise false", () => {
+			// When given an entity, `isEntity` will return true and "cast" the object to type Entity
+			const person: any = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" });
+			if (isEntity(person))
+				expect(person.meta.type.fullName).toBe("Person");
+			else
+				expect(isEntity(person)).toBe(true);
+
+			expect(isEntity("foo")).toBeFalsy();
+			expect(isEntity(42)).toBeFalsy();
+			expect(isEntity({})).toBeFalsy();
+			expect(isEntity(person.meta)).toBeFalsy();
+			expect(isEntity(person.meta.type)).toBeFalsy();
+			expect(isEntity(person.meta.type.jstype)).toBeFalsy();
+			expect(isEntity(model)).toBeFalsy();
 		});
 	});
 });

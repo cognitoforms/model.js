@@ -6,6 +6,7 @@ import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
 import { DefaultSerializationSettings } from "./entity-serializer";
+
 export class Entity {
 	static ctorDepth: number = 0;
 
@@ -211,11 +212,13 @@ export class Entity {
 			return context.ready.then(markPersistedWhenIdAssigned);
 		}
 
+		const context = this._context;
+
 		// Set the specified properties
 		for (let [propName, state] of Entity.getSortedPropertyData(properties)) {
 			const prop = this.serializer.resolveProperty(this, propName);
 			if (prop && !prop.isCalculated && !prop.isConstant) {
-				const valueResolution = this._context ? this._context.tryResolveValue(this, prop, state) : null;
+				const valueResolution = context.tryResolveValue(this, prop, state);
 				if (valueResolution)
 					valueResolution.then(asyncState => this.setProp(prop, asyncState));
 				else
@@ -223,7 +226,7 @@ export class Entity {
 			}
 		}
 
-		return this._context.ready;
+		return context.ready;
 	}
 
 	private setProp(prop: Property, state: any) {
@@ -414,4 +417,8 @@ export interface EntityChangeEventArgs {
 	property: Property;
 	oldValue?: any;
 	newValue: any;
+}
+
+export function isEntity(obj): obj is Entity {
+	return obj && obj.meta && obj.meta.type && obj.meta.type.jstype && isEntityType(obj.meta.type.jstype);
 }
