@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Allow "setting" list properties via the `property.value()` method
 ### Fixed
 - Dont' ignore null value for reference property in initial entity state
+- Improve type checking of property options (i.e. `identifier` option)
+- Remove duplicate exports of 'initilization-context'
 ### Added
 - Added ES module build output
 ## [0.8.42] - 2023-01-26
