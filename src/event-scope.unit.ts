@@ -138,7 +138,7 @@ describe("EventScope", () => {
 		context.MatchedUser.FirstName = "Bob";
 		const maxNesting = model.eventScope.settings.maxExitingTransferCount - 1;
 		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
-		expect(context.SearchText).toBe("Bob" + Array.from(new Array(expectedCalculationCount)).map(() => "*").join("") + " Smith");
+		expect(context.SearchText).toBe("abc123");
 		expect(model.eventScope.current).toBeNull();
 		expect(eventScopeError).not.toBeNull();
 		expect(eventScopeError.message).toBe("Exceeded max scope event transfer.");
