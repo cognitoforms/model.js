@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Allow "setting" list properties via the `property.value()` method
 ### Fixed
 - Dont' ignore null value for reference property in initial entity state
+- Remove duplicate exports of 'initilization-context'
 ## [0.8.42] - 2023-01-26
 ### Fixed
 - error: "Cannot read properties of null (reading 'ready')" when using async resolver and initializers
