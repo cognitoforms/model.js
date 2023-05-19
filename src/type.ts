@@ -448,7 +448,7 @@ export class Type {
 
 				// Property
 				else {
-					member = { ...member };
+					member = { ...member } as PropertyOptions;
 
 					// Get Property
 					let property = this.getProperty(name);
