@@ -88,10 +88,7 @@ describe("Property", () => {
 				expect(instance.Name).toBe("John");
 			});
 
-			// BUG: Currently, pendingInit is always set to true, even if it has an initializer.
-			// An initializer implies that it is responsible for initializing the property. Also, it should be mutually
-			// exclusive with behavior that would leverage pending init (ex: calculation rules).
-			it.skip("sets pendingInit to false after initialization", async () => {
+			it("sets pendingInit to false after initialization", async () => {
 				const Person = valuePropModel.types.Person;
 				const instance = await Person.create({}) as any;
 				const property = Person.getProperty("Name");
@@ -99,10 +96,7 @@ describe("Property", () => {
 				expect(Property$pendingInit(instance, property)).toBe(false);
 			});
 
-			// BUG: Currently, pendingInit is set to true if the value is the property's default, even if it has an initializer.
-			// An initializer implies that it is responsible for initializing the property. Also, it should be mutually
-			// exclusive with behavior that would leverage pending init (ex: calculation rules).
-			it.skip("sets pendingInit to false after initialization the property's default value", async () => {
+			it("sets pendingInit to false after initialization the property's default value", async () => {
 				const Person = valuePropModel.types.Person;
 				const instance = await Person.create({}) as any;
 				const property = Person.getProperty("Name2");
