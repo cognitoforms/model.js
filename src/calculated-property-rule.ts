@@ -1,4 +1,4 @@
-import { Rule, RuleInvocationOptions, RuleOptions } from "./rule";
+import { Rule, RuleOptions } from "./rule";
 import { Type } from "./type";
 import { Property, Property$init, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
