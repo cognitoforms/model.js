@@ -950,19 +950,17 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 	if (!obj.__fields__.hasOwnProperty(property.name)) {
 		Property$pendingInit(obj, property, true);
 
-		let setPendingInit = !property.isConstant;
-
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
+			let setPendingInit = !property.isConstant;
 			Property$init(property, obj, Property$getInitialValue(property));
 			if (property.initializer) {
 				obj.update(property.name, property.initializer.call(obj));
 				setPendingInit = false;
 			}
+			if (setPendingInit)
+				Property$pendingInit(obj, property, true);
 		}
-
-		if (setPendingInit)
-			Property$pendingInit(obj, property, true);
 	}
 }
 
