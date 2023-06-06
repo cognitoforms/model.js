@@ -958,6 +958,9 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 				obj.update(property.name, property.initializer.call(obj));
 				setPendingInit = false;
 			}
+			// Mark the property as pending initialization if the property value may need to
+			// be established by a default calculation rule, or some other external logic.
+			// This is not relevant if it is a constant or its value is established via an initilizer.
 			if (setPendingInit)
 				Property$pendingInit(obj, property, true);
 		}
