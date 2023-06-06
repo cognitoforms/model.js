@@ -2,8 +2,9 @@ import { Rule, RuleOptions } from "./rule";
 import { Type } from "./type";
 import { Property, Property$init, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
-import { ObservableArray, updateArray } from "./observable-array";
+import { ObservableArray } from "./observable-array";
 import { RuleInvocationType } from "./rule-invocation-type";
+import { updateArray } from "./helpers";
 
 let calculationErrorDefault: any = null;
 
