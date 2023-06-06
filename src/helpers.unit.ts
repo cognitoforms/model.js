@@ -54,15 +54,15 @@ describe("merge", function () {
 });
 
 describe("updateArray", () => {
-	it.each([
-		[[], [1, 2, 3]], // Add items to the array
-		[[1, 2, 3], []], // Remove items from the array
-		[[1, 2, 3], [3, 2, 1]], // Reverse the array
-		[[1, 2, 3, 4], [3, 1, 4, 2]], // Change order of items in the array
-		[[1, 2, 3, 4, 5], [1, 4]], // Remove extra items
-		[[2, 5], [1, 2, 3, 4, 5]], // Add new items
-		[[1, 2, 3, 4, 5], [1, 3, 2, 4, 5]] // Move an item forward or back in the list
-	])("updates the target array to match the given input", (arr, values) => {
+	it.each<[string, number[], number[]]>([
+		["adds items to the array", [], [1, 2, 3]],
+		["removes items from the array", [1, 2, 3], []],
+		["reverses the array", [1, 2, 3], [3, 2, 1]],
+		["changes order of items in the array", [1, 2, 3, 4], [3, 1, 4, 2]],
+		["removes extra items", [1, 2, 3, 4, 5], [1, 4]],
+		["adds new items", [2, 5], [1, 2, 3, 4, 5]],
+		["moves an item forward or back in the list", [1, 2, 3, 4, 5], [1, 3, 2, 4, 5]]
+	])("%s", (description: string, arr: number[], values: number[]) => {
 		updateArray(arr, values);
 		expect(arr).toEqual(expect.arrayContaining(values));
 	});
