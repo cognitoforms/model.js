@@ -1022,15 +1022,13 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 	if (property.isList) {
 		let currentArray = currentValue as ObservableArray<any>;
 
-		let updates = 0;
 		currentArray.batchUpdate((array) => {
-			updates = updateArray(array, newValue, true).length;
+			updateArray(array, newValue);
 		}, additionalArgs);
 
-		// If there were no updates (ex: array was previously an empty array and newValue is also an empty array),
-		// then set pendingInit to false here, since the array change event handler would not have fired
-		if (updates === 0)
-			Property$pendingInit(obj, property, false);
+		// Set pendingInit to false here, since an array change event will not be raised if there are no changes
+		// (ex: array was previously an empty array and newValue is also an empty array).
+		Property$pendingInit(obj, property, false);
 	}
 	else {
 		let oldValue = currentValue;
