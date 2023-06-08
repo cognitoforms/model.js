@@ -472,6 +472,9 @@ describe("Property", () => {
 						},
 						Name: {
 							type: String
+						},
+						YesNo: {
+							type: Boolean
 						}
 					}
 				});
@@ -506,6 +509,38 @@ describe("Property", () => {
 				const instance = await Person.create({ Id: "4" }) as any;
 				const property = Person.getProperty("Name");
 				expect(instance.Name).toBeNull();
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+
+			it("is true for a new object without a provided boolean value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({}) as any;
+				const property = Person.getProperty("YesNo");
+				expect(instance.YesNo).toBe(false);
+				expect(Property$pendingInit(instance, property)).toBe(true);
+			});
+
+			it("is false for a new object with a provided boolean value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ YesNo: false }) as any;
+				const property = Person.getProperty("YesNo");
+				expect(instance.YesNo).toBe(false);
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is false for an existing object with a boolean value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ Id: "7", YesNo: false }) as any;
+				const property = Person.getProperty("YesNo");
+				expect(instance.YesNo).toBe(false);
+				expect(Property$pendingInit(instance, property)).toBe(false);
+			});
+
+			it("is true for an existing object without a boolean value", async () => {
+				const Person = valuePropModel.types.Person;
+				const instance = await Person.create({ Id: "8" }) as any;
+				const property = Person.getProperty("YesNo");
+				expect(instance.YesNo).toBe(false);
 				expect(Property$pendingInit(instance, property)).toBe(true);
 			});
 		});

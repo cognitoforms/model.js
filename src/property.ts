@@ -988,6 +988,10 @@ export function Property$setter(property: Property, obj: Entity, val: any, addit
 	if (Property$shouldSetValue(property, obj, old, val)) {
 		Property$setValue(property, obj, old, val, additionalArgs);
 	}
+	else {
+		// Set pendingInit to false here, since the setter is not called since the value is not changing
+		Property$pendingInit(obj, property, false);
+	}
 }
 
 function Property$shouldSetValue(property: Property, obj: Entity, old: any, val: any): boolean {
