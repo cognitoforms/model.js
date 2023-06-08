@@ -1025,7 +1025,6 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 	// Update lists as batch remove/add operations
 	if (property.isList) {
 		let currentArray = currentValue as ObservableArray<any>;
-
 		currentArray.batchUpdate((array) => {
 			updateArray(array, newValue);
 		}, additionalArgs);
