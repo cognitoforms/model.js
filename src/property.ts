@@ -3,8 +3,8 @@ import { Entity, EntityChangeEventArgs, EntityAccessEventArgs } from "./entity";
 import { Format } from "./format";
 import { Type, PropertyType, isEntityType, Value, isValue, isValueArray } from "./type";
 import { PropertyChain } from "./property-chain";
-import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType, flatMap, updateArray } from "./helpers";
-import { ObservableArray } from "./observable-array";
+import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType, flatMap } from "./helpers";
+import { ObservableArray, updateArray } from "./observable-array";
 import { Rule, RuleOptions } from "./rule";
 import { CalculatedPropertyRule } from "./calculated-property-rule";
 import { StringFormatRule } from "./string-format-rule";
@@ -988,10 +988,10 @@ export function Property$setter(property: Property, obj: Entity, val: any, addit
 	if (Property$shouldSetValue(property, obj, old, val)) {
 		Property$setValue(property, obj, old, val, additionalArgs);
 	}
-	else {
-		// Set pendingInit to false here, since the setter is not called since the value is not changing
-		Property$pendingInit(obj, property, false);
-	}
+	// else {
+	// 	// Set pendingInit to false here, since the setter is not called since the value is not changing
+	// 	Property$pendingInit(obj, property, false);
+	// }
 }
 
 function Property$shouldSetValue(property: Property, obj: Entity, old: any, val: any): boolean {

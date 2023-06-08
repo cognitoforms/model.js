@@ -1,4 +1,4 @@
-import { merge, updateArray } from "./helpers";
+import { merge } from "./helpers";
 
 describe("merge", function () {
 	it("merges two input objects into a single new object", () => {
@@ -50,20 +50,5 @@ describe("merge", function () {
 
 		// Should return a new object
 		expect(result).not.toBe(obj1);
-	});
-});
-
-describe("updateArray", () => {
-	it.each<[string, number[], number[]]>([
-		["adds items to the array", [], [1, 2, 3]],
-		["removes items from the array", [1, 2, 3], []],
-		["reverses the array", [1, 2, 3], [3, 2, 1]],
-		["changes order of items in the array", [1, 2, 3, 4], [3, 1, 4, 2]],
-		["removes extra items", [1, 2, 3, 4, 5], [1, 4]],
-		["adds new items", [2, 5], [1, 2, 3, 4, 5]],
-		["moves an item forward or back in the list", [1, 2, 3, 4, 5], [1, 3, 2, 4, 5]]
-	])("%s", (description: string, arr: number[], values: number[]) => {
-		updateArray(arr, values);
-		expect(arr).toEqual(expect.arrayContaining(values));
 	});
 });

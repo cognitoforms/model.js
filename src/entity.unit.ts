@@ -3,10 +3,9 @@ import { Model } from "./model";
 import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
-import { ArrayChangeType } from "./observable-array";
+import { ArrayChangeType, updateArray } from "./observable-array";
 import { createEventObject } from "./events";
 import { Property$pendingInit } from "./property";
-import { updateArray } from "./helpers";
 
 let Types: { [name: string]: EntityConstructorForType<Entity> };
 

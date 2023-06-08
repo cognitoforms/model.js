@@ -1,6 +1,5 @@
 import { createEventObject } from "./events";
-import { updateArray } from "./helpers";
-import { ArrayChangeType, ObservableArray } from "./observable-array";
+import { ArrayChangeType, ObservableArray, updateArray } from "./observable-array";
 
 describe("ObservableArray", () => {
 	it("should not publish change event for no changes", () => {
@@ -198,5 +197,20 @@ describe("ObservableArray", () => {
 				]
 			}));
 		});
+	});
+});
+
+describe("updateArray", () => {
+	it.each<[string, number[], number[]]>([
+		["adds items to the array", [], [1, 2, 3]],
+		["removes items from the array", [1, 2, 3], []],
+		["reverses the array", [1, 2, 3], [3, 2, 1]],
+		["changes order of items in the array", [1, 2, 3, 4], [3, 1, 4, 2]],
+		["removes extra items", [1, 2, 3, 4, 5], [1, 4]],
+		["adds new items", [2, 5], [1, 2, 3, 4, 5]],
+		["moves an item forward or back in the list", [1, 2, 3, 4, 5], [1, 3, 2, 4, 5]]
+	])("%s", (description: string, arr: number[], values: number[]) => {
+		updateArray(arr, values);
+		expect(arr).toEqual(expect.arrayContaining(values));
 	});
 });
