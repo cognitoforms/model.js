@@ -272,7 +272,7 @@ export class Entity {
 					currentValue.splice(state.length);
 				}
 
-				// Mark property pendingInit = false, since the setter is not called
+				// Mark property pendingInit = false, since value is not assigned so the setter is not called
 				Property$pendingInit(this, prop, false);
 			}
 			else if (state instanceof ChildEntity)
@@ -306,7 +306,7 @@ export class Entity {
 		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
 			currentValue.splice(0, currentValue.length, ...state.map(s => this.serializer.deserialize(this, s, prop, this._context)));
 
-			// Mark property pendingInit = false, since the setter is not called
+			// Mark property pendingInit = false, since value is not assigned so the setter is not called
 			Property$pendingInit(this, prop, false);
 		}
 		else
