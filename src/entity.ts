@@ -3,7 +3,7 @@ import { Format } from "./format";
 import { Type, EntityType, isEntityType, getIdFromState } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
-import { Property, Property$init, Property$setter } from "./property";
+import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
 import { DefaultSerializationSettings } from "./entity-serializer";
 
@@ -271,6 +271,9 @@ export class Entity {
 					// Remove excess items from the list
 					currentValue.splice(state.length);
 				}
+
+				// Mark property pendingInit = false, since value is not assigned so the setter is not called
+				Property$pendingInit(this, prop, false);
 			}
 			else if (state instanceof ChildEntity)
 				value = state;
@@ -300,8 +303,12 @@ export class Entity {
 					value = Entity.createOrUpdate(ChildEntity.meta, state, this._context);
 			}
 		}
-		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue))
+		else if (prop.isList && Array.isArray(state) && Array.isArray(currentValue)) {
 			currentValue.splice(0, currentValue.length, ...state.map(s => this.serializer.deserialize(this, s, prop, this._context)));
+
+			// Mark property pendingInit = false, since value is not assigned so the setter is not called
+			Property$pendingInit(this, prop, false);
+		}
 		else
 			value = this.serializer.deserialize(this, state, prop, this._context);
 

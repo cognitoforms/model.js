@@ -896,6 +896,8 @@ export function Property$pendingInit(obj: Entity, prop: Property, value: boolean
 
 function Property$subArrayEvents(obj: Entity, property: Property, array: ObservableArray<any>): void {
 	array.changed.subscribe(function (args) {
+		Property$pendingInit(obj, property, false);
+
 		// Don't raise a no-op list change event
 		if (!args.changes.length)
 			return;
@@ -950,14 +952,16 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
+			let setPendingInit = !property.isConstant;
 			Property$init(property, obj, Property$getInitialValue(property));
-			if (property.initializer)
+			if (property.initializer) {
 				obj.update(property.name, property.initializer.call(obj));
-
-			const underlyingValue = obj.__fields__[property.name];
-			// Mark the property as pending initialization if it still has no underlying value, or is the property type's default, to allow default calculation rules to run for it
-			// List properties are defaulted onInitNew instead of on access
-			if (underlyingValue === property.defaultValue && !Array.isArray(underlyingValue))
+				setPendingInit = false;
+			}
+			// Mark the property as pending initialization if the property value may need to
+			// be established by a default calculation rule, or some other external logic.
+			// This is not relevant if it is a constant or its value is established via an initilizer.
+			if (setPendingInit)
 				Property$pendingInit(obj, property, true);
 		}
 	}
@@ -983,6 +987,10 @@ export function Property$setter(property: Property, obj: Entity, val: any, addit
 
 	if (Property$shouldSetValue(property, obj, old, val)) {
 		Property$setValue(property, obj, old, val, additionalArgs);
+	}
+	else {
+		// Set pendingInit to false here, since the setter is not called since the value is not changing
+		Property$pendingInit(obj, property, false);
 	}
 }
 
@@ -1020,6 +1028,10 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		currentArray.batchUpdate((array) => {
 			updateArray(array, newValue);
 		}, additionalArgs);
+
+		// Set pendingInit to false here, since an array change event will not be raised if there are no changes
+		// (ex: array was previously an empty array and newValue is also an empty array).
+		Property$pendingInit(obj, property, false);
 	}
 	else {
 		let oldValue = currentValue;

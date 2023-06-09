@@ -564,53 +564,14 @@ export class ArrayObserver<ItemType> {
 	}
 }
 
-function observableSplice(arr: any[], events: any[], index: number, removeCount: number, addItems: any[]): void {
-	var removedItems;
-
-	let arr2 = arr as any;
-
-	if (removeCount) {
-		removedItems = arr.splice(index, removeCount);
-
-		if (events) {
-			events.push({
-				action: "remove",
-				oldStartingIndex: index,
-				oldItems: removedItems,
-				newStartingIndex: null,
-				newItems: null
-			});
-		}
-	}
-
-	if (addItems.length > 0) {
-		if (addItems.length > 1 && arr2.insertRange) {
-			arr2.insertRange(index, addItems);
-		}
-		else if (addItems.length === 1 && arr2.insert) {
-			arr2.insert(index, addItems[0]);
-		}
-		else {
-			var addItemsArgs = addItems.slice();
-			addItemsArgs.splice(0, 0, index, 0);
-			arr.splice.apply(arr, addItemsArgs);
-		}
-
-		if (events) {
-			events.push({
-				action: "add",
-				oldStartingIndex: null,
-				oldItems: null,
-				newStartingIndex: index,
-				newItems: addItems
-			});
-		}
+function callSplice(arr: any[], index: number, removeCount: number, addItems: any[]): void {
+	if (removeCount || addItems.length > 0) {
+		var addItemsArgs = [index, removeCount].concat(addItems);
+		arr.splice.apply(arr, addItemsArgs);
 	}
 }
 
-export function updateArray(array: any[], values: any[] /*, trackEvents */): any[] {
-	var trackEvents: boolean = arguments[2];
-	var events: any[] = trackEvents ? [] : null;
+export function updateArray(array: any[], values: any[]): void {
 	var pointer = 0;
 	var srcSeek = 0;
 	var tgtSeek = 0;
@@ -623,7 +584,7 @@ export function updateArray(array: any[], values: any[] /*, trackEvents */): any
 			}
 			else {
 				// remove range from source and add range from target
-				observableSplice(array, events, pointer, srcSeek - pointer, values.slice(pointer, tgtSeek));
+				callSplice(array, pointer, srcSeek - pointer, values.slice(pointer, tgtSeek));
 
 				// reset to index follow target seek location since arrays match up to that point
 				pointer = srcSeek = tgtSeek = tgtSeek + 1;
@@ -640,7 +601,5 @@ export function updateArray(array: any[], values: any[] /*, trackEvents */): any
 		}
 	}
 
-	observableSplice(array, events, pointer, srcSeek - pointer, values.slice(pointer, Math.max(tgtSeek, values.length)));
-
-	return events;
+	callSplice(array, pointer, srcSeek - pointer, values.slice(pointer, Math.max(tgtSeek, values.length)));
 }

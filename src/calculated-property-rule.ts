@@ -1,4 +1,4 @@
-import { Rule, RuleInvocationOptions, RuleOptions } from "./rule";
+import { Rule, RuleOptions } from "./rule";
 import { Type } from "./type";
 import { Property, Property$init, PropertyRuleOptions } from "./property";
 import { Entity } from "./entity";
@@ -32,9 +32,6 @@ export class CalculatedPropertyRule extends Rule {
 		if (options) {
 			if (options.property) {
 				property = typeof options.property === "string" ? rootType.getProperty(options.property) as Property : options.property as Property;
-
-				if (options.isDefaultValue && property.isList)
-					(options as RuleInvocationOptions).onInitNew = true;
 
 				// indicate that the rule is responsible for returning the value of the calculated property
 				options.returns = [property];
