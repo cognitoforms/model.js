@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Always set pending init to `true` when a non-constant property initializes without an initializer,
   and ensure that it is consistently set to `false` when the property is set, the array is modified,
   or the property is included in the entity's initial state
+### Added
+- Added ES module build output
 ## [0.8.42] - 2023-01-26
 ### Fixed
 - error: "Cannot read properties of null (reading 'ready')" when using async resolver and initializers
