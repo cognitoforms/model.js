@@ -216,7 +216,7 @@ export class EntitySerializer {
 				value = data;
 			else if (data instanceof Object)
 				value = resolveEntity(ChildEntity, data);
-			else
+			else if (data === null)
 				value = data;
 		}
 
