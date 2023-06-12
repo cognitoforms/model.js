@@ -170,7 +170,7 @@ describe("Entity", () => {
 			const movieProp = Types.Person.meta.getProperty("Movie");
 			expect(Property$pendingInit(person, movieProp)).toBe(true);
 			expect(person.Movie).toBe(null);
-			// expect(Property$pendingInit(person, movieProp)).toBe(false);
+			expect(person.serialize()).toEqual({ Address: null, FirstName: null, Id: "1", LastName: null, Movie: null, Salary: null });
 		});
 
 		it("can initialize reference properties to null", () => {
@@ -178,6 +178,15 @@ describe("Entity", () => {
 			const movieProp = Types.Person.meta.getProperty("Movie");
 			expect(Property$pendingInit(person, movieProp)).toBe(false);
 			expect(person.Movie).toBe(null);
+			expect(person.serialize()).toEqual({ Address: null, FirstName: null, Id: "1", LastName: null, Movie: null, Salary: null });
+		});
+
+		it("invalid data for reference properties is ignored", () => {
+			const person = Types.Person.meta.createSync({ Id: "1", Movie: "Toy Story" });
+			const movieProp = Types.Person.meta.getProperty("Movie");
+			expect(Property$pendingInit(person, movieProp)).toBe(true);
+			expect(person.Movie).toBe(null);
+			expect(person.serialize()).toEqual({ Address: null, FirstName: null, Id: "1", LastName: null, Movie: null, Salary: null });
 		});
 
 		it("provides a way to wait for initialization to complete", async () => {
