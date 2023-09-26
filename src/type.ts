@@ -511,7 +511,7 @@ export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }
 
-export interface TypeOptions {
+interface TypeBasicOptions {
 	$extends?: string;
 	$format?: string | Format<Entity>;
 }
@@ -526,6 +526,8 @@ export type RuleOrMethodFunctionOrOptions<EntityType extends Entity> = ((this: E
 export interface TypeExtensionOptions<EntityType extends Entity> {
 	[name: string]: string | ValueType | PropertyOptions | RuleOrMethodFunctionOrOptions<EntityType>;
 }
+
+export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
 
 export function isValueType(type: any): type is ValueType {
 	return type === String || type === Number || type === Date || type === Boolean;

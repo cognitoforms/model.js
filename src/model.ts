@@ -1,7 +1,7 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
 import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs } from "./entity";
-import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
+import { Type, PropertyType, isEntityType, ValueType, TypeOptions } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
@@ -31,7 +31,7 @@ export class Model {
 
 	readonly serializer = new EntitySerializer();
 
-	constructor(options?: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions, config?: ModelConfiguration) {
+	constructor(options?: ModelOptions, config?: ModelConfiguration) {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
@@ -158,7 +158,7 @@ export class Model {
 	 * Extends the model with the specified type information.
 	 * @param options The set of model types to add and/or extend.
 	 */
-	extend(options: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions): void {
+	extend(options: ModelOptions): void {
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.prepare(() => {
 			// Namespace
@@ -249,7 +249,7 @@ export class Model {
 					}
 				}
 
-				let typeOptions = options[typeName] as TypeOptions & TypeExtensionOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptions<Entity>;
 				let type = this.types[typeName];
 
 				typesToInitialize.push(typeName);
@@ -272,7 +272,7 @@ export class Model {
 
 			// Extend Types
 			for (let typeName of typesToInitialize) {
-				let typeOptions = options[typeName] as TypeOptions & TypeExtensionOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptions<Entity>;
 				this.types[typeName].extend(typeOptions);
 			}
 		});
@@ -374,11 +374,11 @@ export interface ModelConstructor {
 	new(createOwnProperties?: boolean): Model;
 }
 
-export type ModelOptions = {
+export type ModelTypeOptions = {
 	/**
 	 * Standard type options ($extends and $format), properties, and methods/rules
 	 */
-	[name: string]: (TypeOptions & TypeExtensionOptions<Entity>) | string;
+	[name: string]: (TypeOptions<Entity>) | string;
 }
 
 export type ModelLocalizationOptions = {
@@ -404,6 +404,8 @@ export type ModelNamespaceOption = {
 	 */
 	$namespace?: object;
 }
+
+export type ModelOptions = ModelTypeOptions & ModelNamespaceOption & ModelLocalizationOptions;
 
 export type ModelConfiguration = {
 
