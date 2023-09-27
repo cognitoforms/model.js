@@ -82,8 +82,8 @@ export abstract class Format<T> {
 		return new CustomFormat<T>(model, options);
 	}
 
-	static fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<TEntity> {
-		return new ModelFormat<TEntity>(type, template, formatEval);
+	static fromTemplate<EntityType extends Entity>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<EntityType> {
+		return new ModelFormat<EntityType>(type, template, formatEval);
 	}
 
 	static hasTokens(template: string): boolean {
@@ -93,7 +93,7 @@ export abstract class Format<T> {
 
 export interface FormatConstructor {
 	create<T>(options: CustomFormatOptions<T>): Format<T>;
-	fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval?: unknown): Format<TEntity>;
+	fromTemplate<EntityType extends Entity>(type: Type, template: string, formatEval?: unknown): Format<EntityType>;
 }
 
 export interface FormatOptions {

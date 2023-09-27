@@ -388,9 +388,9 @@ export interface EntityConstructor {
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
 }
 
-export interface EntityConstructorForType<TEntity extends Entity> extends EntityConstructor {
-	new(): TEntity;
-	new(properties?: ObjectLookup<any>): TEntity; // Construct new instance with state
+export interface EntityConstructorForType<EntityType extends Entity> extends EntityConstructor {
+	new(): EntityType;
+	new(properties?: ObjectLookup<any>): EntityType; // Construct new instance with state
 	meta: Type;
 }
 

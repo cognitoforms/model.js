@@ -516,8 +516,8 @@ interface TypeBasicOptions {
 	$format?: string | Format<Entity>;
 }
 
-export interface RuleOrMethodOptions<TEntity extends Entity> {
-	function: (this: TEntity, ...args: any[]) => any;
+export interface RuleOrMethodOptions<EntityType extends Entity> {
+	function: (this: EntityType, ...args: any[]) => any;
 	dependsOn?: string;
 }
 
