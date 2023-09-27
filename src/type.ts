@@ -1,5 +1,5 @@
 import { Model } from "./model";
-import { Entity, EntityConstructorForType, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor } from "./entity";
+import { Entity, EntityConstructorForType, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
 import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
@@ -36,8 +36,8 @@ export class Type {
 
 	readonly _formats: { [name: string]: Format<any> };
 
-	readonly initNew: EventSubscriber<Type, EntityInitNewEventArgs>;
-	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
+	readonly initNew: EventSubscriber<Type, EntityInitNewEventArgs<Entity>>;
+	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs<Entity>>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
 	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<Entity>) {
@@ -59,8 +59,8 @@ export class Type {
 			baseType.derivedTypes.push(this);
 		}
 
-		this.initNew = new Event<Type, EntityInitNewEventArgs>();
-		this.initExisting = new Event<Type, EntityInitExistingEventArgs>();
+		this.initNew = new Event<Type, EntityInitNewEventArgs<Entity>>();
+		this.initExisting = new Event<Type, EntityInitExistingEventArgs<Entity>>();
 		// this.conditionsChanged = new Event<Type, ConditionTargetsChangedEventArgs>();
 
 		// Set Format
@@ -173,7 +173,7 @@ export class Type {
 			}
 		}
 
-		(this.model.entityRegistered as Event<Model, EntityRegisteredEventArgs>).publish(this.model, { entity: obj });
+		(this.model.entityRegistered as Event<Model, EntityRegisteredEventArgs<Entity>>).publish(this.model, { entity: obj });
 	}
 
 	changeObjectId(oldId: string, newId: string): Entity | void {
@@ -448,7 +448,7 @@ export class Type {
 
 				// Property
 				else {
-					member = { ...member } as PropertyOptions;
+					member = { ...member } as PropertyOptions<Entity>;
 
 					// Get Property
 					let property = this.getProperty(name);
@@ -511,6 +511,21 @@ export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }
 
+type TypeOfTypeMemberOverrides<T> = {
+	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgs<EntityOfType<T>>>;
+	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgs<EntityOfType<T>>>;
+	createIfNotExists(state: any): EntityOfType<T>;
+	createSync(state: any): EntityOfType<T>;
+	create(state: any): Promise<EntityOfType<T>>;
+	register(obj: EntityOfType<T>): void;
+	changeObjectId(oldId: string, newId: string): EntityOfType<T> | void;
+	get(id: string, exactTypeOnly?: boolean): EntityOfType<T>;
+	known(): EntityOfType<T>[];
+	addRule(optionsOrFunction: ((this: EntityOfType<T>) => void) | RuleOptions): Rule;
+};
+
+export type TypeOfType<T> = TypeOfTypeMemberOverrides<T> & Type; // Omit<Type, keyof TypeOfTypeMemberOverrides<T>> &
+
 interface TypeBasicOptions {
 	$extends?: string;
 	$format?: string | Format<Entity>;
@@ -524,10 +539,10 @@ export interface RuleOrMethodOptions<EntityType extends Entity> {
 export type RuleOrMethodFunctionOrOptions<EntityType extends Entity> = ((this: EntityType, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
 
 export interface TypeExtensionOptions<EntityType extends Entity> {
-	[name: string]: string | ValueType | PropertyOptions | RuleOrMethodFunctionOrOptions<EntityType>;
+	[name: string]: string | ValueType | PropertyOptions<EntityType> | RuleOrMethodFunctionOrOptions<EntityType>;
 }
 
-export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
+export type TypeOptions<EntityType extends Entity> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
 
 export function isValueType(type: any): type is ValueType {
 	return type === String || type === Number || type === Date || type === Boolean;

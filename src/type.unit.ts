@@ -1,3 +1,4 @@
+import { TEntityConstructor } from "./entity";
 import { Model } from "./model";
 
 describe("Type", () => {
@@ -144,32 +145,44 @@ describe("Type", () => {
 	});
 
 	describe("createIfNotExists", () => {
-		let model: Model;
+		type Namespace = {
+			Test: Test;
+		};
+
+		type Test = {
+			Id: string;
+			Name: string;
+			Sibling: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
 		beforeEach(() => {
-			model = new Model({
-				Entity: {
+			return new Model({
+				$namespace: Types as any,
+				Test: {
 					Id: { identifier: true, type: String },
 					Name: String,
-					Sibling: "Entity"
+					Sibling: "Test"
 				}
 			});
 		});
 
 		it("should create new instance if id is not known", () => {
-			const entity = model.types.Entity.createIfNotExists({ Id: "x", Name: "Test123" });
+			const entity = Types.Test.meta.createIfNotExists({ Id: "x", Name: "Test123" });
 			expect(entity.Id).toBe("x");
 			expect(entity.Name).toBe("Test123");
 		});
 
 		it("should create new instance if id is not provided", () => {
-			const entity = model.types.Entity.createIfNotExists({ Name: "Test123" });
+			const entity = Types.Test.meta.createIfNotExists({ Name: "Test123" });
 			expect(entity.Id).toBeNull();
 			expect(entity.Name).toBe("Test123");
 		});
 
 		it("should return known instance if id is known", () => {
-			const known = model.types.Entity.createSync({ Id: "x", Name: "Test123" });
-			expect(model.types.Entity.createIfNotExists({ Id: "x", Name: "New123" })).toBe(known);
+			const known = Types.Test.meta.createSync({ Id: "y", Name: "Test123" });
+			expect(Types.Test.meta.createIfNotExists({ Id: "y", Name: "New123" })).toBe(known);
 			expect(known.Name).toBe("Test123");
 		});
 	});

@@ -1,9 +1,11 @@
+import { EntityConstructorForType, EntityOfType, TEntityConstructor } from "./entity";
 import { Model } from "./model";
 
 // Import English resources
 import "./resource-en";
+import { EntityType } from "./type";
 
-function createModel(options) {
+function createModel(options): Promise<Model> {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -26,13 +28,24 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Person = model.getJsType("Person");
+		const Person = model.getJsType("Person") as EntityType;
 		const p = new Person({ Name: { First: "John", Last: "Doe" } });
 		expect(p.toString("[Name]")).toBe("John Doe");
 	});
 
 	it("Description, reformat, expression", async () => {
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Phone: string;
+		};
+
 		const model = await createModel({
+			$namespace: Types,
 			Test: {
 				Phone: {
 					format: {
@@ -44,7 +57,7 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Test = model.getJsType("Test");
+		const Test = model.getJsType("Test") as EntityConstructorForType<EntityOfType<Test>>;
 		const p = new Test({ Phone: "1234567890" });
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890");
 		p.Phone = "1234567890x1234";

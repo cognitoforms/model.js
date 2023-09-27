@@ -14,7 +14,7 @@ function createModel(options: ModelOptions & ModelNamespaceOption & ModelLocaliz
 
 describe("CalculateRule", () => {
 	test("Errors thrown in calculated rules are displayed to the user.", async () => {
-		let consoleOutputs = [];
+		let consoleOutputs: any[] = [];
 		window.console.warn = jest.fn((s)=> consoleOutputs.push(s.toString()));
 		const model = await createModel({
 			Test: {
@@ -189,7 +189,7 @@ describe("CalculateRule", () => {
 						type: "Number[]",
 						get: {
 							function() {
-								const list = [];
+								const list: any[] = [];
 								for (let i = 0; i < this.Max; i++)
 									list.push(i+1);
 								return list;

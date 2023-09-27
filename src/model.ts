@@ -20,9 +20,9 @@ export class Model {
 	readonly $resources: LocalizedResourcesMap;
 	readonly $culture: CultureInfo;
 
-	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
-	readonly afterPropertySet: EventSubscriber<Entity, EntityChangeEventArgs>;
-	readonly listChanged: EventSubscriber<Entity, EntityChangeEventArgs>;
+	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs<Entity>>;
+	readonly afterPropertySet: EventSubscriber<Entity, EntityChangeEventArgs<Entity>>;
+	readonly listChanged: EventSubscriber<Entity, EntityChangeEventArgs<Entity>>;
 	readonly eventScope: EventScope;
 
 	private _readyCallbacks: (() => void)[];
@@ -34,9 +34,9 @@ export class Model {
 	constructor(options?: ModelOptions, config?: ModelConfiguration) {
 		this.types = {};
 		this.settings = new ModelSettings(config);
-		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
-		this.afterPropertySet = new Event<Entity, EntityChangeEventArgs>();
-		this.listChanged = new Event<Entity, EntityChangeEventArgs>();
+		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs<Entity>>();
+		this.afterPropertySet = new Event<Entity, EntityChangeEventArgs<Entity>>();
+		this.listChanged = new Event<Entity, EntityChangeEventArgs<Entity>>();
 		this.eventScope = EventScope.create(this.settings.eventScopeSettings);
 
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
@@ -378,7 +378,7 @@ export type ModelTypeOptions = {
 	/**
 	 * Standard type options ($extends and $format), properties, and methods/rules
 	 */
-	[name: string]: (TypeOptions<Entity>) | string;
+	[name: string]: (TypeOptions<any>) | string;
 }
 
 export type ModelLocalizationOptions = {

@@ -32,7 +32,7 @@ export class Property implements PropertyPath {
 	helptext: string;
 	isCalculated: boolean;
 	format: Format<any>;
-	required: boolean | PropertyBooleanFunction | PropertyBooleanFunctionAndOptions;
+	required: boolean | PropertyBooleanFunction<Entity> | PropertyBooleanFunctionAndOptions<Entity>;
 
 	private _defaultValue: any;
 
@@ -44,7 +44,7 @@ export class Property implements PropertyPath {
 	readonly changed: EventSubscriber<Entity, PropertyChangeEventArgs>;
 	readonly accessed: EventSubscriber<Entity, PropertyAccessEventArgs>;
 
-	constructor(containingType: Type, name: string, propertyType: PropertyType, isIdentifier: boolean, isList: boolean, options?: PropertyOptions) {
+	constructor(containingType: Type, name: string, propertyType: PropertyType, isIdentifier: boolean, isList: boolean, options?: PropertyOptions<Entity>) {
 		this.containingType = containingType;
 		this.name = name;
 		this.propertyType = propertyType;
@@ -103,7 +103,7 @@ export class Property implements PropertyPath {
 			return getDefaultValue(this.isList, this.propertyType);
 	}
 
-	extend(options: PropertyOptions, targetType?: Type): void {
+	extend(options: PropertyOptions<Entity>, targetType?: Type): void {
 		if (!targetType)
 			targetType = this.containingType;
 
@@ -228,7 +228,7 @@ export class Property implements PropertyPath {
 			// Init
 			if (options.init !== undefined) {
 				let initFn: (this: Entity) => any;
-				if (isPropertyValueFunction<any>(options.init))
+				if (isPropertyValueFunction<Entity, any>(options.init))
 					initFn = options.init;
 				else
 					throw new Error(`Invalid property 'init' option of type '${getTypeName(options.init)}'.`);
@@ -238,11 +238,11 @@ export class Property implements PropertyPath {
 
 			// Default
 			if (options.default !== undefined) {
-				if (isPropertyValueFunction<any>(options.default)) {
+				if (isPropertyValueFunction<Entity, any>(options.default)) {
 					// Always generate a rule for default function
 					options.default = { function: options.default, dependsOn: "" };
 				}
-				else if (isPropertyOptions<PropertyValueFunctionAndOptions<any>>(options.default)) {
+				else if (isPropertyOptions<PropertyValueFunctionAndOptions<Entity, any>>(options.default)) {
 					// Use default object as specified
 				}
 				else if (options.default === null || isValue(options.default) || isValueArray(options.default)) {
@@ -273,7 +273,7 @@ export class Property implements PropertyPath {
 					throw new Error(`Invalid property 'default' option of type '${getTypeName(options.default)}'.`);
 				}
 
-				if (isPropertyOptions<PropertyValueFunctionAndOptions<any>>(options.default)) {
+				if (isPropertyOptions<PropertyValueFunctionAndOptions<Entity, any>>(options.default)) {
 					let defaultOptions = options.default;
 
 					if (typeof (options.default.function) !== "function") {
@@ -300,7 +300,7 @@ export class Property implements PropertyPath {
 					options.get = { function: allowedValuesFunction, dependsOn: "" };
 				}
 
-				if (isPropertyOptions<PropertyValueFunctionAndOptions<any[]>>(options.allowedValues)) {
+				if (isPropertyOptions<PropertyValueFunctionAndOptions<Entity, any[]>>(options.allowedValues)) {
 					let allowedValuesOptions = options.allowedValues;
 
 					if (typeof (options.allowedValues.function) !== "function") {
@@ -327,7 +327,7 @@ export class Property implements PropertyPath {
 				let min: (this: Entity) => any;
 
 				if (options.range.min != null) {
-					if (isPropertyValueFunction<any>(options.range.min)) {
+					if (isPropertyValueFunction<Entity, any>(options.range.min)) {
 						min = options.range.min;
 					}
 					else if (isValue(options.range.min)) {
@@ -342,7 +342,7 @@ export class Property implements PropertyPath {
 				let max: (this: Entity) => any;
 
 				if (options.range.max != null) {
-					if (isPropertyValueFunction<any>(options.range.max)) {
+					if (isPropertyValueFunction<Entity, any>(options.range.max)) {
 						max = options.range.max;
 					}
 					else if (isValue(options.range.max)) {
@@ -365,7 +365,7 @@ export class Property implements PropertyPath {
 				let min: (this: Entity) => number;
 
 				if (options.length.min != null) {
-					if (isPropertyValueFunction<any>(options.length.min)) {
+					if (isPropertyValueFunction<Entity, any>(options.length.min)) {
 						min = options.length.min;
 					}
 					else if (isValue<number>(options.length.min, Number)) {
@@ -380,7 +380,7 @@ export class Property implements PropertyPath {
 				let max: (this: Entity) => number;
 
 				if (options.length.max != null) {
-					if (isPropertyValueFunction<any>(options.length.max)) {
+					if (isPropertyValueFunction<Entity, any>(options.length.max)) {
 						max = options.length.max;
 					}
 					else if (isValue<number>(options.length.max, Number)) {
@@ -425,7 +425,7 @@ export class Property implements PropertyPath {
 					let requiredFn: (this: Entity) => boolean;
 					let requiredMessage: string | ((this: Entity) => string);
 					let requiredDependsOn: string;
-					if (isPropertyOptions<PropertyBooleanFunctionAndOptions>(options.required)) {
+					if (isPropertyOptions<PropertyBooleanFunctionAndOptions<Entity>>(options.required)) {
 						requiredFn = options.required.function;
 						requiredMessage = options.required.message;
 						requiredDependsOn = options.required.dependsOn;
@@ -610,7 +610,7 @@ export class Property implements PropertyPath {
 	}
 }
 
-export interface PropertyOptions {
+export interface PropertyOptions<EntityType extends Entity> {
 
 	/** The name or Javascript type of the property */
 	type?: string | PropertyType;
@@ -641,34 +641,34 @@ export interface PropertyOptions {
 	constant?: any;
 
 	/** An optional function or dependency function object that calculates the value of this property. */
-	get?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any>;
+	get?: PropertyValueFunction<EntityType, any> | PropertyValueFunctionAndOptions<EntityType, any>;
 
 	/** An optional function to call when this property is updated. */
-	set?: (this: Entity, value: any) => void;
+	set?: (this: EntityType, value: any) => void;
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
-	default?: PropertyValueFunction<any> | PropertyValueFunctionAndOptions<any> | Value | Value[];
+	default?: PropertyValueFunction<EntityType, any> | PropertyValueFunctionAndOptions<EntityType, any> | Value | Value[] | null;
 
 	/** A function used to obtain the value with which to initialize this property.
 	 * The function is called only once, and is not reactive as a rule would be.
 	 * Does not overwrite a property value provided during construction of the containing entity.
 	 */
-	init?: PropertyValueFunction<any>;
+	init?: PropertyValueFunction<EntityType, any>;
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
-	allowedValues?: PropertyValueFunction<any[]> | AllowedValuesFunctionAndOptions<any[]> | Value[];
+	allowedValues?: PropertyValueFunction<EntityType, any[]> | AllowedValuesFunctionAndOptions<EntityType, any[]> | Value[];
 
 	/** True if the property is always required, or a dependency function object for conditionally required properties. */
-	required?: boolean | PropertyBooleanFunction | PropertyBooleanFunctionAndOptions;
+	required?: boolean | PropertyBooleanFunction<EntityType> | PropertyBooleanFunctionAndOptions<EntityType>;
 
 	/** An optional dependency function object that adds an error with the specified message when true. */
 	error?: PropertyErrorFunctionAndOptions | PropertyErrorFunctionAndOptions[];
 
 	/** Optional contant or function-based min and max values. */
-	range?: PropertyRangeOptions<any>;
+	range?: PropertyRangeOptions<EntityType, any>;
 
 	/** Optional contant or function-based min and max length. */
-	length?: PropertyLengthOptions;
+	length?: PropertyLengthOptions<EntityType>;
 }
 
 export interface PropertyFormatOptions {
@@ -693,18 +693,18 @@ export interface PropertyErrorFunctionAndOptions {
 	properties?: string[];
 }
 
-export type PropertyValueFunction<T> = () => T;
+export type PropertyValueFunction<EntityType extends Entity, T> = (this: EntityType) => T;
 
-export interface PropertyValueFunctionAndOptions<T> {
-	function: (this: Entity) => T;
+export interface PropertyValueFunctionAndOptions<EntityType extends Entity, ResultType> {
+	function: (this: EntityType) => ResultType;
 	dependsOn?: string;
 }
 
-export function isPropertyValueFunction<T>(obj: any): obj is PropertyValueFunction<T> {
+export function isPropertyValueFunction<EntityType extends Entity, T>(obj: any): obj is PropertyValueFunction<EntityType, T> {
 	return typeof (obj) === "function";
 }
 
-export interface AllowedValuesFunctionAndOptions<T> extends PropertyValueFunctionAndOptions<T> {
+export interface AllowedValuesFunctionAndOptions<EntityType extends Entity, ResultType> extends PropertyValueFunctionAndOptions<EntityType, ResultType> {
 	ignoreValidation?: boolean;
 	preventInvalidValues?: boolean;
 }
@@ -713,31 +713,31 @@ type LambdaFunction<ReturnType> = () => ReturnType;
 
 type BoundFunction<ThisType, ReturnType> = (this: ThisType) => ReturnType;
 
-export interface PropertyRangeOptions<T> {
-	min?: T | LambdaFunction<T> | BoundFunction<Entity, T>;
-	max?: T | LambdaFunction<T> | BoundFunction<Entity, T>;
+export interface PropertyRangeOptions<EntityType extends Entity, T> {
+	min?: T | LambdaFunction<T> | BoundFunction<EntityType, T>;
+	max?: T | LambdaFunction<T> | BoundFunction<EntityType, T>;
 	dependsOn?: string;
 }
 
-export interface PropertyLengthOptions {
-	min?: number | LambdaFunction<number> | BoundFunction<Entity, number>;
-	max?: number | LambdaFunction<number> | BoundFunction<Entity, number>;
+export interface PropertyLengthOptions<EntityType extends Entity> {
+	min?: number | LambdaFunction<number> | BoundFunction<EntityType, number>;
+	max?: number | LambdaFunction<number> | BoundFunction<EntityType, number>;
 	dependsOn?: string;
 }
 
-export type PropertyBooleanFunction = (this: Entity) => boolean;
+export type PropertyBooleanFunction<EntityType extends Entity>= (this: EntityType) => boolean;
 
-export interface PropertyBooleanFunctionAndOptions {
-	function?: (this: Entity) => boolean;
+export interface PropertyBooleanFunctionAndOptions<EntityType extends Entity> {
+	function?: (this: EntityType) => boolean;
 	dependsOn?: string;
-	message?: string | ((this: Entity) => string);
+	message?: string | ((this: EntityType) => string);
 }
 
-export function isPropertyBooleanFunctionAndOptions(obj: any): obj is PropertyBooleanFunctionAndOptions {
+export function isPropertyBooleanFunctionAndOptions<EntityType extends Entity>(obj: any): obj is PropertyBooleanFunctionAndOptions<EntityType> {
 	return typeof (obj) === "object";
 }
 
-export function isPropertyBooleanFunction(obj: any): obj is PropertyBooleanFunction {
+export function isPropertyBooleanFunction<EntityType extends Entity>(obj: any): obj is PropertyBooleanFunction<EntityType> {
 	return typeof (obj) === "function";
 }
 
@@ -746,7 +746,7 @@ export function isPropertyOptions<TOptions>(obj: any, check: (options: any) => b
 }
 
 export interface PropertyConstructor {
-	new(containingType: Type, name: string, jstype: PropertyType, isList: boolean, options?: PropertyOptions): Property;
+	new(containingType: Type, name: string, jstype: PropertyType, isList: boolean, options?: PropertyOptions<Entity>): Property;
 }
 
 export type PropertyGetMethod = (property: Property, entity: Entity, additionalArgs: any) => any;
@@ -908,9 +908,9 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 		// Assign additional collection change event arguments to the property change event
 		var additionalArgs = { changes: args.changes, collectionChanged: true, ...args.additionalArgs };
 
-		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
 		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
-		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+		(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
 	});
 }
 
@@ -942,7 +942,7 @@ export function Property$init(property: Property, obj: Entity, val: any): void {
 	}
 
 	// TODO: Implement observable?
-	(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: val });
+	(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, { entity: obj, property, newValue: val });
 }
 
 function Property$ensureInited(property: Property, obj: Entity): void {
@@ -973,7 +973,7 @@ function Property$getter(property: Property, obj: Entity): any {
 
 	// Raise access events
 	(property.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(obj, { entity: obj, property, value: obj.__fields__[property.name] });
-	(obj.accessed as Event<Entity, EntityAccessEventArgs>).publish(obj, { entity: obj, property });
+	(obj.accessed as Event<Entity, EntityAccessEventArgs<Entity>>).publish(obj, { entity: obj, property });
 
 	// Return the property value
 	return obj.__fields__[property.name];
@@ -1054,9 +1054,9 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		// Do not raise change if the property has not been initialized.
 		if (oldValue !== undefined) {
 			var eventArgs = { entity: obj, property, newValue, oldValue };
-			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
 			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
-			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
+			(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
 		}
 	}
 }

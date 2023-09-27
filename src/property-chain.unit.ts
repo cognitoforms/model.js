@@ -1,6 +1,7 @@
 import { PropertyChain } from "./property-chain";
 import { Model } from "./model";
-import { Type } from "./type";
+import { TypeOfType } from "./type";
+import { EntityConstructorForType, EntityOfType, TEntityConstructor } from "./entity";
 
 function createModel(options): Promise<Model> {
 	return new Promise((resolve) => {
@@ -17,7 +18,31 @@ describe("PropertyChain", () => {
 		// we create a model that has some type (Person).This type has multiple properties (GroupName, GroupId, GroupCountry etc...)
 		// that references back to one shared object's (Group) properties
 
+		type Namespace = {
+			Person: Person;
+			Group: Group;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			Name: string;
+			Group: Group;
+			GroupName: string;
+			GroupId: string;
+			GroupCountry: string;
+			GroupLanguage: string;
+		};
+
+		type Group = {
+			Name: string;
+			Id: string;
+			Country: string;
+			Language: string;
+		};
+
 		const model = await createModel({
+			$namespace: Types,
 			Person: {
 				Name: {
 					type: String,
@@ -63,7 +88,7 @@ describe("PropertyChain", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
+		const Person = model.getJsType("Person") as unknown as EntityConstructorForType<EntityOfType<Person>>;
 
 		// Create multiple Persons (will just sit in memory)
 		// The effect is more pronounced when there are a large number of objects in memory.
@@ -73,7 +98,7 @@ describe("PropertyChain", () => {
 		}
 
 		// Create new Group
-		const Group = model.getJsType("Group");
+		const Group = model.getJsType("Group") as unknown as EntityConstructorForType<EntityOfType<Group>>;
 		const group = new Group({
 			Name: "Test Group",
 			Id: "XDA-1V9-AM3",
@@ -89,7 +114,7 @@ describe("PropertyChain", () => {
 		// on the Person's container object, which would unnecessarily loop over pooled entities to
 		// see if they are linked to the changed entity via a null property. This is where the slowdown comes into play.
 		// With the fix, we would prevent unnecessarily looping over said entities.
-		for (let p of (Person.meta as Type).known())
+		for (let p of (Person.meta as TypeOfType<Person>).known())
 			p.Group = group;
 
 		//	Assure that testConnection() is not called (we are not unnecessarily looping) on initial assignment
