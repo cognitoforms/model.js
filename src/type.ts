@@ -18,7 +18,7 @@ export class Type {
 	// changed without fundamentally changing what it represents
 	readonly model: Model;
 	readonly fullName: string;
-	readonly jstype: EntityType;
+	readonly jstype: ReferenceType;
 	readonly baseType: Type;
 	readonly derivedTypes: Type[];
 
@@ -504,8 +504,8 @@ export class Type {
 
 export type Value = string | number | Date | boolean;
 export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
-export type EntityType = EntityConstructorForType<Entity>;
-export type PropertyType = ValueType | EntityType | ObjectConstructor;
+export type ReferenceType = EntityConstructorForType<Entity>;
+export type PropertyType = ValueType | ReferenceType | ObjectConstructor;
 
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
@@ -576,7 +576,7 @@ export function isValueArray(value: any): value is Value[] {
 	return isValueType(itemType);
 }
 
-export function isEntityType(type: any): type is EntityType {
+export function isEntityType(type: any): type is ReferenceType {
 	return type.meta && type.meta instanceof Type;
 }
 

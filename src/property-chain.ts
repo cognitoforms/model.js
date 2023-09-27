@@ -1,4 +1,4 @@
-import { Type, EntityType } from "./type";
+import { Type, ReferenceType } from "./type";
 import { Property, PropertyBooleanFunction } from "./property";
 import { PropertyPath, PropertyAccessEventArgs, PropertyChangeEventArgs, PropertyChangeEventHandler, PropertyAccessEventHandler } from "./property-path";
 import { Event, EventSubscriber, EventPublisher } from "./events";
@@ -343,7 +343,7 @@ function getPropertyChainPathFromIndex(chain: PropertyChain, startIndex: number)
 			}
 		}
 		steps.push(p.name);
-		previousStepType = (p.propertyType as EntityType).meta;
+		previousStepType = (p.propertyType as ReferenceType).meta;
 	});
 
 	return steps.join(".");
