@@ -390,12 +390,14 @@ export type EntityPropertiesOfType<T> = {
 			? ObservableArray<(
 				TItem extends string ? string :
 				TItem extends number ? number :
+				TItem extends boolean ? boolean :
 				TItem extends Date ? Date :
 				EntityOfType<TItem>
 			)>
 			: (
 				T[P] extends string ? string :
 				T[P] extends number ? number :
+				T[P] extends boolean ? boolean :
 				T[P] extends Date ? Date :
 				EntityOfType<T[P]>
 			) | null;
@@ -419,12 +421,14 @@ export type EntityArgsOfType<T> = Partial<{
 			? (
 				TItem extends string ? string[] :
 				TItem extends number ? number[] :
+				TItem extends boolean ? boolean[] :
 				TItem extends Date ? Date[] :
 				(EntityOfType<TItem> | Partial<EntityArgsOfType<TItem>>)[]
 			)
 			: (
 				T[P] extends string ? string :
 				T[P] extends number ? number :
+				T[P] extends boolean ? boolean :
 				T[P] extends Date ? Date :
 				(EntityOfType<T[P]> | Partial<EntityArgsOfType<T[P]>>)
 			) | null;
