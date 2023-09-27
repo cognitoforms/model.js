@@ -13,7 +13,7 @@ import { Format } from "./format";
 export class PropertyChain implements PropertyPath {
 	readonly rootType: Type;
 	readonly properties: Property[];
-	readonly required: boolean | PropertyBooleanFunction;
+	readonly required: boolean | PropertyBooleanFunction<Entity>;
 	readonly changed: EventSubscriber<Entity, PropertyChangeEventArgs>;
 	readonly accessed: EventSubscriber<Entity, PropertyAccessEventArgs>;
 
