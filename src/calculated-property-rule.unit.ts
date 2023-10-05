@@ -1,7 +1,7 @@
 import { Model, ModelLocalizationOptions, ModelNamespaceOption, ModelOptions } from "./model";
 
 import "./resource-en";
-import { EntityType, Type } from "./type";
+import { ReferenceType, Type } from "./type";
 
 function createModel(options: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions) {
 	return new Promise<Model>((resolve) => {
@@ -91,7 +91,7 @@ describe("CalculateRule", () => {
 					}
 				}
 			});
-			TestEntity = (model.getJsType("Test") as EntityType).meta;
+			TestEntity = (model.getJsType("Test") as ReferenceType).meta;
 		});
 
 		describe("on new instance", () => {

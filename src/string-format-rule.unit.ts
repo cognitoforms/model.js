@@ -3,7 +3,7 @@ import { Model } from "./model";
 
 // Import English resources
 import "./resource-en";
-import { EntityType } from "./type";
+import { ReferenceType } from "./type";
 
 function createModel(options): Promise<Model> {
 	return new Promise((resolve) => {
@@ -28,7 +28,7 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Person = model.getJsType("Person") as EntityType;
+		const Person = model.getJsType("Person") as ReferenceType;
 		const p = new Person({ Name: { First: "John", Last: "Doe" } });
 		expect(p.toString("[Name]")).toBe("John Doe");
 	});
