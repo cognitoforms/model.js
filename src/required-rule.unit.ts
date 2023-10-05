@@ -1,8 +1,9 @@
-import { Model } from "./model";
+import { EntityOfType, TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -13,16 +14,27 @@ function createModel(options) {
 
 describe("RequiredRule", () => {
 	test("Required boolean", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Text: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Text: {
 					required: true,
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		});
+
+		const t = new Types.Test();
 		expect(t.meta.conditions.length).toBe(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Text is required.");
 		t.Text = "A";
@@ -30,7 +42,19 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Text1: string;
+			Text2: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Text1: {
 					required: {
@@ -43,10 +67,9 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		const t = new Types.Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";
 		expect(t.meta.conditions.length).toBe(1);
@@ -56,12 +79,24 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required message function", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Text1: string;
+			Text2: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Text1: {
 					required: {
 						dependsOn: "Text2",
-						message() {
+						message(this: EntityOfType<Test>) {
 							if (!this.Text1 && this.Text2)
 								return "Custom required.";
 						},
@@ -75,10 +110,9 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		const t = new Types.Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";
 		expect(t.meta.conditions.length).toBe(1);
@@ -88,7 +122,19 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function with custom message", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Text1: string;
+			Text2: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Text1: {
 					required: {
@@ -102,10 +148,9 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		const t = new Types.Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";
 		expect(t.meta.conditions.length).toBe(1);

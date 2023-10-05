@@ -730,7 +730,7 @@ export type PropertyBooleanFunction<EntityType extends Entity>= (this: EntityTyp
 export interface PropertyBooleanFunctionAndOptions<EntityType extends Entity> {
 	function?: (this: EntityType) => boolean;
 	dependsOn?: string;
-	message?: string | ((this: EntityType) => string);
+	message?: string | ((this: EntityType) => string | null | undefined);
 }
 
 export function isPropertyBooleanFunctionAndOptions<EntityType extends Entity>(obj: any): obj is PropertyBooleanFunctionAndOptions<EntityType> {
