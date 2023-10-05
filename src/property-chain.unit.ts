@@ -54,7 +54,7 @@ describe("PropertyChain", () => {
 					type: String,
 					get: {
 					  dependsOn: "Group.Name",
-					  function() { return this.Group.Name; }
+					  function(this: Person) { return this.Group.Name; }
 					}
 				},
 				GroupId: {
