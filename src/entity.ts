@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, ReferenceType, isEntityType, getIdFromState, TypeOfType } from "./type";
+import { Type, EntityType, isEntityType, getIdFromState, TypeOfType } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
 import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
@@ -330,7 +330,7 @@ export class Entity {
 		// Get the entity format to use
 		let formatter: Format<Entity> = null;
 		if (format) {
-			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as ReferenceType, format, formatEval);
+			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format, formatEval);
 		}
 		else {
 			formatter = this.meta.type.format;
@@ -423,14 +423,14 @@ export type EntityArgsOfType<T> = Partial<{
 				TItem extends number ? number[] :
 				TItem extends boolean ? boolean[] :
 				TItem extends Date ? Date[] :
-				(EntityOfType<TItem> | Partial<EntityArgsOfType<TItem>>)[]
+				(EntityOfType<TItem> | EntityArgsOfType<TItem>)[]
 			)
 			: (
 				T[P] extends string ? string :
 				T[P] extends number ? number :
 				T[P] extends boolean ? boolean :
 				T[P] extends Date ? Date :
-				(EntityOfType<T[P]> | Partial<EntityArgsOfType<T[P]>>)
+				(EntityOfType<T[P]> | EntityArgsOfType<T[P]>)
 			) | null;
 }>;
 
