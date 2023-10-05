@@ -1,4 +1,4 @@
-import { TEntityConstructor } from "./entity";
+import { EntityOfType, TEntityConstructor } from "./entity";
 import { Model, ModelOptions } from "./model";
 
 import "./resource-en";
@@ -198,15 +198,29 @@ describe("CalculateRule", () => {
 	});
 
 	describe("calculated list", () => {
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Id: string;
+			Len: number;
+			Max: number;
+			Nums: number[];
+		};
+
 		let model;
 		beforeEach(() => {
 			model = new Model({
+				$namespace: Types as any,
 				Test: {
 					Id: { identifier: true, type: String },
 					Len: {
 						type: Number,
 						default: {
-							function() {
+							function(this: EntityOfType<Test>) {
 								return this.Nums.length;
 							},
 							dependsOn: "Nums"
