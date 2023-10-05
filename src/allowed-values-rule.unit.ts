@@ -1,8 +1,9 @@
-import { Model } from "./model";
+import { TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -13,7 +14,18 @@ function createModel(options) {
 
 describe("AllowedValuesRule", () => {
 	test("Prevent the setting of value if value is not in allowedValues list.", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Choice: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Choice: {
 					allowedValues: {
@@ -24,9 +36,8 @@ describe("AllowedValuesRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		var t = new Test({ Choice: "First" });
+		});
+		var t = new Types.Test({ Choice: "First" });
 		try {
 			t.Choice = "Second";
 			expect(t.Choice).toBe("Second");

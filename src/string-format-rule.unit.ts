@@ -1,11 +1,10 @@
-import { EntityConstructorForType, EntityOfType, TEntityConstructor } from "./entity";
-import { Model } from "./model";
+import { TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 // Import English resources
 import "./resource-en";
-import { ReferenceType } from "./type";
 
-function createModel(options): Promise<Model> {
+function createModel(options: ModelOptions): Promise<Model> {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -16,7 +15,24 @@ function createModel(options): Promise<Model> {
 
 describe("StringFormatRule", ()=>{
 	it("format", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Name: Name;
+			Person: Person;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Name = {
+			First: string;
+			Last: string;
+		};
+
+		type Person = {
+			Name: Name;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Name: {
 				First: String,
 				Last: String
@@ -28,8 +44,8 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Person = model.getJsType("Person") as ReferenceType;
-		const p = new Person({ Name: { First: "John", Last: "Doe" } });
+
+		const p = new Types.Person({ Name: { First: "John", Last: "Doe" } });
 		expect(p.toString("[Name]")).toBe("John Doe");
 	});
 
@@ -44,8 +60,8 @@ describe("StringFormatRule", ()=>{
 			Phone: string;
 		};
 
-		const model = await createModel({
-			$namespace: Types,
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Phone: {
 					format: {
@@ -57,8 +73,8 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Test = model.getJsType("Test") as EntityConstructorForType<EntityOfType<Test>>;
-		const p = new Test({ Phone: "1234567890" });
+
+		const p = new Types.Test({ Phone: "1234567890" });
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890");
 		p.Phone = "1234567890x1234";
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890x1234");

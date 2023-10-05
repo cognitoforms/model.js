@@ -1,8 +1,9 @@
-import { Model } from "./model";
+import { TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -12,25 +13,31 @@ function createModel(options) {
 }
 
 describe("ListLengthRule", () => {
+	type Namespace = {
+		Test: Test;
+	};
+
+	type Test = {
+		Array: string[];
+	};
+
 	test("Between", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Array: {
 					length: {
 						min: 1,
 						max: 2
 					},
-					type: "Test2[]"
-				}
-			},
-			Test2: {
-				Text: {
-					type: String
+					type: "String[]"
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		});
+
+		const t = new Types.Test();
 		expect(t.meta.conditions).toHaveLength(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Please specify between 1 and 2 Array.");
 
@@ -45,24 +52,21 @@ describe("ListLengthRule", () => {
 	});
 
 	test("Min", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Array: {
 					length: {
 						min: 1
 					},
-					type: "Test2[]"
+					type: "String[]"
 				}
-			},
-			Test2: {
-				Text: {
-					type: String
-				}
-
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		});
+
+		const t = new Types.Test();
 		expect(t.meta.conditions).toHaveLength(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Please specify at least 1 Array.");
 
@@ -71,24 +75,21 @@ describe("ListLengthRule", () => {
 	});
 
 	test("Max", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Array: {
 					length: {
 						max: 1
 					},
-					type: "Test2[]"
+					type: "String[]"
 				}
-			},
-			Test2: {
-				Text: {
-					type: String
-				}
-
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const t = new Test();
+		});
+
+		const t = new Types.Test();
 		expect(t.meta.conditions).toHaveLength(0);
 
 		t.Array.push("1");

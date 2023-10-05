@@ -159,7 +159,7 @@ export class Property implements PropertyPath {
 				}
 
 				// String Format
-				else if (isType<PropertyFormatOptions>(options.format, (f: any) => getTypeName(f) === "object" && f.expression)) {
+				else if (isType<PropertyFormatOptions<Entity>>(options.format, (f: any) => getTypeName(f) === "object" && f.expression)) {
 					let format = options.format;
 					targetType.model.ready(() => {
 						new StringFormatRule(targetType, {
@@ -394,7 +394,7 @@ export class Property implements PropertyPath {
 
 				targetType.model.ready(() => {
 					let onChangeOf: PropertyPath[] = resolveDependsOn(this, "length", options.length.dependsOn);
-					if (isEntityType(this.propertyType)) {
+					if (this.isList) {
 						new ListLengthRule(targetType, { property: this, onChangeOf, min, max }).register();
 					}
 					else {
@@ -423,7 +423,7 @@ export class Property implements PropertyPath {
 				// Conditionally Required
 				else {
 					let requiredFn: (this: Entity) => boolean;
-					let requiredMessage: string | ((this: Entity) => string);
+					let requiredMessage: string | ((this: Entity) => string | null | undefined);
 					let requiredDependsOn: string;
 					if (isPropertyOptions<PropertyBooleanFunctionAndOptions<Entity>>(options.required)) {
 						requiredFn = options.required.function;
@@ -635,7 +635,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	helptext?: string;
 
 	/** The optional format specifier for the property. */
-	format?: string | Format<PropertyType> | PropertyFormatOptions;
+	format?: string | Format<PropertyType> | PropertyFormatOptions<EntityType>;
 
 	/** A non-null value if the property is constant */
 	constant?: any;
@@ -662,7 +662,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	required?: boolean | PropertyBooleanFunction<EntityType> | PropertyBooleanFunctionAndOptions<EntityType>;
 
 	/** An optional dependency function object that adds an error with the specified message when true. */
-	error?: PropertyErrorFunctionAndOptions | PropertyErrorFunctionAndOptions[];
+	error?: PropertyErrorFunctionAndOptions<EntityType> | PropertyErrorFunctionAndOptions<EntityType>[];
 
 	/** Optional contant or function-based min and max values. */
 	range?: PropertyRangeOptions<EntityType, any>;
@@ -671,7 +671,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	length?: PropertyLengthOptions<EntityType>;
 }
 
-export interface PropertyFormatOptions {
+export interface PropertyFormatOptions<EntityType extends Entity> {
 
 	/** The human readable description of the format, such as MM/DD/YYY */
 	description: string;
@@ -682,11 +682,11 @@ export interface PropertyFormatOptions {
 	/** An optional regular expression reformat string that will be used to correct the value if it matches */
 	reformat?: string;
 
-	message?: string | ((this: Entity) => string);
+	message?: string | ((this: EntityType) => string | null | undefined);
 }
 
-export interface PropertyErrorFunctionAndOptions {
-	function: (this: Entity) => string;
+export interface PropertyErrorFunctionAndOptions<EntityType extends Entity> {
+	function: (this: EntityType) => string | null | undefined;
 	dependsOn: string;
 	resource?: string;
 	code?: string;

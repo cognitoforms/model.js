@@ -10,7 +10,7 @@ export class ConditionRule extends Rule {
 	assert: (this: Entity) => boolean;
 
 	// The message describing the state of the condition
-	message: string | ((this: Entity) => string);
+	message: string | ((this: Entity) => string | null | undefined);
 
 	// Array of property paths the validation condition should be attached to when asserted, in addition to the target property
 	properties: PropertyPath[];
@@ -83,7 +83,7 @@ export interface ConditionRuleOptions extends RuleOptions {
 	assert?: (this: Entity) => boolean;
 
 	// the message to show the user when the validation fails
-	message?: string | ((this: Entity) => string);
+	message?: string | ((this: Entity) => string | null | undefined);
 
 	// an array of property paths the validation condition should be attached to when asserted, in addition to the target property
 	properties?: PropertyPath[];
