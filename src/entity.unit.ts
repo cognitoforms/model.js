@@ -301,7 +301,8 @@ describe("Entity", () => {
 
 			const movie = new Types.Movie(Alien);
 
-			const updateTask = movie.update({ Title: "Alien 2", Budget: "BUDGET_1" });
+			// NOTE: as Entity is necessary to avoid TS complaining about "Budget"
+			const updateTask = (movie as Entity).update({ Title: "Alien 2", Budget: "BUDGET_1" });
 
 			expect(movie.Title).toBe("Alien 2");
 			expect(movie.Budget).toBeNull();
@@ -783,7 +784,9 @@ describe("Entity", () => {
 					return Promise.resolve({ City: "Orlando", State: "Florida" });
 			});
 			const movie = new Types.Movie(Alien);
-			await movie.Director!.update({
+
+			// NOTE: as Entity is necessary to avoid TS complaining about "Address"
+			await (movie.Director as Entity).update({
 				Id: "1",
 				Address: "test_async_address"
 			});

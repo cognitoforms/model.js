@@ -2,7 +2,7 @@ import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
 import { Type, EntityType, isEntityType, getIdFromState, TypeOfType } from "./type";
 import { InitializationContext } from "./initilization-context";
-import { ObjectMeta } from "./object-meta";
+import { ObjectMeta, ObjectMetaOfType } from "./object-meta";
 import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
 import { DefaultSerializationSettings } from "./entity-serializer";
@@ -187,7 +187,6 @@ export class Entity {
 	}
 
 	update(properties: ObjectLookup<any>): Promise<void>;
-	update(property: string, value: any): Promise<void>;
 	update(property: any, value?: any): Promise<void> {
 		let properties: ObjectLookup<any>;
 
@@ -403,11 +402,14 @@ export type EntityPropertiesOfType<T> = {
 			) | null;
 };
 
-type EntityOfTypeMemberOverrides<T> = {
-    update(args: EntityArgsOfType<T>): Promise<void>;
-};
+export interface TEntity<T> extends Entity {
+	meta: ObjectMetaOfType<T>;
+	update(args: EntityArgsOfType<T>): Promise<void>;
+	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs<EntityOfType<T>>>;
+	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs<EntityOfType<T>>>;
+}
 
-export type EntityOfType<T> = EntityPropertiesOfType<T> & EntityOfTypeMemberOverrides<T> & Entity; // Omit<Entity, keyof EntityOfTypeMemberOverrides<T>> & ;
+export type EntityOfType<T> = TEntity<T> & EntityPropertiesOfType<T>;
 
 export type TEntityConstructor<T> = {
     new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;

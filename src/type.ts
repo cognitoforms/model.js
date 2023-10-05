@@ -511,7 +511,7 @@ export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }
 
-type TypeOfTypeMemberOverrides<T> = {
+export interface TypeOfType<T> extends Type {
 	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgs<EntityOfType<T>>>;
 	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgs<EntityOfType<T>>>;
 	createIfNotExists(state: any): EntityOfType<T>;
@@ -522,9 +522,7 @@ type TypeOfTypeMemberOverrides<T> = {
 	get(id: string, exactTypeOnly?: boolean): EntityOfType<T>;
 	known(): EntityOfType<T>[];
 	addRule(optionsOrFunction: ((this: EntityOfType<T>) => void) | RuleOptions): Rule;
-};
-
-export type TypeOfType<T> = TypeOfTypeMemberOverrides<T> & Type; // Omit<Type, keyof TypeOfTypeMemberOverrides<T>> &
+}
 
 interface TypeBasicOptions {
 	$extends?: string;

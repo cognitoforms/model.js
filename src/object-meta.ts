@@ -1,5 +1,5 @@
-import { Type } from "./type";
-import { Entity } from "./entity";
+import { Type, TypeOfType } from "./type";
+import { Entity, EntityOfType } from "./entity";
 import { ConditionTarget } from "./condition-target";
 import { ConditionType, PermissionConditionType } from "./condition-type";
 import { ObservableArray } from "./observable-array";
@@ -84,4 +84,9 @@ export class ObjectMeta {
 
 		return true;
 	}
+}
+
+export interface ObjectMetaOfType<T> extends ObjectMeta {
+	readonly type: TypeOfType<T>;
+	readonly entity: EntityOfType<T>;
 }
