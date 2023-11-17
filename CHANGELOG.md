@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Check `isList` when determining whether to create a list-length or string-length rule.
+- typing: Allow `message` and `error` functions to return `null` or `undefined`.
+### Changed
+- Add `EntityType` generic type arguments to various types
+### Added
+- Add `EntityOfType` generic type.
 ## [0.8.44] - 2023-06-12
 ### Fixed
 - Ignore undefined or invalid value for reference property in initial entity state
