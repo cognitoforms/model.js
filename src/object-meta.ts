@@ -10,7 +10,7 @@ export class ObjectMeta {
 	readonly type: Type;
 	readonly entity: Entity;
 
-	readonly __pendingInvocation__: Rule[] = [];
+	readonly __pendingInvocation__: Rule[];
 
 	id: string;
 	isNew: boolean;
