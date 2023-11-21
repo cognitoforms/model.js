@@ -10,7 +10,7 @@ export class ObjectMeta {
 	readonly type: Type;
 	readonly entity: Entity;
 
-	readonly __pendingInvocation__: Rule[] = [];
+	readonly __pendingInvocation__: Rule[];
 
 	id: string;
 	isNew: boolean;
@@ -18,11 +18,12 @@ export class ObjectMeta {
 	conditions: ObservableArray<ConditionTarget>;
 
 	constructor(type: Type, entity: Entity, id: string, isNew: boolean) {
-		this.type = type;
-		this.entity = entity;
-		this.id = id;
-		this.isNew = isNew;
-		this.conditions = ObservableArray.create<ConditionTarget>();
+		Object.defineProperty(this, "type", { enumerable: true, configurable: false, writable: false, value: type });
+		Object.defineProperty(this, "entity", { enumerable: true, configurable: false, writable: false, value: entity });
+		Object.defineProperty(this, "id", { enumerable: true, configurable: false, writable: true, value: id });
+		Object.defineProperty(this, "isNew", { enumerable: true, configurable: false, writable: true, value: isNew });
+		Object.defineProperty(this, "conditions", { enumerable: true, configurable: false, writable: true, value: ObservableArray.create<ConditionTarget>() });
+		Object.defineProperty(this, "__pendingInvocation__", { enumerable: false, configurable: false, writable: false, value: [] });
 	}
 
 	/**

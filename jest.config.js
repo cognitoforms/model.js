@@ -9,7 +9,13 @@ module.exports = {
 	// globalTeardown: "<rootDir>/testing/unit/global-teardown",
 	// setupFilesAfterEnv: ["<rootDir>/testing/unit/setup"],
 	testMatch: ["**/(*.)unit.[jt]s"],
-	testPathIgnorePatterns: ["/node_modules/", "/dist/"],
+	testPathIgnorePatterns: [
+		"<rootDir>/node_modules/",
+		"<rootDir>/out/",
+		"<rootDir>/lib/",
+		"<rootDir>/esm/",
+		"<rootDir>/@types/"
+	],
 	moduleFileExtensions: ["js", "ts", "json"],
 	transform: {
 		"^.+\\.[jt]s$": "babel-jest",

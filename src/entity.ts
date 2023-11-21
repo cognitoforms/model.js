@@ -17,7 +17,7 @@ export class Entity {
 
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
-	private _context: InitializationContext = null;
+	private _context: InitializationContext;
 	readonly initialized: Promise<void>;
 
 	constructor(); // Prototype assignment *** used internally
@@ -30,8 +30,9 @@ export class Entity {
 		else if (Entity.ctorDepth === 0)
 			throw new Error("Entity constructor should not be called directly.");
 		else {
-			this.accessed = new Event<Entity, EntityAccessEventArgs>();
-			this.changed = new Event<Entity, EntityChangeEventArgs>();
+			Object.defineProperty(this, "_context", { enumerable: false, configurable: false, writable: true, value: null });
+			Object.defineProperty(this, "accessed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityAccessEventArgs>() });
+			Object.defineProperty(this, "changed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityChangeEventArgs>() });
 
 			let isNew = false;
 
@@ -50,7 +51,7 @@ export class Entity {
 			if (!(context instanceof InitializationContext))
 				context = new InitializationContext(isNew);
 
-			this.meta = new ObjectMeta(type, this, id, isNew);
+			Object.defineProperty(this, "meta", { enumerable: true, configurable: false, writable: false, value: new ObjectMeta(type, this, id, isNew) });
 
 			Object.defineProperty(this, "__fields__", { enumerable: false, configurable: false, writable: false, value: {} });
 			Object.defineProperty(this, "__pendingInit__", { enumerable: false, configurable: false, writable: false, value: {} });
