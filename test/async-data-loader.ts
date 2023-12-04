@@ -46,10 +46,6 @@ export default function AsyncDataLoader(typeName: string, map: { [id: string]: a
 				.then(() => ids.map(id => loaded[id]))
 				.then(objs => isList ? objs : objs[0]);
 		}
-
-		// return null so the framework knows there is no async resolution for this value
-		else
-			return null;
 	}
 
 	return asyncDataLoader;

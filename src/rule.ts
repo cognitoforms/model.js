@@ -17,7 +17,7 @@ export class Rule {
 	readonly rootType: Type;
 	readonly name: string;
 
-	invocationTypes: RuleInvocationType = 0;
+	invocationTypes: RuleInvocationType = 0 as any;
 	predicates: PropertyPath[] = [];
 	returnValues: Property[] = [];
 
@@ -234,7 +234,7 @@ export class Rule {
 							rule.eventScope.onExit(e => {
 								if (!e.abort) {
 									rule.returnValues.forEach((returnValue) => {
-										(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
+										(args.entity.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
 									});
 								}
 							});

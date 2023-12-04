@@ -1,9 +1,10 @@
-import { Model } from "./model";
+import { TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -14,7 +15,18 @@ function createModel(options) {
 
 describe("StringLengthRule", () => {
 	it("can be configured with contant min and max length", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Person: Person;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			Name: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				Name: {
 					type: String,
@@ -23,9 +35,7 @@ describe("StringLengthRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ Name: "Jane" });
+		var p = new Types.Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
 
 		p.Name = "J";
@@ -45,7 +55,18 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Person: Person;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			Name: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				Name: {
 					type: String,
@@ -54,9 +75,7 @@ describe("StringLengthRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ Name: "Jane" });
+		var p = new Types.Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
 
 		p.Name = "J";
@@ -68,7 +87,18 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Person: Person;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			Name: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				Name: {
 					type: String,
@@ -77,9 +107,7 @@ describe("StringLengthRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ Name: "Jane" });
+		var p = new Types.Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
 
 		p.Name = "J";
@@ -91,7 +119,19 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with dynamic function min and max values", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Person: Person;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			IsFullName: boolean;
+			Name: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				IsFullName: Boolean,
 				Name: {
@@ -109,9 +149,7 @@ describe("StringLengthRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ Name: "Jane" });
+		var p = new Types.Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Name = "J";

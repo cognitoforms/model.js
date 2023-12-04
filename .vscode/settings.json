@@ -17,5 +17,6 @@
         "bin/": true,
         "obj/": true,
         "dist/": true,
+        "**/*.bak": true,
     }
 }

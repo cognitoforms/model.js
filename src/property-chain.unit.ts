@@ -1,8 +1,8 @@
 import { PropertyChain } from "./property-chain";
-import { Model } from "./model";
-import { Type } from "./type";
+import { Model, ModelOptions } from "./model";
+import { TEntityConstructor } from "./entity";
 
-function createModel(options): Promise<Model> {
+function createModel(options: ModelOptions): Promise<Model> {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -17,7 +17,31 @@ describe("PropertyChain", () => {
 		// we create a model that has some type (Person).This type has multiple properties (GroupName, GroupId, GroupCountry etc...)
 		// that references back to one shared object's (Group) properties
 
-		const model = await createModel({
+		type Namespace = {
+			Person: Person;
+			Group: Group;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Person = {
+			Name: string;
+			Group: Group;
+			GroupName: string;
+			GroupId: string;
+			GroupCountry: string;
+			GroupLanguage: string;
+		};
+
+		type Group = {
+			Name: string;
+			Id: string;
+			Country: string;
+			Language: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				Name: {
 					type: String,
@@ -30,7 +54,7 @@ describe("PropertyChain", () => {
 					type: String,
 					get: {
 					  dependsOn: "Group.Name",
-					  function() { return this.Group.Name; }
+					  function(this: Person) { return this.Group.Name; }
 					}
 				},
 				GroupId: {
@@ -63,18 +87,15 @@ describe("PropertyChain", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
 		// Create multiple Persons (will just sit in memory)
 		// The effect is more pronounced when there are a large number of objects in memory.
 		for (let i = 0; i < 1000; i++) {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const person = new Person({ Name: "Dude Man" });
+			const person = new Types.Person({ Name: "Dude Man" });
 		}
 
 		// Create new Group
-		const Group = model.getJsType("Group");
-		const group = new Group({
+		const group = new Types.Group({
 			Name: "Test Group",
 			Id: "XDA-1V9-AM3",
 			Country: "US",
@@ -89,7 +110,7 @@ describe("PropertyChain", () => {
 		// on the Person's container object, which would unnecessarily loop over pooled entities to
 		// see if they are linked to the changed entity via a null property. This is where the slowdown comes into play.
 		// With the fix, we would prevent unnecessarily looping over said entities.
-		for (let p of (Person.meta as Type).known())
+		for (let p of Types.Person.meta.known())
 			p.Group = group;
 
 		//	Assure that testConnection() is not called (we are not unnecessarily looping) on initial assignment

@@ -1,8 +1,9 @@
-import { Model } from "./model";
+import { EntityOfType, TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -13,13 +14,24 @@ function createModel(options) {
 
 describe("ConditionRule", () => {
 	test("Custom condition", async () => {
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Text: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Text: {
 					error: {
 						dependsOn: "Text",
 						code: "Text",
-						function: function() {
+						function: function(this: Test) {
 							if (((this ? this.Text : null) !== null)) {
 								return "Test error message.";
 							}
@@ -28,9 +40,8 @@ describe("ConditionRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		var p = new Test();
+		});
+		var p = new Types.Test();
 		expect(p.meta.conditions).toHaveLength(0);
 		p.Text = "x";
 		expect(p.meta.conditions).toHaveLength(1);
@@ -38,13 +49,28 @@ describe("ConditionRule", () => {
 	});
 
 	test("Nested Property- Error appears on referenced field", async () =>{
-		const model = await createModel({
+		type Namespace = {
+			Test: Test;
+			Section: Section;
+		};
+
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Test = {
+			Section: Section;
+			Text: string;
+			Calculation: string;
+		};
+
+		type Section = {
+			Text: string;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Test: {
 				Section: {
-					type: "Section",
-					Test: {
-						type: String
-					}
+					type: "Section"
 				},
 				Calculation: {
 					type: String,
@@ -54,7 +80,7 @@ describe("ConditionRule", () => {
 					},
 					error: {
 						dependsOn: "{Calculation, Section.Text}",
-						function: function() {
+						function: function(this: EntityOfType<Test>) {
 							if (((this ? this.Calculation : null) !== null)) {
 								return "Test error message.";
 							}
@@ -69,14 +95,12 @@ describe("ConditionRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const Section = model.getJsType("Section");
-		var testForm = new Test({
-			Section: new Section()
+		});
+		var testForm = new Types.Test({
+			Section: new Types.Section()
 		});
 		expect(testForm.meta.conditions).toHaveLength(0);
-		testForm.Section.Text = "x";
+		testForm.Section!.Text = "x";
 		expect(testForm.meta.conditions).toHaveLength(1);
 		expect(testForm.meta.conditions[0].condition.targets).toHaveLength(2);
 	});

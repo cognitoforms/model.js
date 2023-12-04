@@ -1,9 +1,10 @@
-import { Model } from "./model";
+import { TEntityConstructor } from "./entity";
+import { Model, ModelOptions } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options) {
+function createModel(options: ModelOptions) {
 	return new Promise((resolve) => {
 		let model = new Model(options);
 		model.ready(() => {
@@ -13,8 +14,20 @@ function createModel(options) {
 }
 
 describe("RangeRule", () => {
+	type Namespace = {
+		Person: Person;
+	};
+
+	type Person = {
+		FirstName: string;
+		Age: number;
+	};
+
 	it("can be configured with contant min and max values", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -25,9 +38,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ FirstName: "Jane", Age: 50 });
+		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
 
 		p.Age = -5;
@@ -49,7 +60,10 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -60,9 +74,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ FirstName: "Jane", Age: 50 });
+		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = -1;
@@ -77,11 +89,12 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				FirstName: String,
-				IsAdult: Boolean,
-				IsCentenarian: Boolean,
 				Age: {
 					label: "[FirstName]'s age",
 					type: Number,
@@ -91,9 +104,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ FirstName: "Jane", Age: 1 });
+		var p = new Types.Person({ FirstName: "Jane", Age: 1 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 19;
@@ -112,7 +123,10 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with function min and max values", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -126,9 +140,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ FirstName: "Jane", Age: 50 });
+		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 17;
@@ -150,7 +162,21 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with dynamic function min and max values", async () => {
-		const model = await createModel({
+		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
+
+		type Namespace = {
+			Person: Person;
+		};
+
+		type Person = {
+			FirstName: string;
+			IsAdult: boolean;
+			IsCentenarian: boolean;
+			Age: number;
+		};
+
+		await createModel({
+			$namespace: Types as any,
 			Person: {
 				FirstName: String,
 				IsAdult: {
@@ -174,9 +200,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
-		var p = new Person({ FirstName: "Jane", Age: 50 });
+		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 17;
