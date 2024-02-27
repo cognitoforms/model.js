@@ -4,7 +4,7 @@ import { Property } from "./property";
 export class InitializationContext {
 	private newDocument = false;
 	private tasks = new Set<Promise<any>>();
-	private waiting: (() => void)[] = [];
+	private waiting: { onfullfilled: (() => void), onrejected?: (error: Error) => void }[] = [];
 
 	constructor(newDocument: boolean) {
 		this.newDocument = newDocument;
@@ -35,6 +35,12 @@ export class InitializationContext {
 				this.tasks.delete(task);
 				this.processWaitingQueue();
 			});
+		}).catch(e => {
+			console.error("Task failed with error: ", e);
+			Promise.resolve().then(() => {
+				this.tasks.delete(task);
+				this.processWaitingQueue(false, e);
+			});
 		});
 	}
 
@@ -42,20 +48,23 @@ export class InitializationContext {
 		return this.tasks.size === 0;
 	}
 
-	private processWaitingQueue() {
+	private processWaitingQueue(fullfilled: boolean = true, error: Error = null) {
 		if (this.canProcessQueue) {
 			while (this.waiting.length > 0 && this.canProcessQueue) {
-				const done = this.waiting.shift();
-				done();
+				const waiting = this.waiting.shift();
+				if (fullfilled)
+					waiting.onfullfilled();
+				else if (waiting.onrejected)
+					waiting.onrejected(error);
 			}
 		}
 	}
 
-	whenReady(callback: () => void) {
+	whenReady(onfullfilled: () => void, onrejected?: (error: Error) => void) {
 		if (this.canProcessQueue)
-			callback();
+			onfullfilled();
 		else
-			this.waiting.push(callback);
+			this.waiting.push({ onfullfilled, onrejected });
 	}
 
 	tryResolveValue(instance: Entity, property: Property, value: any) {
