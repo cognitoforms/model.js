@@ -953,11 +953,15 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 		// Do not initialize calculated properties. Calculated properties should be initialized using a property get rule.
 		if (!property.isCalculated) {
 			let setPendingInit = !property.isConstant;
-			Property$init(property, obj, Property$getInitialValue(property));
+			let initialValue: any;
 			if (property.initializer) {
-				obj.update(property.name, property.initializer.call(obj));
+				initialValue = obj.initialize(property, property.initializer.call(obj));
 				setPendingInit = false;
 			}
+			else {
+				initialValue = Property$getInitialValue(property);
+			}
+			Property$init(property, obj, initialValue);
 			// Mark the property as pending initialization if the property value may need to
 			// be established by a default calculation rule, or some other external logic.
 			// This is not relevant if it is a constant or its value is established via an initilizer.

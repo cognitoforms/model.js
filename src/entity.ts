@@ -138,6 +138,10 @@ export class Entity {
 			Property$init(prop, this, value);
 	}
 
+	initialize(prop: Property, state: any) {
+		return this.serializer.deserialize(this, state, prop, this._context);
+	}
+
 	private updateWithContext(context: InitializationContext, state: ObjectLookup<any>) {
 		const hadContext = !!this._context;
 		// Do not allow reentrant updates of the same entity for a given context
