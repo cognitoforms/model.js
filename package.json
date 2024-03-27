@@ -57,5 +57,8 @@
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0",
     "webpack-env": "^0.8.0"
+  },
+  "dependencies": {
+    "vue": "^3.3.4"
   }
 }

@@ -597,10 +597,10 @@ export class Property implements PropertyPath {
 		}
 
 		if (arguments.length > 1) {
-			Property$setter(this, obj, val, additionalArgs);
+			obj[this.name] = val;
 		}
 		else {
-			return Property$getter(this, obj);
+			return obj[this.name];
 		}
 	}
 

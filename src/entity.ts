@@ -3,7 +3,7 @@ import { Format } from "./format";
 import { Type, EntityType, isEntityType, getIdFromState } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta } from "./object-meta";
-import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
+import { Property, Property$init, Property$pendingInit } from "./property";
 import { ObjectLookup, entries } from "./helpers";
 import { DefaultSerializationSettings } from "./entity-serializer";
 
@@ -314,7 +314,7 @@ export class Entity {
 
 		if (value !== undefined)
 			try {
-				Property$setter(prop, this, value);
+				this[prop.name] = value;
 			}
 			catch (e) {
 				console.warn(e);
@@ -380,6 +380,10 @@ export class Entity {
 		};
 
 		_persist(this);
+	}
+
+	equals(other: Entity) {
+		return this.meta.type === other.meta.type && this.meta.id === other.meta.id;
 	}
 }
 

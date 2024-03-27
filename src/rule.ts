@@ -316,7 +316,7 @@ function executeRule(rule: Rule, obj: Entity): void {
 
 	try {
 		rule.eventScope.perform(() => {
-			rule.execute(obj);
+			rule.execute(obj["__proxy__"] || obj);
 		});
 	}
 	catch (e) {

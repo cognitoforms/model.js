@@ -2,7 +2,7 @@ import { Type, EntityType } from "./type";
 import { Property, PropertyBooleanFunction } from "./property";
 import { PropertyPath, PropertyAccessEventArgs, PropertyChangeEventArgs, PropertyChangeEventHandler, PropertyAccessEventHandler } from "./property-path";
 import { Event, EventSubscriber, EventPublisher } from "./events";
-import { Entity, EntityConstructorForType } from "./entity";
+import { Entity, EntityConstructorForType, isEntity } from "./entity";
 import { Format } from "./format";
 
 /**
@@ -254,11 +254,11 @@ export class PropertyChain implements PropertyPath {
 
 		// perform simple comparison if no property is defined
 		if (!viaProperty) {
-			return fromRoot === toObj;
+			return fromRoot.equals(toObj);
 		}
 
 		this.each(fromRoot, function (target) {
-			if (target === toObj) {
+			if (isEntity(target) && target.equals(toObj)) {
 				connected = true;
 				return false;
 			}
