@@ -114,7 +114,10 @@ export class Type {
 
 	create(state: any): Promise<Entity> {
 		const instance = this.createSync(state);
-		return instance.initialized.then(() => instance);
+		if (instance.initialized && instance.initialized !== true)
+			return instance.initialized.then(() => instance);
+		else
+			return Promise.resolve(instance);
 	}
 
 	/** Generates a unique id suitable for an instance in the current type hierarchy. */

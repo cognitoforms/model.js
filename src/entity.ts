@@ -18,7 +18,7 @@ export class Entity {
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
 	private _context: InitializationContext;
-	readonly initialized: Promise<void>;
+	initialized: boolean | Promise<void>;
 
 	constructor(); // Prototype assignment *** used internally
 	constructor(type: Type, id: string, properties?: ObjectLookup<any>, context?: InitializationContext); // Construct existing instance with state
@@ -82,6 +82,8 @@ export class Entity {
 					context.whenReady(resolve);
 				});
 			});
+
+			this.initialized.then(() => { this.initialized = true; });
 		}
 	}
 
@@ -140,6 +142,13 @@ export class Entity {
 
 	initialize(prop: Property, state: any) {
 		return this.serializer.deserialize(this, state, prop, this._context);
+	}
+
+	whenReady(callback: () => void) {
+		if (this._context)
+			this._context.whenReady(callback);
+		else
+			callback();
 	}
 
 	private updateWithContext(context: InitializationContext, state: ObjectLookup<any>) {
