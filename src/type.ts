@@ -391,7 +391,7 @@ export class Type {
 	 * Extends the current type with the specified format, properties and methods
 	 * @param options The options specifying how to extend the type
 	 */
-	extend(options: TypeExtensionOptions<Entity>): void {
+	extend(options: TypeExtensionOptions<any>): void {
 		let type = this;
 
 		// Utility function to convert a path string into a resolved array of Property and PropertyChain instances
@@ -448,7 +448,7 @@ export class Type {
 
 				// Property
 				else {
-					member = { ...member } as PropertyOptions<Entity>;
+					member = { ...member } as PropertyOptions<Entity, any>;
 
 					// Get Property
 					let property = this.getProperty(name);
@@ -529,18 +529,25 @@ interface TypeBasicOptions {
 	$format?: string | Format<Entity>;
 }
 
-export interface RuleOrMethodOptions<EntityType extends Entity> {
-	function: (this: EntityType, ...args: any[]) => any;
+export interface RuleOrMethodOptions<EntityType> {
+	function: (this: EntityOfType<EntityType>, ...args: any[]) => any;
 	dependsOn?: string;
 }
 
-export type RuleOrMethodFunctionOrOptions<EntityType extends Entity> = ((this: EntityType, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
+export type RuleOrMethodFunctionOrOptions<EntityType> = ((this: EntityOfType<EntityType>, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
 
-export interface TypeExtensionOptions<EntityType extends Entity> {
-	[name: string]: string | ValueType | PropertyOptions<EntityType> | RuleOrMethodFunctionOrOptions<EntityType>;
+export type ConstructorForValueType<T> =
+	T extends string ? StringConstructor :
+	T extends number ? NumberConstructor :
+	T extends boolean ? BooleanConstructor :
+	T extends Date ? DateConstructor :
+	string;
+
+export type TypeExtensionOptions<EntityType> = {
+	[P in keyof EntityType]: ConstructorForValueType<EntityType[P]> | string | PropertyOptions<EntityType, EntityType[P]> | RuleOrMethodFunctionOrOptions<EntityType>;
 }
 
-export type TypeOptions<EntityType extends Entity> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
+export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
 
 export function isValueType(type: any): type is ValueType {
 	return type === String || type === Number || type === Date || type === Boolean;

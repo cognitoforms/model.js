@@ -1,7 +1,7 @@
 import { Event, EventSubscriber, EventPublisher } from "./events";
-import { Entity, EntityChangeEventArgs, EntityAccessEventArgs } from "./entity";
+import { Entity, EntityChangeEventArgs, EntityAccessEventArgs, EntityOfType } from "./entity";
 import { Format } from "./format";
-import { Type, PropertyType, isEntityType, Value, isValue, isValueArray } from "./type";
+import { Type, PropertyType, isEntityType, Value, isValue, isValueArray, ConstructorForValueType, TypeOfType } from "./type";
 import { PropertyChain } from "./property-chain";
 import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType, flatMap } from "./helpers";
 import { ObservableArray, updateArray } from "./observable-array";
@@ -44,7 +44,7 @@ export class Property implements PropertyPath {
 	readonly changed: EventSubscriber<Entity, PropertyChangeEventArgs>;
 	readonly accessed: EventSubscriber<Entity, PropertyAccessEventArgs>;
 
-	constructor(containingType: Type, name: string, propertyType: PropertyType, isIdentifier: boolean, isList: boolean, options?: PropertyOptions<Entity>) {
+	constructor(containingType: Type, name: string, propertyType: PropertyType, isIdentifier: boolean, isList: boolean, options?: PropertyOptions<Entity, unknown>) {
 		this.containingType = containingType;
 		this.name = name;
 		this.propertyType = propertyType;
@@ -103,7 +103,7 @@ export class Property implements PropertyPath {
 			return getDefaultValue(this.isList, this.propertyType);
 	}
 
-	extend(options: PropertyOptions<Entity>, targetType?: Type): void {
+	extend(options: PropertyOptions<Entity, unknown>, targetType?: Type): void {
 		if (!targetType)
 			targetType = this.containingType;
 
@@ -610,10 +610,10 @@ export class Property implements PropertyPath {
 	}
 }
 
-export interface PropertyOptions<EntityType extends Entity> {
+export interface PropertyOptions<EntityType, P> {
 
 	/** The name or Javascript type of the property */
-	type?: string | PropertyType;
+	type: ConstructorForValueType<P> | string | PropertyType;
 
 	/**
 	*  The optional label for the property.
@@ -635,7 +635,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	helptext?: string;
 
 	/** The optional format specifier for the property. */
-	format?: string | Format<PropertyType> | PropertyFormatOptions<EntityType>;
+	format?: string | Format<P> | PropertyFormatOptions<EntityType>;
 
 	/** A non-null value if the property is constant */
 	constant?: any;
@@ -644,7 +644,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	get?: PropertyValueFunction<EntityType, any> | PropertyValueFunctionAndOptions<EntityType, any>;
 
 	/** An optional function to call when this property is updated. */
-	set?: (this: EntityType, value: any) => void;
+	set?: (this: EntityOfType<EntityType>, value: any) => void;
 
 	/** An optional constant default value, or a function or dependency function object that calculates the default value of this property. */
 	default?: PropertyValueFunction<EntityType, any> | PropertyValueFunctionAndOptions<EntityType, any> | Value | Value[] | null;
@@ -671,7 +671,7 @@ export interface PropertyOptions<EntityType extends Entity> {
 	length?: PropertyLengthOptions<EntityType>;
 }
 
-export interface PropertyFormatOptions<EntityType extends Entity> {
+export interface PropertyFormatOptions<EntityType> {
 
 	/** The human readable description of the format, such as MM/DD/YYY */
 	description: string;
@@ -682,29 +682,29 @@ export interface PropertyFormatOptions<EntityType extends Entity> {
 	/** An optional regular expression reformat string that will be used to correct the value if it matches */
 	reformat?: string;
 
-	message?: string | ((this: EntityType) => string | null | undefined);
+	message?: string | ((this: EntityOfType<EntityType>) => string | null | undefined);
 }
 
-export interface PropertyErrorFunctionAndOptions<EntityType extends Entity> {
-	function: (this: EntityType) => string | null | undefined;
+export interface PropertyErrorFunctionAndOptions<EntityType> {
+	function: (this: EntityOfType<EntityType>) => string | null | undefined;
 	dependsOn: string;
 	resource?: string;
 	code?: string;
 	properties?: string[];
 }
 
-export type PropertyValueFunction<EntityType extends Entity, T> = (this: EntityType) => T;
+export type PropertyValueFunction<EntityType, T> = (this: EntityOfType<EntityType>) => T;
 
-export interface PropertyValueFunctionAndOptions<EntityType extends Entity, ResultType> {
-	function: (this: EntityType) => ResultType;
+export interface PropertyValueFunctionAndOptions<EntityType, ResultType> {
+	function: (this: EntityOfType<EntityType>) => ResultType;
 	dependsOn?: string;
 }
 
-export function isPropertyValueFunction<EntityType extends Entity, T>(obj: any): obj is PropertyValueFunction<EntityType, T> {
+export function isPropertyValueFunction<EntityType, T>(obj: any): obj is PropertyValueFunction<EntityType, T> {
 	return typeof (obj) === "function";
 }
 
-export interface AllowedValuesFunctionAndOptions<EntityType extends Entity, ResultType> extends PropertyValueFunctionAndOptions<EntityType, ResultType> {
+export interface AllowedValuesFunctionAndOptions<EntityType, ResultType> extends PropertyValueFunctionAndOptions<EntityType, ResultType> {
 	ignoreValidation?: boolean;
 	preventInvalidValues?: boolean;
 }
@@ -713,31 +713,31 @@ type LambdaFunction<ReturnType> = () => ReturnType;
 
 type BoundFunction<ThisType, ReturnType> = (this: ThisType) => ReturnType;
 
-export interface PropertyRangeOptions<EntityType extends Entity, T> {
-	min?: T | LambdaFunction<T> | BoundFunction<EntityType, T>;
-	max?: T | LambdaFunction<T> | BoundFunction<EntityType, T>;
+export interface PropertyRangeOptions<EntityType, T> {
+	min?: T | LambdaFunction<T> | BoundFunction<EntityOfType<EntityType>, T>;
+	max?: T | LambdaFunction<T> | BoundFunction<EntityOfType<EntityType>, T>;
 	dependsOn?: string;
 }
 
-export interface PropertyLengthOptions<EntityType extends Entity> {
-	min?: number | LambdaFunction<number> | BoundFunction<EntityType, number>;
-	max?: number | LambdaFunction<number> | BoundFunction<EntityType, number>;
+export interface PropertyLengthOptions<EntityType> {
+	min?: number | LambdaFunction<number> | BoundFunction<EntityOfType<EntityType>, number>;
+	max?: number | LambdaFunction<number> | BoundFunction<EntityOfType<EntityType>, number>;
 	dependsOn?: string;
 }
 
-export type PropertyBooleanFunction<EntityType extends Entity>= (this: EntityType) => boolean;
+export type PropertyBooleanFunction<EntityType> = (this: EntityOfType<EntityType>) => boolean;
 
-export interface PropertyBooleanFunctionAndOptions<EntityType extends Entity> {
-	function?: (this: EntityType) => boolean;
+export interface PropertyBooleanFunctionAndOptions<EntityType> {
+	function?: (this: EntityOfType<EntityType>) => boolean;
 	dependsOn?: string;
-	message?: string | ((this: EntityType) => string | null | undefined);
+	message?: string | ((this: EntityOfType<EntityType>) => string | null | undefined);
 }
 
-export function isPropertyBooleanFunctionAndOptions<EntityType extends Entity>(obj: any): obj is PropertyBooleanFunctionAndOptions<EntityType> {
+export function isPropertyBooleanFunctionAndOptions<EntityType>(obj: any): obj is PropertyBooleanFunctionAndOptions<EntityType> {
 	return typeof (obj) === "object";
 }
 
-export function isPropertyBooleanFunction<EntityType extends Entity>(obj: any): obj is PropertyBooleanFunction<EntityType> {
+export function isPropertyBooleanFunction<EntityType>(obj: any): obj is PropertyBooleanFunction<EntityType> {
 	return typeof (obj) === "function";
 }
 
@@ -745,8 +745,8 @@ export function isPropertyOptions<TOptions>(obj: any, check: (options: any) => b
 	return isType<TOptions>(obj, d => getTypeName(d) === "object" && (!check || check(d)));
 }
 
-export interface PropertyConstructor {
-	new(containingType: Type, name: string, jstype: PropertyType, isList: boolean, options?: PropertyOptions<Entity>): Property;
+export interface PropertyConstructor<E extends Type, P> {
+	new(containingType: TypeOfType<E>, name: string, jstype: PropertyType, isList: boolean, options?: PropertyOptions<E, P>): Property;
 }
 
 export type PropertyGetMethod = (property: Property, entity: Entity, additionalArgs: any) => any;

@@ -1,5 +1,5 @@
 /* eslint-disable no-new */
-import { Model } from "./model";
+import { Model, ModelNamespace, ModelOfType } from "./model";
 import { Entity, EntityArgsOfType, EntityOfType, TEntityConstructor, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
@@ -15,8 +15,6 @@ type Namespace = {
 	Movie: Movie,
 	Person: Person
 };
-
-let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> };
 
 type Credits = {
 	Movie: Movie;
@@ -60,11 +58,10 @@ type Person = {
 	Salary: number;
 }
 
-function resetModel() {
-	Types = {} as any;
+function resetModel(ns?: any) {
 	CultureInfo.setup();
-	return new Model({
-		$namespace: Types as any,
+	return Model.create<Namespace>({
+		$namespace: ns,
 		$locale: "en",
 		$culture: CultureInfo.CurrentCulture as any,
 		Credits: {
@@ -169,9 +166,11 @@ const Alien = {
 };
 
 describe("Entity", () => {
-	let model: Model;
-	beforeEach(() => {
-		model = resetModel();
+	let model: ModelOfType<Namespace>;
+	let Types: ModelNamespace<Namespace>;
+	beforeEach(async () => {
+		Types = {} as any;
+		model = await resetModel(Types);
 	});
 
 	describe("construction", () => {
@@ -563,12 +562,12 @@ describe("Entity", () => {
 		describe("static", () => {
 			beforeAll(() => {
 				Types.Person.meta.extend({
-					FirstName: { default: _default.Director.FirstName },
-					LastName: { default: _default.Director.LastName }
+					FirstName: { type: String, default: _default.Director.FirstName },
+					LastName: { type: String, default: _default.Director.LastName }
 				});
 
 				Types.Movie.meta.extend({
-					Title: { default: _default.Title }
+					Title: { type: String, default: _default.Title }
 				});
 			});
 
@@ -592,15 +591,15 @@ describe("Entity", () => {
 				calculated.mockReset();
 			});
 
-			beforeAll(() => {
+			beforeEach(() => {
 				Types.Person.meta.extend({
-					FirstName: { default: () => _default.Director.FirstName },
-					LastName: { default: () => _default.Director.LastName }
+					FirstName: { type: String, default: () => _default.Director.FirstName },
+					LastName: { type: String, default: () => _default.Director.LastName }
 				});
 
 				Types.Movie.meta.extend({
-					Title: { default: () => _default.Title },
-					Director: { default: () => new Types.Person() }
+					Title: { type: String, default: () => _default.Title },
+					Director: { type: "Person", default: () => new Types.Person() }
 				});
 			});
 
@@ -625,34 +624,53 @@ describe("Entity", () => {
 	});
 
 	describe("list", () => {
-		const PersonWithSkillsModel = {
-			Skill: {
-				Name: String,
-				Proficiency: {
-					default() { return null; },
-					type: Number
-				}
-			},
-			Person: {
-				Id: { identifier: true, type: String },
-				Skills: {
+		type Person = {
+			Id: string;
+			Skills: Skill[];
+		};
+
+		type Skill = {
+			Name: string;
+			Proficiency: number;
+		};
+
+		type PersonWithSkillsNamespace = {
+			Person: Person;
+			Skill: Skill;
+		};
+
+		let PersonWithSkillsTypes: ModelNamespace<PersonWithSkillsNamespace>;
+		beforeEach(async () => {
+			PersonWithSkillsTypes = {} as any;
+			await Model.create<PersonWithSkillsNamespace>({
+				$namespace: PersonWithSkillsTypes,
+				Skill: {
+					Name: String,
+					Proficiency: {
+						default() { return null; },
+						type: Number
+					}
+				},
+				Person: {
 					Id: { identifier: true, type: String },
-					type: "Skill[]",
-					default() {
-						return [{
-							Id: 1,
-							Name: "Climbing",
-							Proficiency: 4
-						},
-						{
-							Id: 2,
-							Name: "Eating",
-							Proficiency: 4
-						}];
+					Skills: {
+						type: "Skill[]",
+						default() {
+							return [{
+								Id: 1,
+								Name: "Climbing",
+								Proficiency: 4
+							},
+							{
+								Id: 2,
+								Name: "Eating",
+								Proficiency: 4
+							}];
+						}
 					}
 				}
-			}
-		};
+			});
+		});
 
 		it("can add/remove primitive items", () => {
 			const movie = new Types.Movie(Alien) as any;
@@ -689,47 +707,40 @@ describe("Entity", () => {
 		});
 
 		it("can set an empty list", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [] });
 			expect(instance.Skills.length).toBe(0);
 		});
 
 		it("Updating a list with an array with less items does not leave extra items in the array", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
-			const skillInstance = await model.types.Skill.create({ Name: "Surfing" }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
+			const skillInstance = await PersonWithSkillsTypes.Skill.meta.create({ Name: "Surfing" }) as any;
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [skillInstance] }, null, true);
 			expect(instance.Skills.length).toBe(1);
 		});
 
 		it("runs default rule for list property for new instance with no property value in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 		});
 
 		it("does not runs default rule for list property for new object with empty list in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({ Skills: [] }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({ Skills: [] }) as any;
 			expect(instance.Skills.length).toBe(0);
 		});
 
 		it("runs default rule for list property for existing object with no property value in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({ Id: "test" }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(2);
 		});
 
 		it("triggers property change when default calculation runs for list", async () => {
-			const model = new Model(PersonWithSkillsModel);
-
 			const skillsChanged = jest.fn();
-			model.types["Person"].getProperty("Skills").changed.subscribe(skillsChanged);
+			PersonWithSkillsTypes.Person.meta.getProperty("Skills").changed.subscribe(skillsChanged);
 
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 
 			expect(skillsChanged).toBeCalledTimes(1);
