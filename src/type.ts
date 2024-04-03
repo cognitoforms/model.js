@@ -18,7 +18,7 @@ export class Type {
 	// changed without fundamentally changing what it represents
 	readonly model: Model;
 	readonly fullName: string;
-	readonly jstype: EntityType;
+	readonly jstype: EntityConstructor;
 	readonly baseType: Type;
 	readonly derivedTypes: Type[];
 
@@ -504,14 +504,14 @@ export class Type {
 
 export type Value = string | number | Date | boolean;
 export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
-export type EntityType = EntityConstructor;
-export type PropertyType = ValueType | EntityType | ObjectConstructor;
+export type PropertyType = ValueType | EntityConstructor | ObjectConstructor;
 
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }
 
 export interface TypeOfType<T> extends Type {
+	readonly jstype: EntityConstructorForType<T>;
 	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgsForType<T>>;
 	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgsForType<T>>;
 	createIfNotExists(state: any): EntityOfType<T>;

@@ -1,6 +1,6 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType, getIdFromState, TypeOfType } from "./type";
+import { Type, isEntityType, getIdFromState, TypeOfType } from "./type";
 import { InitializationContext } from "./initilization-context";
 import { ObjectMeta, ObjectMetaOfType } from "./object-meta";
 import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
@@ -330,7 +330,7 @@ export class Entity {
 		// Get the entity format to use
 		let formatter: Format<Entity> = null;
 		if (format) {
-			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format, formatEval);
+			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityConstructor, format, formatEval);
 		}
 		else {
 			formatter = this.meta.type.format;
