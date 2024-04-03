@@ -359,7 +359,7 @@ export class Model {
 
 		// Otherwise, create and cache the format
 		if (isEntityType(type)) {
-			return (formats[format] = Format.fromTemplate(type.meta, format, formatEval)) as Format<T>;
+			return (formats[format] = Format.fromTemplate<unknown>(type.meta, format, formatEval)) as unknown as Format<T>;
 		}
 		else {
 			// otherwise, call the format provider to create a new format
