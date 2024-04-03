@@ -623,7 +623,7 @@ export function Type$generateConstructor(type: Type, fullName: string, baseType:
 	// The final name to use is the last token
 	let finalName = token;
 
-	let BaseConstructor: EntityConstructor;
+	let BaseConstructor: EntityConstructor | typeof Entity;
 
 	if (baseType) {
 		BaseConstructor = baseType.jstype;

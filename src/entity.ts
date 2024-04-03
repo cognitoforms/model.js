@@ -432,8 +432,19 @@ export type EntityArgsOfType<T> = Partial<{
 }>;
 
 export interface EntityConstructor {
+	/**
+	 * Construct a new instance with no initial state specified
+	 */
 	new(): Entity;
-	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
+	/**
+	 * Construct an existing instance with persisted state
+	 */
+	new(id: string, args?: ObjectLookup<any>): Entity;
+	/**
+	 * Construct a new instance with initial state
+	 */
+	new(args?: ObjectLookup<any>): Entity;
+	meta: Type;
 }
 
 export type EntityConstructorForType<T> =
@@ -442,7 +453,17 @@ export type EntityConstructorForType<T> =
 	T extends boolean ? never :
 	T extends Date ? never :
 	{
+		/**
+		 * Construct a new instance with no initial state specified
+		 */
+		new(): EntityOfType<T>;
+		/**
+		 * Construct an existing instance with persisted state
+		 */
 		new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
+		/**
+		 * Construct a new instance with initial state
+		 */
 		new(args?: EntityArgsOfType<T>): EntityOfType<T>;
 		meta: TypeOfType<T>;
 	};
