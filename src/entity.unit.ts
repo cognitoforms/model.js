@@ -1,6 +1,6 @@
 /* eslint-disable no-new */
 import { Model, ModelNamespace, ModelOfType } from "./model";
-import { Entity, EntityArgsOfType, EntityOfType, TEntityConstructor, isEntity } from "./entity";
+import { Entity, EntityArgsOfType, EntityOfType, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { ArrayChangeType, updateArray } from "./observable-array";
@@ -531,7 +531,7 @@ describe("Entity", () => {
 				Test: Test;
 			};
 
-			let defaultTypes: { [T in keyof defaultNamespace]: TEntityConstructor<defaultNamespace[T]> } = {} as any;
+			let defaultTypes: { [T in keyof defaultNamespace]: EntityConstructorForType<defaultNamespace[T]> } = {} as any;
 
 			type Test = {
 				A: string;
