@@ -412,12 +412,6 @@ export interface EntityBasePropertiesOfType<T> extends Entity {
 
 export type EntityOfType<T> = EntityBasePropertiesOfType<T> & EntityDynamicPropertiesOfType<T>;
 
-export type EntityConstructorForType<T> = {
-    new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
-    new(args?: EntityArgsOfType<T>): EntityOfType<T>;
-	meta: TypeOfType<T>;
-};
-
 export type EntityArgsOfType<T> = Partial<{
     -readonly [P in keyof T]:
 		T[P] extends (infer TItem)[]
@@ -441,6 +435,12 @@ export interface EntityConstructor {
 	new(): Entity;
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
 }
+
+export type EntityConstructorForType<T> = {
+    new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
+    new(args?: EntityArgsOfType<T>): EntityOfType<T>;
+	meta: TypeOfType<T>;
+};
 
 export interface EntityRegisteredEventArgs {
 	entity: Entity;
