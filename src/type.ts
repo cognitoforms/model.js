@@ -553,7 +553,7 @@ export function isValueType(type: any): type is ValueConstructor {
 	return type === String || type === Number || type === Date || type === Boolean;
 }
 
-export function isValue<T = Value | string | number | Date | boolean>(value: any, type: ValueConstructor = null): value is T {
+export function isValue<T = Value>(value: any, type: ValueConstructor = null): value is T {
 	if (value == null)
 		return false;
 
