@@ -192,7 +192,7 @@ export class EntitySerializer {
 
 		let value: any;
 
-		const resolveEntity = (type: EntityConstructorForType<Entity>, state: any) => {
+		const resolveEntity = <T>(type: EntityConstructorForType<T>, state: any) => {
 			let entity: Entity;
 			let id: any = type.meta.identifier ? state[type.meta.identifier.name] : null;
 			if (id)

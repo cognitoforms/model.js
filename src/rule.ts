@@ -1,4 +1,4 @@
-import { Entity, EntityConstructorForType, EntityChangeEventArgs } from "./entity";
+import { Entity, EntityConstructor, EntityChangeEventArgs } from "./entity";
 import { PropertyPath } from "./property-path";
 import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
@@ -234,7 +234,7 @@ export class Rule {
 							rule.eventScope.onExit(e => {
 								if (!e.abort) {
 									rule.returnValues.forEach((returnValue) => {
-										(args.entity.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
+										(args.entity.changed as Event<Entity, EntityChangeEventArgs>).publish(args.entity, { entity: args.entity, property: returnValue, newValue: returnValue.value(args.entity) });
 									});
 								}
 							});
@@ -260,7 +260,7 @@ export interface RuleOptions {
 	/** Array of properties (strings or Property instances) that the rule is responsible for calculating */
 	returns?: Property[];
 
-	rootType?: EntityConstructorForType<Entity>;
+	rootType?: EntityConstructor;
 }
 
 export interface RuleInvocationOptions {

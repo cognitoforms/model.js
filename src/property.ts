@@ -908,9 +908,9 @@ function Property$subArrayEvents(obj: Entity, property: Property, array: Observa
 		// Assign additional collection change event arguments to the property change event
 		var additionalArgs = { changes: args.changes, collectionChanged: true, ...args.additionalArgs };
 
-		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
+		(property.containingType.model.listChanged as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 		(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
-		(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
+		(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 	});
 }
 
@@ -942,7 +942,7 @@ export function Property$init(property: Property, obj: Entity, val: any): void {
 	}
 
 	// TODO: Implement observable?
-	(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, { entity: obj, property, newValue: val });
+	(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, { entity: obj, property, newValue: val });
 }
 
 function Property$ensureInited(property: Property, obj: Entity): void {
@@ -976,7 +976,7 @@ function Property$getter(property: Property, obj: Entity): any {
 
 	// Raise access events
 	(property.accessed as EventPublisher<Entity, PropertyAccessEventArgs>).publish(obj, { entity: obj, property, value: obj.__fields__[property.name] });
-	(obj.accessed as Event<Entity, EntityAccessEventArgs<Entity>>).publish(obj, { entity: obj, property });
+	(obj.accessed as Event<Entity, EntityAccessEventArgs>).publish(obj, { entity: obj, property });
 
 	// Return the property value
 	return obj.__fields__[property.name];
@@ -1057,9 +1057,9 @@ function Property$setValue(property: Property, obj: Entity, currentValue: any, n
 		// Do not raise change if the property has not been initialized.
 		if (oldValue !== undefined) {
 			var eventArgs = { entity: obj, property, newValue, oldValue };
-			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
+			(property.containingType.model.afterPropertySet as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 			(property.changed as EventPublisher<Entity, PropertyChangeEventArgs>).publish(obj, merge<PropertyChangeEventArgs>(eventArgs, additionalArgs));
-			(obj.changed as Event<Entity, EntityChangeEventArgs<Entity>>).publish(obj, merge<EntityChangeEventArgs<Entity>>(eventArgs, additionalArgs));
+			(obj.changed as Event<Entity, EntityChangeEventArgs>).publish(obj, merge<EntityChangeEventArgs>(eventArgs, additionalArgs));
 		}
 	}
 }

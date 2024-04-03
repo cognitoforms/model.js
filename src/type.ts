@@ -1,5 +1,5 @@
 import { Model } from "./model";
-import { Entity, EntityConstructorForType, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType } from "./entity";
+import { Entity, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType, EntityInitNewEventArgsForType, EntityInitExistingEventArgsForType, EntityConstructorForType } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
 import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
@@ -36,8 +36,8 @@ export class Type {
 
 	readonly _formats: { [name: string]: Format<any> };
 
-	readonly initNew: EventSubscriber<Type, EntityInitNewEventArgs<Entity>>;
-	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs<Entity>>;
+	readonly initNew: EventSubscriber<Type, EntityInitNewEventArgs>;
+	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
 	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<Entity>) {
@@ -59,8 +59,8 @@ export class Type {
 			baseType.derivedTypes.push(this);
 		}
 
-		this.initNew = new Event<Type, EntityInitNewEventArgs<Entity>>();
-		this.initExisting = new Event<Type, EntityInitExistingEventArgs<Entity>>();
+		this.initNew = new Event<Type, EntityInitNewEventArgs>();
+		this.initExisting = new Event<Type, EntityInitExistingEventArgs>();
 		// this.conditionsChanged = new Event<Type, ConditionTargetsChangedEventArgs>();
 
 		// Set Format
@@ -173,7 +173,7 @@ export class Type {
 			}
 		}
 
-		(this.model.entityRegistered as Event<Model, EntityRegisteredEventArgs<Entity>>).publish(this.model, { entity: obj });
+		(this.model.entityRegistered as Event<Model, EntityRegisteredEventArgs>).publish(this.model, { entity: obj });
 	}
 
 	changeObjectId(oldId: string, newId: string): Entity | void {
@@ -504,7 +504,7 @@ export class Type {
 
 export type Value = string | number | Date | boolean;
 export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
-export type EntityType = EntityConstructorForType<Entity>;
+export type EntityType = EntityConstructor;
 export type PropertyType = ValueType | EntityType | ObjectConstructor;
 
 export interface TypeConstructor {
@@ -512,8 +512,8 @@ export interface TypeConstructor {
 }
 
 export interface TypeOfType<T> extends Type {
-	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgs<EntityOfType<T>>>;
-	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgs<EntityOfType<T>>>;
+	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgsForType<T>>;
+	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgsForType<T>>;
 	createIfNotExists(state: any): EntityOfType<T>;
 	createSync(state: any): EntityOfType<T>;
 	create(state: any): Promise<EntityOfType<T>>;
@@ -581,7 +581,7 @@ export function isValueArray(value: any): value is Value[] {
 	return isValueType(itemType);
 }
 
-export function isEntityType(type: any): type is EntityType {
+export function isEntityType(type: any): type is EntityConstructorForType<any> {
 	return type.meta && type.meta instanceof Type;
 }
 
@@ -600,7 +600,7 @@ export function Type$generateMethod(type: Type, target: any, name: string, fn: F
 // TODO: Get rid of disableConstruction?
 let disableConstruction = false;
 
-export function Type$generateConstructor(type: Type, fullName: string, baseType: Type = null, global: any = null): EntityConstructorForType<Entity> {
+export function Type$generateConstructor(type: Type, fullName: string, baseType: Type = null, global: any = null): EntityConstructor {
 	// Create namespaces as needed
 	let nameTokens: string[] = fullName.split(".");
 	let token: string = nameTokens.shift();

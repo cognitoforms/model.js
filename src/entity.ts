@@ -16,8 +16,8 @@ export class Entity {
 	readonly __fields__: { [name: string]: any };
 	readonly __pendingInit__: { [name: string]: boolean };
 
-	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs<Entity>>;
-	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs<Entity>>;
+	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs>;
+	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs>;
 	private _context: InitializationContext;
 	readonly initialized: Promise<void>;
 
@@ -32,8 +32,8 @@ export class Entity {
 			throw new Error("Entity constructor should not be called directly.");
 		else {
 			Object.defineProperty(this, "_context", { enumerable: false, configurable: false, writable: true, value: null });
-			Object.defineProperty(this, "accessed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityAccessEventArgs<Entity>>() });
-			Object.defineProperty(this, "changed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityChangeEventArgs<Entity>>() });
+			Object.defineProperty(this, "accessed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityAccessEventArgs>() });
+			Object.defineProperty(this, "changed", { enumerable: false, configurable: false, writable: false, value: new Event<Entity, EntityChangeEventArgs>() });
 
 			let isNew = false;
 
@@ -75,9 +75,9 @@ export class Entity {
 
 					for (let t = type; t; t = t.baseType) {
 						if (isNew)
-							(t.initNew as Event<Type, EntityInitNewEventArgs<Entity>>).publish(t, { entity: this });
+							(t.initNew as Event<Type, EntityInitNewEventArgs>).publish(t, { entity: this });
 						else
-							(t.initExisting as Event<Type, EntityInitExistingEventArgs<Entity>>).publish(t, { entity: this });
+							(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
 					}
 
 					context.whenReady(resolve);
@@ -406,13 +406,13 @@ export type EntityPropertiesOfType<T> = {
 export interface TEntity<T> extends Entity {
 	meta: ObjectMetaOfType<T>;
 	update(args: EntityArgsOfType<T>): Promise<void>;
-	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgs<EntityOfType<T>>>;
-	readonly changed: EventSubscriber<Entity, EntityChangeEventArgs<EntityOfType<T>>>;
+	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
+	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
 
 export type EntityOfType<T> = TEntity<T> & EntityPropertiesOfType<T>;
 
-export type TEntityConstructor<T> = {
+export type EntityConstructorForType<T> = {
     new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
     new(args?: EntityArgsOfType<T>): EntityOfType<T>;
 	meta: TypeOfType<T>;
@@ -437,51 +437,63 @@ export type EntityArgsOfType<T> = Partial<{
 			) | null;
 }>;
 
-// TODO: Replace with TEntityConstructor
 export interface EntityConstructor {
 	new(): Entity;
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
 }
 
-// TODO: Replace with TEntityConstructor, rename to EntityConstructorOfType
-export interface EntityConstructorForType<EntityType extends Entity> extends EntityConstructor {
-	new(): EntityType;
-	new(properties?: ObjectLookup<any>): EntityType; // Construct new instance with state
-	meta: Type;
+export interface EntityRegisteredEventArgs {
+	entity: Entity;
 }
 
-export interface EntityRegisteredEventArgs<EntityType extends Entity> {
-	entity: EntityType;
+export interface EntityRegisteredEventArgsForType<EntityType> {
+	entity: EntityOfType<EntityType>;
 }
 
-export interface EntityInitNewEventArgs<EntityType extends Entity> {
-	entity: EntityType;
+export interface EntityInitNewEventArgs {
+	entity: Entity;
 }
 
-export interface EntityInitExistingEventArgs<EntityType extends Entity> {
-	entity: EntityType;
+export interface EntityInitNewEventArgsForType<EntityType> {
+	entity: EntityOfType<EntityType>;
 }
 
-export interface EntityAccessEventHandler<EntityType extends Entity> {
-	(this: Property, args: EventObject & EntityAccessEventArgs<EntityType>): void;
+export interface EntityInitExistingEventArgs {
+	entity: Entity;
 }
 
-export interface EntityAccessEventArgs<EntityType extends Entity> {
-	entity: EntityType;
+export interface EntityInitExistingEventArgsForType<EntityType> {
+	entity: EntityOfType<EntityType>;
+}
+
+export interface EntityAccessEventHandler<EntityType> {
+	(this: Property, args: EventObject & EntityAccessEventArgsForType<EntityType>): void;
+}
+
+export interface EntityAccessEventArgs {
+	entity: Entity;
 	property: Property;
 }
 
-export interface EntityChangeEventHandler<EntityType extends Entity> {
-	(this: Property, args: EventObject & EntityChangeEventArgs<EntityType>): void;
+export interface EntityAccessEventArgsForType<EntityType> extends EntityAccessEventArgs {
+	entity: EntityOfType<EntityType>;
 }
 
-export interface EntityChangeEventArgs<EntityType extends Entity> {
-	entity: EntityType;
+export interface EntityChangeEventHandler<EntityType> {
+	(this: Property, args: EventObject & EntityChangeEventArgsForType<EntityType>): void;
+}
+
+export interface EntityChangeEventArgs {
+	entity: Entity;
 	property: Property;
 	oldValue?: any;
 	newValue: any;
 }
 
-export function isEntity<EntityType extends Entity>(obj): obj is EntityType {
+export interface EntityChangeEventArgsForType<EntityType> extends EntityChangeEventArgs {
+	entity: EntityOfType<EntityType>;
+}
+
+export function isEntity<EntityType>(obj): obj is EntityOfType<EntityType> {
 	return obj && obj.meta && obj.meta.type && obj.meta.type.jstype && isEntityType(obj.meta.type.jstype);
 }

@@ -1,6 +1,6 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
-import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs, TEntityConstructor } from "./entity";
+import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs, EntityConstructorForType } from "./entity";
 import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeOfType } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
@@ -20,9 +20,9 @@ export class Model {
 	readonly $resources: LocalizedResourcesMap;
 	readonly $culture: CultureInfo;
 
-	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs<Entity>>;
-	readonly afterPropertySet: EventSubscriber<Entity, EntityChangeEventArgs<Entity>>;
-	readonly listChanged: EventSubscriber<Entity, EntityChangeEventArgs<Entity>>;
+	readonly entityRegistered: EventSubscriber<Model, EntityRegisteredEventArgs>;
+	readonly afterPropertySet: EventSubscriber<Entity, EntityChangeEventArgs>;
+	readonly listChanged: EventSubscriber<Entity, EntityChangeEventArgs>;
 	readonly eventScope: EventScope;
 
 	private _readyCallbacks: (() => void)[];
@@ -34,9 +34,9 @@ export class Model {
 	constructor(options?: ModelOptions<any>, config?: ModelConfiguration) {
 		this.types = {};
 		this.settings = new ModelSettings(config);
-		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs<Entity>>();
-		this.afterPropertySet = new Event<Entity, EntityChangeEventArgs<Entity>>();
-		this.listChanged = new Event<Entity, EntityChangeEventArgs<Entity>>();
+		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
+		this.afterPropertySet = new Event<Entity, EntityChangeEventArgs>();
+		this.listChanged = new Event<Entity, EntityChangeEventArgs>();
 		this.eventScope = EventScope.create(this.settings.eventScopeSettings);
 
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
@@ -359,7 +359,7 @@ export class Model {
 
 		// Otherwise, create and cache the format
 		if (isEntityType(type)) {
-			return (formats[format] = Format.fromTemplate(type.meta, format, formatEval));
+			return (formats[format] = Format.fromTemplate(type.meta, format, formatEval)) as Format<T>;
 		}
 		else {
 			// otherwise, call the format provider to create a new format
@@ -418,7 +418,7 @@ export type ModelLocalizationOptions = {
 }
 
 export type ModelNamespace<TTypes> = {
-	[T in keyof TTypes]: TEntityConstructor<TTypes[T]>;
+	[T in keyof TTypes]: EntityConstructorForType<TTypes[T]>;
 }
 
 export type ModelNamespaceOption<TTypes> = {
