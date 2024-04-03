@@ -384,7 +384,7 @@ export class Entity {
 	}
 }
 
-export type EntityPropertiesOfType<T> = {
+export type EntityDynamicPropertiesOfType<T> = {
     [P in keyof T]:
 		T[P] extends (infer TItem)[]
 			? ObservableArray<(
@@ -410,7 +410,7 @@ export interface TEntity<T> extends Entity {
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
 
-export type EntityOfType<T> = TEntity<T> & EntityPropertiesOfType<T>;
+export type EntityOfType<T> = TEntity<T> & EntityDynamicPropertiesOfType<T>;
 
 export type EntityConstructorForType<T> = {
     new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
