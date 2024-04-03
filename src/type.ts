@@ -514,6 +514,8 @@ export type ValueConstructorForType<T> =
 
 export type PropertyType = ValueConstructor | EntityConstructor | ObjectConstructor;
 
+export type PropertyTypeForType<T> = ValueConstructorForType<T> | EntityConstructorForType<T> | ObjectConstructor;
+
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }

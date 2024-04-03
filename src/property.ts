@@ -1,7 +1,7 @@
 import { Event, EventSubscriber, EventPublisher } from "./events";
 import { Entity, EntityChangeEventArgs, EntityAccessEventArgs, EntityOfType } from "./entity";
 import { Format } from "./format";
-import { Type, PropertyType, isEntityType, Value, isValue, isValueArray, ValueConstructorForType, TypeOfType } from "./type";
+import { Type, PropertyType, isEntityType, Value, isValue, isValueArray, TypeOfType, PropertyTypeForType } from "./type";
 import { PropertyChain } from "./property-chain";
 import { getTypeName, getDefaultValue, parseFunctionName, ObjectLookup, merge, getConstructorName, isType, flatMap } from "./helpers";
 import { ObservableArray, updateArray } from "./observable-array";
@@ -613,7 +613,7 @@ export class Property implements PropertyPath {
 export interface PropertyOptions<EntityType, P> {
 
 	/** The name or Javascript type of the property */
-	type: ValueConstructorForType<P> | string | PropertyType;
+	type: string | PropertyTypeForType<P>;
 
 	/**
 	*  The optional label for the property.

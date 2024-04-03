@@ -436,11 +436,16 @@ export interface EntityConstructor {
 	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
 }
 
-export type EntityConstructorForType<T> = {
-    new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
-    new(args?: EntityArgsOfType<T>): EntityOfType<T>;
-	meta: TypeOfType<T>;
-};
+export type EntityConstructorForType<T> =
+	T extends string ? never :
+	T extends number ? never :
+	T extends boolean ? never :
+	T extends Date ? never :
+	{
+		new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
+		new(args?: EntityArgsOfType<T>): EntityOfType<T>;
+		meta: TypeOfType<T>;
+	};
 
 export interface EntityRegisteredEventArgs {
 	entity: Entity;
