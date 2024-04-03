@@ -503,7 +503,15 @@ export class Type {
 }
 
 export type Value = string | number | Date | boolean;
+
 export type ValueConstructor = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
+export type ValueConstructorForType<T> =
+	T extends string ? StringConstructor :
+	T extends number ? NumberConstructor :
+	T extends boolean ? BooleanConstructor :
+	T extends Date ? DateConstructor :
+	never;
+
 export type PropertyType = ValueConstructor | EntityConstructor | ObjectConstructor;
 
 export interface TypeConstructor {
@@ -536,15 +544,8 @@ export interface RuleOrMethodOptions<EntityType> {
 
 export type RuleOrMethodFunctionOrOptions<EntityType> = ((this: EntityOfType<EntityType>, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
 
-export type ConstructorForValueType<T> =
-	T extends string ? StringConstructor :
-	T extends number ? NumberConstructor :
-	T extends boolean ? BooleanConstructor :
-	T extends Date ? DateConstructor :
-	string;
-
 export type TypeExtensionOptions<EntityType> = {
-	[P in keyof EntityType]: ConstructorForValueType<EntityType[P]> | string | PropertyOptions<EntityType, EntityType[P]> | RuleOrMethodFunctionOrOptions<EntityType>;
+	[P in keyof EntityType]: ValueConstructorForType<EntityType[P]> | string | PropertyOptions<EntityType, EntityType[P]> | RuleOrMethodFunctionOrOptions<EntityType>;
 }
 
 export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
