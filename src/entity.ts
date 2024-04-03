@@ -403,14 +403,14 @@ export type EntityDynamicPropertiesOfType<T> = {
 			) | null;
 };
 
-export interface EntityBasePropertiesOfType<T> extends Entity {
+export interface EntityBasePropertiesOfType<T> {
 	meta: ObjectMetaOfType<T>;
 	update(args: EntityArgsOfType<T>): Promise<void>;
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
 
-export type EntityOfType<T> = EntityBasePropertiesOfType<T> & EntityDynamicPropertiesOfType<T>;
+export type EntityOfType<T> = Entity & EntityBasePropertiesOfType<T> & EntityDynamicPropertiesOfType<T>;
 
 export type EntityArgsOfType<T> = Partial<{
     -readonly [P in keyof T]:
