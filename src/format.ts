@@ -82,7 +82,6 @@ export abstract class Format<T> {
 		return new CustomFormat<T>(model, options);
 	}
 
-	// TODO: Infer from type? (Doesn't provide any value in this context)
 	static fromTemplate<EntityType>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<EntityOfType<EntityType>> {
 		return new ModelFormat<EntityOfType<EntityType>>(type, template, formatEval);
 	}
