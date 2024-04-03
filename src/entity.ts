@@ -403,14 +403,14 @@ export type EntityDynamicPropertiesOfType<T> = {
 			) | null;
 };
 
-export interface TEntity<T> extends Entity {
+export interface EntityBasePropertiesOfType<T> extends Entity {
 	meta: ObjectMetaOfType<T>;
 	update(args: EntityArgsOfType<T>): Promise<void>;
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
 
-export type EntityOfType<T> = TEntity<T> & EntityDynamicPropertiesOfType<T>;
+export type EntityOfType<T> = EntityBasePropertiesOfType<T> & EntityDynamicPropertiesOfType<T>;
 
 export type EntityConstructorForType<T> = {
     new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
