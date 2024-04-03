@@ -40,7 +40,7 @@ export class Type {
 	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
-	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<Entity>) {
+	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<unknown>) {
 		this.model = model;
 		this.fullName = fullName;
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
@@ -410,7 +410,7 @@ export class Type {
 
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.model.prepare(() => {
-			const isRuleMethod = (value: any): value is RuleOrMethodOptions<Entity> => value.hasOwnProperty("function");
+			const isRuleMethod = (value: any): value is RuleOrMethodOptions<unknown> => value.hasOwnProperty("function");
 
 			// Type Members
 			for (let [name, member] of entries(options)) {
@@ -448,7 +448,7 @@ export class Type {
 
 				// Property
 				else {
-					member = { ...member } as PropertyOptions<Entity, any>;
+					member = { ...member } as PropertyOptions<unknown, any>;
 
 					// Get Property
 					let property = this.getProperty(name);

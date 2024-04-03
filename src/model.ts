@@ -260,7 +260,7 @@ export class Model {
 					}
 				}
 
-				let typeOptions = options[typeName] as TypeOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptions<unknown>;
 				let type = this.types[typeName];
 
 				typesToInitialize.push(typeName);
@@ -283,7 +283,7 @@ export class Model {
 
 			// Extend Types
 			for (let typeName of typesToInitialize) {
-				let typeOptions = options[typeName] as TypeOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptions<unknown>;
 				this.types[typeName].extend(typeOptions);
 			}
 		});
