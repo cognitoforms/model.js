@@ -745,7 +745,7 @@ export function isPropertyOptions<TOptions>(obj: any, check: (options: any) => b
 	return isType<TOptions>(obj, d => getTypeName(d) === "object" && (!check || check(d)));
 }
 
-export interface PropertyConstructor<E extends Type, P> {
+export interface PropertyConstructor<E, P> {
 	new(containingType: TypeOfType<E>, name: string, jstype: PropertyType, isList: boolean, options?: PropertyOptions<E, P>): Property;
 }
 
