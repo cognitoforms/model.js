@@ -503,8 +503,8 @@ export class Type {
 }
 
 export type Value = string | number | Date | boolean;
-export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
-export type PropertyType = ValueType | EntityConstructor | ObjectConstructor;
+export type ValueConstructor = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
+export type PropertyType = ValueConstructor | EntityConstructor | ObjectConstructor;
 
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
@@ -549,11 +549,11 @@ export type TypeExtensionOptions<EntityType> = {
 
 export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
 
-export function isValueType(type: any): type is ValueType {
+export function isValueType(type: any): type is ValueConstructor {
 	return type === String || type === Number || type === Date || type === Boolean;
 }
 
-export function isValue<T = Value | string | number | Date | boolean>(value: any, type: ValueType = null): value is T {
+export function isValue<T = Value | string | number | Date | boolean>(value: any, type: ValueConstructor = null): value is T {
 	if (value == null)
 		return false;
 

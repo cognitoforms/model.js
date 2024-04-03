@@ -1,14 +1,14 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
 import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs, EntityConstructorForType } from "./entity";
-import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeOfType } from "./type";
+import { Type, PropertyType, isEntityType, ValueConstructor, TypeOptions, TypeOfType } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
 import { CultureInfo, formatNumber, parseNumber, formatDate, parseDate, expandDateFormat, getNumberStyle } from "./globalization";
 import { EventScope, EventScopeSettings, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 
-const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
+const valueTypes: { [name: string]: ValueConstructor } = { string: String, number: Number, date: Date, boolean: Boolean };
 
 export class Model {
 	readonly types: { [name: string]: Type };
@@ -27,7 +27,7 @@ export class Model {
 
 	private _readyCallbacks: (() => void)[];
 	private _readyProcessing = false;
-	private readonly _formats: { [name: string]: { [name: string]: Format<ValueType> } };
+	private readonly _formats: { [name: string]: { [name: string]: Format<ValueConstructor> } };
 
 	readonly serializer = new EntitySerializer();
 
