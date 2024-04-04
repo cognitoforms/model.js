@@ -46,17 +46,6 @@ export class Model {
 		}
 	}
 
-	static create<TTypes>(options?: ModelTypeOptions<TTypes> & Required<ModelNamespaceOption<TTypes>> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelWithNamespace<TTypes>>;
-	static create<TTypes>(options?: ModelTypeOptions<TTypes> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelNamespace<TTypes>>;
-	static create<TTypes>(options?: ModelOptions<TTypes>, config?: ModelConfiguration): Promise<ModelOfType<TTypes>> {
-		return new Promise((resolve) => {
-			const model = new Model(options, config);
-			model.ready(() => {
-				resolve(model as ModelOfType<TTypes>);
-			});
-		});
-	}
-
 	/**
 	 * Sets the default locale to use when a model's locale is not explicitly set
 	 * @param locale The default locale
@@ -379,6 +368,17 @@ export class Model {
 		}
 		return jstype;
 	}
+}
+
+export function createModel<TTypes>(options?: ModelTypeOptions<TTypes> & Required<ModelNamespaceOption<TTypes>> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelWithNamespace<TTypes>>;
+export function createModel<TTypes>(options?: ModelTypeOptions<TTypes> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelNamespace<TTypes>>;
+export function createModel<TTypes>(options?: ModelOptions<TTypes>, config?: ModelConfiguration): Promise<ModelOfType<TTypes>> {
+	return new Promise((resolve) => {
+		const model = new Model(options, config);
+		model.ready(() => {
+			resolve(model as ModelOfType<TTypes>);
+		});
+	});
 }
 
 export interface ModelOfType<TTypes> extends Model {

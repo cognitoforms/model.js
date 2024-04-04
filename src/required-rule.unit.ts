@@ -1,10 +1,10 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
 describe("RequiredRule", () => {
 	test("Required boolean", async () => {
-		const { Test } = await Model.create<{
+		const { Test } = await createModel<{
 			Test: {
 				Text: string;
 			}
@@ -25,7 +25,7 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function", async () => {
-		const { Test } = await Model.create<{
+		const { Test } = await createModel<{
 			Test: {
 				Text1: string;
 				Text2: string;
@@ -55,7 +55,7 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required message function", async () => {
-		const { Test } = await Model.create<{
+		const { Test } = await createModel<{
 			Test: {
 				Text1: string;
 				Text2: string;
@@ -91,7 +91,7 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function with custom message", async () => {
-		const { Test } = await Model.create<{
+		const { Test } = await createModel<{
 			Test: {
 				Text1: string;
 				Text2: string;

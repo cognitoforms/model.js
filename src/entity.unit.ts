@@ -1,5 +1,5 @@
 /* eslint-disable no-new */
-import { Model, ModelNamespace, ModelOfType } from "./model";
+import { Model, ModelNamespace, ModelOfType, createModel } from "./model";
 import { Entity, EntityArgsOfType, EntityOfType, EntityConstructorForType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
@@ -60,7 +60,7 @@ type Person = {
 
 function resetModel(ns?: any) {
 	CultureInfo.setup();
-	return Model.create<Namespace>({
+	return createModel<Namespace>({
 		$namespace: ns,
 		$locale: "en",
 		$culture: CultureInfo.CurrentCulture as any,
@@ -642,7 +642,7 @@ describe("Entity", () => {
 		let PersonWithSkillsTypes: ModelNamespace<PersonWithSkillsNamespace>;
 		beforeEach(async () => {
 			PersonWithSkillsTypes = {} as any;
-			await Model.create<PersonWithSkillsNamespace>({
+			await createModel<PersonWithSkillsNamespace>({
 				$namespace: PersonWithSkillsTypes,
 				Skill: {
 					Name: String,
