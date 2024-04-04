@@ -1,33 +1,17 @@
-import { TEntityConstructor } from "./entity";
-import { Model, ModelOptions } from "./model";
+import { createModel } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options: ModelOptions) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("RangeRule", () => {
-	type Namespace = {
-		Person: Person;
-	};
-
 	type Person = {
 		FirstName: string;
 		Age: number;
 	};
 
 	it("can be configured with contant min and max values", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { $namespace: Types } = await createModel<{ Person: Person }>({
+			$namespace: {} as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -60,10 +44,8 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { $namespace: Types } = await createModel<{ Person: Person }>({
+			$namespace: {} as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -89,10 +71,8 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { $namespace: Types } = await createModel<{ Person: Person }>({
+			$namespace: {} as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -123,10 +103,8 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with function min and max values", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { $namespace: Types } = await createModel<{ Person: Person }>({
+			$namespace: {} as any,
 			Person: {
 				FirstName: String,
 				Age: {
@@ -162,12 +140,6 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with dynamic function min and max values", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		type Namespace = {
-			Person: Person;
-		};
-
 		type Person = {
 			FirstName: string;
 			IsAdult: boolean;
@@ -175,8 +147,8 @@ describe("RangeRule", () => {
 			Age: number;
 		};
 
-		await createModel({
-			$namespace: Types as any,
+		const { $namespace: Types } = await createModel<{ Person: Person }>({
+			$namespace: {} as any,
 			Person: {
 				FirstName: String,
 				IsAdult: {
