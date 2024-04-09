@@ -1,6 +1,6 @@
 /* eslint-disable no-new */
 import { Model, ModelNamespace, ModelOfType, createModel } from "./model";
-import { Entity, EntityArgsOfType, EntityOfType, EntityConstructorForType, isEntity } from "./entity";
+import { Entity, EntityArgsOfType, EntityOfType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { ArrayChangeType, updateArray } from "./observable-array";
@@ -58,7 +58,7 @@ type Person = {
 	Salary: number;
 }
 
-function resetModel(ns?: any) {
+function resetModel<TTypes>(ns?: any) {
 	CultureInfo.setup();
 	return createModel<Namespace>({
 		$namespace: ns,
@@ -70,7 +70,7 @@ function resetModel(ns?: any) {
 				type: Number,
 				get: {
 					dependsOn: "Movie.Cast",
-					function(this: EntityOfType<Credits>) {
+					function() {
 						return this.Movie ? this.Movie.Cast.length : 0;
 					}
 				}
@@ -103,7 +103,7 @@ function resetModel(ns?: any) {
 				default() {
 					return this.ReleaseDate ? this.ReleaseDate.getFullYear() : null;
 				},
-				required(this: EntityOfType<Movie>) {
+				required() {
 					return this.ReleaseYear != null && !isNaN(this.ReleaseYear);
 				},
 				dependsOn: "ReleaseDate"
@@ -169,8 +169,8 @@ describe("Entity", () => {
 	let model: ModelOfType<Namespace>;
 	let Types: ModelNamespace<Namespace>;
 	beforeEach(async () => {
-		Types = {} as any;
-		model = await resetModel(Types);
+		model = await resetModel({});
+		Types = model.$namespace!;
 	});
 
 	describe("construction", () => {
@@ -245,6 +245,7 @@ describe("Entity", () => {
 				if (prop.name === "Budget" && value === "BUDGET_1")
 					return Promise.resolve(Budget1);
 			});
+			// TODO: Allow values of any type since async initializers could expect any type
 			var args: EntityArgsOfType<Movie> = { ...Alien };
 			(args as any)["Budget"] = "BUDGET_1";
 			const movie = new Types.Movie(args);
@@ -527,18 +528,11 @@ describe("Entity", () => {
 		});
 
 		it("default values are run when serializing", async () => {
-			type defaultNamespace = {
-				Test: Test;
-			};
-
-			let defaultTypes: { [T in keyof defaultNamespace]: EntityConstructorForType<defaultNamespace[T]> } = {} as any;
-
-			type Test = {
-				A: string;
-			};
-
-			new Model({
-				$namespace: defaultTypes as any,
+			const defaultModel = await createModel<{
+				Test: {
+					A: string;
+				}
+			}>({
 				Test: {
 					A: {
 						type: String,
@@ -547,7 +541,7 @@ describe("Entity", () => {
 				}
 			});
 
-			const instance = new defaultTypes.Test();
+			const instance = new defaultModel.Test();
 			expect(instance.serialize()).toEqual({ "A": "a default" });
 		});
 	});

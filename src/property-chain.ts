@@ -43,7 +43,7 @@ export class PropertyChain implements PropertyPath {
 			}
 
 			// Get the current type of the step
-			currentType = (property.propertyType as EntityConstructorForType<any>).meta;
+			currentType = (property.propertyType as EntityConstructorForType<unknown>).meta;
 			if (parsed[3]) {
 				currentType = rootType.model.types[parsed[3]];
 			}
@@ -343,7 +343,7 @@ function getPropertyChainPathFromIndex(chain: PropertyChain, startIndex: number)
 			}
 		}
 		steps.push(p.name);
-		previousStepType = (p.propertyType as EntityConstructorForType<any>).meta;
+		previousStepType = (p.propertyType as EntityConstructorForType<unknown>).meta;
 	});
 
 	return steps.join(".");

@@ -1,31 +1,14 @@
-import { TEntityConstructor } from "./entity";
-import { Model, ModelOptions } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
-function createModel(options: ModelOptions) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("ListLengthRule", () => {
-	type Namespace = {
-		Test: Test;
-	};
-
-	type Test = {
-		Array: string[];
-	};
-
 	test("Between", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Array: string[]
+			}
+		}>({
 			Test: {
 				Array: {
 					length: {
@@ -36,8 +19,7 @@ describe("ListLengthRule", () => {
 				}
 			}
 		});
-
-		const t = new Types.Test();
+		const t = new Test();
 		expect(t.meta.conditions).toHaveLength(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Please specify between 1 and 2 Array.");
 
@@ -52,10 +34,11 @@ describe("ListLengthRule", () => {
 	});
 
 	test("Min", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Array: string[]
+			}
+		}>({
 			Test: {
 				Array: {
 					length: {
@@ -65,8 +48,7 @@ describe("ListLengthRule", () => {
 				}
 			}
 		});
-
-		const t = new Types.Test();
+		const t = new Test();
 		expect(t.meta.conditions).toHaveLength(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Please specify at least 1 Array.");
 
@@ -75,10 +57,11 @@ describe("ListLengthRule", () => {
 	});
 
 	test("Max", async () => {
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Array: string[]
+			}
+		}>({
 			Test: {
 				Array: {
 					length: {
@@ -88,8 +71,7 @@ describe("ListLengthRule", () => {
 				}
 			}
 		});
-
-		const t = new Types.Test();
+		const t = new Test();
 		expect(t.meta.conditions).toHaveLength(0);
 
 		t.Array.push("1");

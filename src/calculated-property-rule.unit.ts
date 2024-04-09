@@ -1,35 +1,19 @@
-import { EntityOfType, TEntityConstructor } from "./entity";
-import { Model, ModelOptions } from "./model";
+import { EntityConstructorForType } from "./entity";
+import { ModelOfType, createModel } from "./model";
 
 import "./resource-en";
-
-function createModel(options: ModelOptions) {
-	return new Promise<Model>((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
 
 describe("CalculateRule", () => {
 	test("Errors thrown in calculated rules are displayed to the user.", async () => {
 		let consoleOutputs: any[] = [];
 		window.console.warn = jest.fn((s)=> consoleOutputs.push(s.toString()));
 
-		type Namespace = {
-			Test: Test;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		type Test = {
-			Choice: string;
-			Text: string;
-		};
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Choice: string;
+				Text: string;
+			}
+		}>({
 			Test: {
 				Choice: {
 					default: {
@@ -48,8 +32,7 @@ describe("CalculateRule", () => {
 				}
 			}
 		});
-
-		var p = new Types.Test({ Choice: "First", Text: "First" });
+		var p = new Test({ Choice: "First", Text: "First" });
 
 		p.Text = "x";
 
@@ -57,12 +40,6 @@ describe("CalculateRule", () => {
 	});
 
 	describe("default value calculation", () => {
-		type Namespace = {
-			Test: Test;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
 		type Test = {
 			Id: string;
 			Name: string;
@@ -74,9 +51,9 @@ describe("CalculateRule", () => {
 			DefaultedText: string;
 		};
 
+		let Test: EntityConstructorForType<Test>;
 		beforeEach(async () => {
-			await createModel({
-				$namespace: Types as any,
+			({ Test } = await createModel<{ Test: Test }>({
 				Test: {
 					Id: { type: String, identifier: true },
 					Name: {
@@ -119,26 +96,26 @@ describe("CalculateRule", () => {
 						}
 					}
 				}
-			});
+			}));
 		});
 
 		describe("on new instance", () => {
 			it("can be based on other default value", async () => {
-				const entity = await Types.Test.meta.create({});
+				const entity = await Test.meta.create({});
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBe("John Doe");
 			});
 
 			it("is overridden by non-null value provided during construction", async () => {
-				const entity = await Types.Test.meta.create({ Name: "New Name" });
+				const entity = await Test.meta.create({ Name: "New Name" });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBe("New Name");
 			});
 
 			it("is overridden by null value provided during construction", async () => {
-				const entity = await Types.Test.meta.create({ Name: null });
+				const entity = await Test.meta.create({ Name: null });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBeNull();
@@ -146,12 +123,12 @@ describe("CalculateRule", () => {
 
 			describe("number property", () => {
 				it("is defaulted", async () => {
-					const entity = await Types.Test.meta.create({});
+					const entity = await Test.meta.create({});
 					expect(entity.Num).toBe(5);
 				});
 
 				it("is defaulted based on other defaulted property", async () => {
-					const entity = await Types.Test.meta.create({});
+					const entity = await Test.meta.create({});
 					expect(entity.Num2).toBe(5);
 				});
 			});
@@ -159,35 +136,35 @@ describe("CalculateRule", () => {
 
 		describe("on existing instance", () => {
 			it("can be based on other default value", async () => {
-				const entity = await Types.Test.meta.create({ Id: "1" });
+				const entity = await Test.meta.create({ Id: "1" });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBe("John Doe");
 			});
 
 			it("can be based on other default value", async () => {
-				const entity = await Types.Test.meta.create({ Id: "2" });
+				const entity = await Test.meta.create({ Id: "2" });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBe("John Doe");
 			});
 
 			it("is overridden by non-null value provided during construction", async () => {
-				const entity = await Types.Test.meta.create({ Id: "3", Name: "New Name" });
+				const entity = await Test.meta.create({ Id: "3", Name: "New Name" });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBe("New Name");
 			});
 
 			it("is overridden by null value provided during construction", async () => {
-				const entity = await Types.Test.meta.create({ Id: "4", Name: null });
+				const entity = await Test.meta.create({ Id: "4", Name: null });
 
 				expect(entity.Name2).toBe("John Doe");
 				expect(entity.Name).toBeNull();
 			});
 
 			it("updates when a dependent calculation changes", async () => {
-				const entity = await Types.Test.meta.create({ Id: "5", Text: null, DefaultedText: null });
+				const entity = await Test.meta.create({ Id: "5", Text: null, DefaultedText: null });
 
 				entity.update({ Text: "abc" });
 
@@ -198,12 +175,6 @@ describe("CalculateRule", () => {
 	});
 
 	describe("calculated list", () => {
-		type Namespace = {
-			Test: Test;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
 		type Test = {
 			Id: string;
 			Len: number;
@@ -211,16 +182,15 @@ describe("CalculateRule", () => {
 			Nums: number[];
 		};
 
-		let model;
-		beforeEach(() => {
-			model = new Model({
-				$namespace: Types as any,
+		let model: ModelOfType<{ Test: Test }>;
+		beforeEach(async () => {
+			model = await createModel<{ Test: Test }>({
 				Test: {
 					Id: { identifier: true, type: String },
 					Len: {
 						type: Number,
 						default: {
-							function(this: EntityOfType<Test>) {
+							function() {
 								return this.Nums.length;
 							},
 							dependsOn: "Nums"
@@ -231,8 +201,8 @@ describe("CalculateRule", () => {
 						type: "Number[]",
 						get: {
 							function() {
-								const list: any[] = [];
-								for (let i = 0; i < this.Max; i++)
+								const list: number[] = [];
+								for (let i = 0; i < (this.Max || 0); i++)
 									list.push(i+1);
 								return list;
 							},
@@ -260,7 +230,27 @@ describe("CalculateRule", () => {
 	});
 
 	test("calculated list based on overridden property", async () => {
-		const model = new Model({
+		type Action = {
+			IsAllowed: boolean;
+			Name: string;
+		};
+
+		type SubmitAction = {
+			// TODO: Add support for (optional) base type properties
+			Name?: string;
+			IsAllowed: boolean;
+		};
+
+		type Test = {
+			Actions: Action[],
+			AllowedActions: Action[]
+		};
+
+		const model = await createModel<{
+			Action: Action,
+			SubmitAction: SubmitAction,
+			Test: Test
+		}>({
 			Action: {
 				IsAllowed: Boolean,
 				Name: String
@@ -271,7 +261,7 @@ describe("CalculateRule", () => {
 					type: Boolean,
 					get: {
 						function() {
-							return this.Name.length > 3;
+							return this.Name && this.Name.length > 3;
 						},
 						dependsOn: "Name"
 					}

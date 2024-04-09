@@ -10,7 +10,7 @@ export interface PropertyPath {
 	readonly name: string;
 	readonly propertyType: PropertyType;
 	readonly isList: boolean;
-	readonly required: boolean | PropertyBooleanFunction<any> | PropertyBooleanFunctionAndOptions<any>;
+	readonly required: boolean | PropertyBooleanFunction<unknown> | PropertyBooleanFunctionAndOptions<unknown>;
 	readonly path: string;
 	readonly firstProperty: Property;
 	readonly lastProperty: Property;

@@ -158,7 +158,7 @@ export class Model {
 	 * Extends the model with the specified type information.
 	 * @param options The set of model types to add and/or extend.
 	 */
-	extend(options: ModelOptions<any>): void {
+	extend(options: ModelOptions<unknown>): void {
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.prepare(() => {
 			// Namespace
@@ -425,7 +425,7 @@ export type ModelNamespaceOption<TTypes> = {
 	/**
 	 * The object to use as the namespace for model types
 	 */
-	$namespace?: ModelNamespace<TTypes>;
+	$namespace?: Partial<ModelNamespace<TTypes>>;
 }
 
 export type ModelOptions<TTypes> = ModelTypeOptions<TTypes> & ModelNamespaceOption<TTypes> & ModelLocalizationOptions;

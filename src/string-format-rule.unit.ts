@@ -1,27 +1,10 @@
-import { TEntityConstructor } from "./entity";
-import { Model, ModelOptions } from "./model";
+import { createModel } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options: ModelOptions): Promise<Model> {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("StringFormatRule", ()=>{
 	it("format", async () => {
-		type Namespace = {
-			Name: Name;
-			Person: Person;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
 		type Name = {
 			First: string;
 			Last: string;
@@ -31,8 +14,10 @@ describe("StringFormatRule", ()=>{
 			Name: Name;
 		};
 
-		await createModel({
-			$namespace: Types as any,
+		const { Person } = await createModel<{
+			Name: Name;
+			Person: Person;
+		}>({
 			Name: {
 				First: String,
 				Last: String
@@ -44,24 +29,16 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-
-		const p = new Types.Person({ Name: { First: "John", Last: "Doe" } });
+		const p = new Person({ Name: { First: "John", Last: "Doe" } });
 		expect(p.toString("[Name]")).toBe("John Doe");
 	});
 
 	it("Description, reformat, expression", async () => {
-		type Namespace = {
-			Test: Test;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		type Test = {
-			Phone: string;
-		};
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Phone: string;
+			}
+		}>({
 			Test: {
 				Phone: {
 					format: {
@@ -73,8 +50,7 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-
-		const p = new Types.Test({ Phone: "1234567890" });
+		const p = new Test({ Phone: "1234567890" });
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890");
 		p.Phone = "1234567890x1234";
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890x1234");

@@ -391,7 +391,7 @@ export class Type {
 	 * Extends the current type with the specified format, properties and methods
 	 * @param options The options specifying how to extend the type
 	 */
-	extend(options: TypeExtensionOptions<any>): void {
+	extend(options: TypeExtensionOptions<unknown>): void {
 		let type = this;
 
 		// Utility function to convert a path string into a resolved array of Property and PropertyChain instances

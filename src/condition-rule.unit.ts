@@ -1,37 +1,20 @@
-import { EntityOfType, TEntityConstructor } from "./entity";
-import { Model, ModelOptions } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
-function createModel(options: ModelOptions) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("ConditionRule", () => {
 	test("Custom condition", async () => {
-		type Namespace = {
-			Test: Test;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
-		type Test = {
-			Text: string;
-		};
-
-		await createModel({
-			$namespace: Types as any,
+		const { Test } = await createModel<{
+			Test: {
+				Text: string;
+			}
+		}>({
 			Test: {
 				Text: {
 					error: {
 						dependsOn: "Text",
 						code: "Text",
-						function: function(this: Test) {
+						function: function() {
 							if (((this ? this.Text : null) !== null)) {
 								return "Test error message.";
 							}
@@ -41,7 +24,7 @@ describe("ConditionRule", () => {
 				}
 			}
 		});
-		var p = new Types.Test();
+		var p = new Test();
 		expect(p.meta.conditions).toHaveLength(0);
 		p.Text = "x";
 		expect(p.meta.conditions).toHaveLength(1);
@@ -49,16 +32,8 @@ describe("ConditionRule", () => {
 	});
 
 	test("Nested Property- Error appears on referenced field", async () =>{
-		type Namespace = {
-			Test: Test;
-			Section: Section;
-		};
-
-		let Types: { [T in keyof Namespace]: TEntityConstructor<Namespace[T]> } = {} as any;
-
 		type Test = {
 			Section: Section;
-			Text: string;
 			Calculation: string;
 		};
 
@@ -66,8 +41,7 @@ describe("ConditionRule", () => {
 			Text: string;
 		};
 
-		await createModel({
-			$namespace: Types as any,
+		const { Test, Section } = await createModel<{ Test: Test, Section: Section }>({
 			Test: {
 				Section: {
 					type: "Section"
@@ -76,11 +50,11 @@ describe("ConditionRule", () => {
 					type: String,
 					get: {
 						dependsOn: "Section.Text",
-						function() { return this.Section.Text; }
+						function() { return this.Section!.Text; }
 					},
 					error: {
 						dependsOn: "{Calculation, Section.Text}",
-						function: function(this: EntityOfType<Test>) {
+						function: function() {
 							if (((this ? this.Calculation : null) !== null)) {
 								return "Test error message.";
 							}
@@ -96,8 +70,8 @@ describe("ConditionRule", () => {
 				}
 			}
 		});
-		var testForm = new Types.Test({
-			Section: new Types.Section()
+		var testForm = new Test({
+			Section: new Section()
 		});
 		expect(testForm.meta.conditions).toHaveLength(0);
 		testForm.Section!.Text = "x";

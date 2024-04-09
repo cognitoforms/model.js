@@ -1,7 +1,7 @@
 import { EventScope, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
-import { Model } from "./model";
+import { createModel } from "./model";
 
 describe("EventScope", () => {
 	beforeAll(() => CultureInfo.setup());
@@ -51,8 +51,22 @@ describe("EventScope", () => {
 		expect(counter).toBe(1);
 		expect(scope.current).toBeNull();
 	});
-	it("aborts when the maximum scope nesting count is reached", () => {
-		const model = new Model({
+	it("aborts when the maximum scope nesting count is reached", async () => {
+		type Context = {
+			SearchText: string;
+			MatchedUser: UserRef;
+			Users: UserRef[];
+		};
+
+		type UserRef = {
+			Id: string;
+			IsArchived: boolean;
+			FirstName: string;
+			LastName: string;
+			FullName: string;
+		};
+
+		const model = await createModel<{ Context: Context, UserRef: UserRef }>({
 			$namespace: {},
 			$locale: "en",
 			"Context": {
@@ -129,22 +143,27 @@ describe("EventScope", () => {
 
 		const context = new model.$namespace.Context();
 		const user1 = new model.$namespace.UserRef({ FirstName: "Dave", LastName: "Smith", Id: "abc123", IsArchived: true });
-		context.Users.push(user1);
+		context.Users!.push(user1);
 		const user2 = new model.$namespace.UserRef({ FirstName: "Bob", LastName: "Smith", Id: "abc123", IsArchived: false });
 		context.Users.push(user2);
 		context.SearchText = "abc123";
 		expect(context.MatchedUser).not.toBeNull();
-		expect(context.MatchedUser.FullName).toBe("Dave Smith");
-		context.MatchedUser.FirstName = "Bob";
-		// const maxNesting = model.eventScope.settings.maxExitingTransferCount - 1;
-		// const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
+		expect(context.MatchedUser!.FullName).toBe("Dave Smith");
+		context.MatchedUser!.FirstName = "Bob";
 		expect(context.SearchText).toBe("abc123");
 		expect(model.eventScope.current).toBeNull();
 		expect(eventScopeError).not.toBeNull();
 		expect(eventScopeError!.message).toBe("Exceeded max scope event transfer.");
 	});
 	it("aborts when the maximum scope depth is reached", async () => {
-		const model = new Model({
+		const model = await createModel<{
+			User: {
+				FirstName: string;
+				LastName: string;
+				AbbreviateName: boolean;
+				FullName: string;
+			}
+		}>({
 			$namespace: {},
 			$locale: "en",
 			"User": {

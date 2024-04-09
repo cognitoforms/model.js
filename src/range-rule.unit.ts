@@ -10,8 +10,7 @@ describe("RangeRule", () => {
 	};
 
 	it("can be configured with contant min and max values", async () => {
-		const { $namespace: Types } = await createModel<{ Person: Person }>({
-			$namespace: {} as any,
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -22,7 +21,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
+		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
 
 		p.Age = -5;
@@ -44,8 +43,7 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		const { $namespace: Types } = await createModel<{ Person: Person }>({
-			$namespace: {} as any,
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -56,7 +54,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
+		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = -1;
@@ -71,8 +69,7 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		const { $namespace: Types } = await createModel<{ Person: Person }>({
-			$namespace: {} as any,
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -84,7 +81,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		var p = new Types.Person({ FirstName: "Jane", Age: 1 });
+		var p = new Person({ FirstName: "Jane", Age: 1 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 19;
@@ -103,8 +100,7 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with function min and max values", async () => {
-		const { $namespace: Types } = await createModel<{ Person: Person }>({
-			$namespace: {} as any,
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -118,7 +114,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
+		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 17;
@@ -147,8 +143,7 @@ describe("RangeRule", () => {
 			Age: number;
 		};
 
-		const { $namespace: Types } = await createModel<{ Person: Person }>({
-			$namespace: {} as any,
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				IsAdult: {
@@ -172,7 +167,7 @@ describe("RangeRule", () => {
 			}
 		});
 
-		var p = new Types.Person({ FirstName: "Jane", Age: 50 });
+		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
 
 		p.Age = 17;
