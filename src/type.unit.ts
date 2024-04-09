@@ -215,7 +215,7 @@ describe("Type", () => {
 					Leaf: {
 						type: "Branch.Leaf"
 					}
-				}
+				} as any
 			});
 			const branch = await model.types.Branch.create({ Id: 1, Leaf: { LeafId: "1" } }) as any;
 			expect(branch.meta.type.fullName).toBe("Branch");
