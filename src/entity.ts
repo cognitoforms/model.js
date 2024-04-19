@@ -475,28 +475,28 @@ export interface EntityRegisteredEventArgs {
 	entity: Entity;
 }
 
-export interface EntityRegisteredEventArgsForType<EntityType> {
-	entity: EntityOfType<EntityType>;
+export interface EntityRegisteredEventArgsForType<T> {
+	entity: EntityOfType<T>;
 }
 
 export interface EntityInitNewEventArgs {
 	entity: Entity;
 }
 
-export interface EntityInitNewEventArgsForType<EntityType> {
-	entity: EntityOfType<EntityType>;
+export interface EntityInitNewEventArgsForType<T> {
+	entity: EntityOfType<T>;
 }
 
 export interface EntityInitExistingEventArgs {
 	entity: Entity;
 }
 
-export interface EntityInitExistingEventArgsForType<EntityType> {
-	entity: EntityOfType<EntityType>;
+export interface EntityInitExistingEventArgsForType<T> {
+	entity: EntityOfType<T>;
 }
 
-export interface EntityAccessEventHandler<EntityType> {
-	(this: Property, args: EventObject & EntityAccessEventArgsForType<EntityType>): void;
+export interface EntityAccessEventHandler<T> {
+	(this: Property, args: EventObject & EntityAccessEventArgsForType<T>): void;
 }
 
 export interface EntityAccessEventArgs {
@@ -504,12 +504,12 @@ export interface EntityAccessEventArgs {
 	property: Property;
 }
 
-export interface EntityAccessEventArgsForType<EntityType> extends EntityAccessEventArgs {
-	entity: EntityOfType<EntityType>;
+export interface EntityAccessEventArgsForType<T> extends EntityAccessEventArgs {
+	entity: EntityOfType<T>;
 }
 
-export interface EntityChangeEventHandler<EntityType> {
-	(this: Property, args: EventObject & EntityChangeEventArgsForType<EntityType>): void;
+export interface EntityChangeEventHandler<T> {
+	(this: Property, args: EventObject & EntityChangeEventArgsForType<T>): void;
 }
 
 export interface EntityChangeEventArgs {
@@ -519,10 +519,10 @@ export interface EntityChangeEventArgs {
 	newValue: any;
 }
 
-export interface EntityChangeEventArgsForType<EntityType> extends EntityChangeEventArgs {
-	entity: EntityOfType<EntityType>;
+export interface EntityChangeEventArgsForType<T> extends EntityChangeEventArgs {
+	entity: EntityOfType<T>;
 }
 
-export function isEntity<EntityType>(obj): obj is EntityOfType<EntityType> {
+export function isEntity<T>(obj): obj is EntityOfType<T> {
 	return obj && obj.meta && obj.meta.type && obj.meta.type.jstype && isEntityType(obj.meta.type.jstype);
 }

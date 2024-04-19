@@ -544,18 +544,18 @@ interface TypeBasicOptions {
 	$format?: string | Format<Entity>;
 }
 
-export interface RuleOrMethodOptions<EntityType> {
-	function: (this: EntityOfType<EntityType>, ...args: any[]) => any;
+export interface RuleOrMethodOptions<TEntity> {
+	function: (this: EntityOfType<TEntity>, ...args: any[]) => any;
 	dependsOn?: string;
 }
 
-export type RuleOrMethodFunctionOrOptions<EntityType> = ((this: EntityOfType<EntityType>, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
+export type RuleOrMethodFunctionOrOptions<TEntity> = ((this: EntityOfType<TEntity>, ...args: any[]) => any) | RuleOrMethodOptions<TEntity>;
 
-export type TypeExtensionOptionsForType<EntityType> = {
-	[P in keyof EntityType]: ValueConstructorForType<EntityType[P]> | string | PropertyOptions<EntityType, EntityType[P]> | RuleOrMethodFunctionOrOptions<EntityType>;
+export type TypeExtensionOptionsForType<TEntity> = {
+	[P in keyof TEntity]: ValueConstructorForType<TEntity[P]> | string | PropertyOptions<TEntity, TEntity[P]> | RuleOrMethodFunctionOrOptions<TEntity>;
 }
 
-export type TypeOptionsForType<EntityType> = TypeBasicOptions & TypeExtensionOptionsForType<EntityType>;
+export type TypeOptionsForType<TEntity> = TypeBasicOptions & TypeExtensionOptionsForType<TEntity>;
 
 export function isValueType(type: any): type is ValueConstructor {
 	return type === String || type === Number || type === Date || type === Boolean;

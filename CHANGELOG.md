@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - typing: Allow `message` and `error` functions to return `null` or `undefined`.
 - Avoid incorrect TS error because `$namespace` option is an object that does not already contain the model's types.
 ### Changed
-- Add `EntityType` generic type arguments to various types
+- Add `TEntity` generic type arguments to various types
 - Rename `ValueType` -> `ValueConstructor`
 - Removed `EntityType` type alias (use `EntityConstructor` or `EntityConstructorForType` instead)
 ### Added
