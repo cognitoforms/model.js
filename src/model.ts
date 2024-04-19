@@ -1,7 +1,7 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
 import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs, EntityConstructorForType } from "./entity";
-import { Type, PropertyType, isEntityType, ValueConstructor, TypeOptions, TypeOfType } from "./type";
+import { Type, PropertyType, isEntityType, ValueConstructor, TypeOptionsForType, TypeOfType } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
@@ -249,7 +249,7 @@ export class Model {
 					}
 				}
 
-				let typeOptions = options[typeName] as TypeOptions<unknown>;
+				let typeOptions = options[typeName] as TypeOptionsForType<unknown>;
 				let type = this.types[typeName];
 
 				typesToInitialize.push(typeName);
@@ -272,7 +272,7 @@ export class Model {
 
 			// Extend Types
 			for (let typeName of typesToInitialize) {
-				let typeOptions = options[typeName] as TypeOptions<unknown>;
+				let typeOptions = options[typeName] as TypeOptionsForType<unknown>;
 				this.types[typeName].extend(typeOptions);
 			}
 		});
@@ -397,7 +397,7 @@ export type ModelTypeOptions<TTypes> = {
 	/**
 	 * Standard type options ($extends and $format), properties, and methods/rules
 	 */
-	[T in keyof TTypes]: (TypeOptions<TTypes[T]>) | string;
+	[T in keyof TTypes]: (TypeOptionsForType<TTypes[T]>) | string;
 }
 
 export type ModelLocalizationOptions = {

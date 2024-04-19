@@ -40,7 +40,7 @@ export class Type {
 	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
-	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<unknown>) {
+	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptionsForType<unknown>) {
 		this.model = model;
 		this.fullName = fullName;
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
@@ -391,7 +391,7 @@ export class Type {
 	 * Extends the current type with the specified format, properties and methods
 	 * @param options The options specifying how to extend the type
 	 */
-	extend(options: TypeExtensionOptions<unknown>): void {
+	extend(options: TypeExtensionOptionsForType<unknown>): void {
 		let type = this;
 
 		// Utility function to convert a path string into a resolved array of Property and PropertyChain instances
@@ -546,11 +546,11 @@ export interface RuleOrMethodOptions<EntityType> {
 
 export type RuleOrMethodFunctionOrOptions<EntityType> = ((this: EntityOfType<EntityType>, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
 
-export type TypeExtensionOptions<EntityType> = {
+export type TypeExtensionOptionsForType<EntityType> = {
 	[P in keyof EntityType]: ValueConstructorForType<EntityType[P]> | string | PropertyOptions<EntityType, EntityType[P]> | RuleOrMethodFunctionOrOptions<EntityType>;
 }
 
-export type TypeOptions<EntityType> = TypeBasicOptions & TypeExtensionOptions<EntityType>;
+export type TypeOptionsForType<EntityType> = TypeBasicOptions & TypeExtensionOptionsForType<EntityType>;
 
 export function isValueType(type: any): type is ValueConstructor {
 	return type === String || type === Number || type === Date || type === Boolean;
