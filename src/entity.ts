@@ -5,7 +5,7 @@ import { InitializationContext } from "./initilization-context";
 import { ObjectMeta, ObjectMetaOfType } from "./object-meta";
 import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
-import { DefaultSerializationSettings } from "./entity-serializer";
+import { DefaultSerializationSettings, SerializationSettings } from "./entity-serializer";
 import { ObservableArray } from "./observable-array";
 
 export class Entity {
@@ -353,7 +353,7 @@ export class Entity {
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(settings = DefaultSerializationSettings): object {
+	serialize(settings = DefaultSerializationSettings): Record<string, any> {
 		return this.serializer.serialize(this, settings);
 	}
 
@@ -407,6 +407,7 @@ export interface EntityBasePropertiesOfType<T> {
 	meta: ObjectMetaOfType<T>;
 	update(property: string, value?: any): Promise<void>;
 	update(args: EntityArgsOfType<T>): Promise<void>;
+	serialize(settings?: SerializationSettings): T;
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
