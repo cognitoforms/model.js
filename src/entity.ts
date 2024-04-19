@@ -405,6 +405,7 @@ export type EntityDynamicPropertiesOfType<T> = {
 
 export interface EntityBasePropertiesOfType<T> {
 	meta: ObjectMetaOfType<T>;
+	update(property: string, value?: any): Promise<void>;
 	update(args: EntityArgsOfType<T>): Promise<void>;
 	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
 	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
