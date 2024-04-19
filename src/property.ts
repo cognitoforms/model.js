@@ -956,10 +956,7 @@ function Property$ensureInited(property: Property, obj: Entity): void {
 			let setPendingInit = !property.isConstant;
 			Property$init(property, obj, Property$getInitialValue(property));
 			if (property.initializer) {
-				const args: ObjectLookup<any> = {};
-				args[property.name] = property.initializer.call(obj);
-				// TODO: Could this just be obj[property.name] = ...?
-				obj.update(args);
+				obj.update(property.name, property.initializer.call(obj));
 				setPendingInit = false;
 			}
 			// Mark the property as pending initialization if the property value may need to

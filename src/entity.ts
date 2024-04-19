@@ -188,6 +188,7 @@ export class Entity {
 	}
 
 	update(properties: ObjectLookup<any>): Promise<void>;
+	update(property: string, value: any): Promise<void>;
 	update(property: any, value?: any): Promise<void> {
 		let properties: ObjectLookup<any>;
 
