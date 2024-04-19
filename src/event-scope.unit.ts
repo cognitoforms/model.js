@@ -179,8 +179,6 @@ describe("EventScope", () => {
 					type: Boolean,
 					get: {
 						dependsOn: "{FullName,FirstName,LastName}",
-						// Doesn't appear to be supported syntax
-						// defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
 						function(this: any) {
 							return this.FullName === `${this.FirstName.substring(0, 1)}. ${this.LastName}` ? true : this.FullName === this.toString("[FirstName] [LastName]") ? false : null;
 						}
@@ -190,8 +188,6 @@ describe("EventScope", () => {
 					type: "String",
 					get: {
 						dependsOn: "{AbbreviateName,FirstName,LastName}",
-						// Doesn't appear to be supported syntax
-						// defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
 						function(this: any) {
 							// The "Abbreviated" code path will throw an error if FirstName doesn't have a value
 							return this.AbbreviateName ? `${this.FirstName.substring(0, 1)}. ${this.LastName}` : this.toString("[FirstName] [LastName]");
