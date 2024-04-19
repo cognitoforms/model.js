@@ -1,7 +1,7 @@
 import { EventScope, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
-import { Model } from "./model";
+import { createModel } from "./model";
 
 describe("EventScope", () => {
 	beforeAll(() => CultureInfo.setup());
@@ -51,8 +51,22 @@ describe("EventScope", () => {
 		expect(counter).toBe(1);
 		expect(scope.current).toBeNull();
 	});
-	it("aborts when the maximum scope nesting count is reached", () => {
-		const model = new Model({
+	it("aborts when the maximum scope nesting count is reached", async () => {
+		type Context = {
+			SearchText: string;
+			MatchedUser: UserRef;
+			Users: UserRef[];
+		};
+
+		type UserRef = {
+			Id: string;
+			IsArchived: boolean;
+			FirstName: string;
+			LastName: string;
+			FullName: string;
+		};
+
+		const model = await createModel<{ Context: Context, UserRef: UserRef }>({
 			$namespace: {},
 			$locale: "en",
 			"Context": {
@@ -124,27 +138,32 @@ describe("EventScope", () => {
 			}
 		});
 
-		let eventScopeError: Error = null;
+		let eventScopeError: Error | null = null;
 		model.eventScope.onError.subscribe(e => { eventScopeError = e.error; e.preventDefault(); });
 
 		const context = new model.$namespace.Context();
 		const user1 = new model.$namespace.UserRef({ FirstName: "Dave", LastName: "Smith", Id: "abc123", IsArchived: true });
-		context.Users.push(user1);
+		context.Users!.push(user1);
 		const user2 = new model.$namespace.UserRef({ FirstName: "Bob", LastName: "Smith", Id: "abc123", IsArchived: false });
 		context.Users.push(user2);
 		context.SearchText = "abc123";
 		expect(context.MatchedUser).not.toBeNull();
-		expect(context.MatchedUser.FullName).toBe("Dave Smith");
-		context.MatchedUser.FirstName = "Bob";
-		const maxNesting = model.eventScope.settings.maxExitingTransferCount - 1;
-		const expectedCalculationCount = Math.floor(maxNesting / 4); // Each cycle appears to create 4 scopes, so it can calculate no more than maxNesting/4 times
+		expect(context.MatchedUser!.FullName).toBe("Dave Smith");
+		context.MatchedUser!.FirstName = "Bob";
 		expect(context.SearchText).toBe("abc123");
 		expect(model.eventScope.current).toBeNull();
 		expect(eventScopeError).not.toBeNull();
-		expect(eventScopeError.message).toBe("Exceeded max scope event transfer.");
+		expect(eventScopeError!.message).toBe("Exceeded max scope event transfer.");
 	});
 	it("aborts when the maximum scope depth is reached", async () => {
-		const model = new Model({
+		const model = await createModel<{
+			User: {
+				FirstName: string;
+				LastName: string;
+				AbbreviateName: boolean;
+				FullName: string;
+			}
+		}>({
 			$namespace: {},
 			$locale: "en",
 			"User": {
@@ -160,7 +179,6 @@ describe("EventScope", () => {
 					type: Boolean,
 					get: {
 						dependsOn: "{FullName,FirstName,LastName}",
-						defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
 						function(this: any) {
 							return this.FullName === `${this.FirstName.substring(0, 1)}. ${this.LastName}` ? true : this.FullName === this.toString("[FirstName] [LastName]") ? false : null;
 						}
@@ -170,7 +188,6 @@ describe("EventScope", () => {
 					type: "String",
 					get: {
 						dependsOn: "{AbbreviateName,FirstName,LastName}",
-						defaultIfError: undefined, // This is necessary to make sure the rule will fail if it throws an error
 						function(this: any) {
 							// The "Abbreviated" code path will throw an error if FirstName doesn't have a value
 							return this.AbbreviateName ? `${this.FirstName.substring(0, 1)}. ${this.LastName}` : this.toString("[FirstName] [LastName]");
@@ -185,7 +202,7 @@ describe("EventScope", () => {
 			maxEventScopeDepth: 100
 		});
 
-		let eventScopeError: Error = null;
+		let eventScopeError: Error | null = null;
 		model.eventScope.onError.subscribe(e => { eventScopeError = e.error; e.preventDefault(); });
 
 		const user1 = new model.$namespace.User({ FirstName: "Dave", LastName: "Smith" });
@@ -194,6 +211,6 @@ describe("EventScope", () => {
 		expect(user1.meta.conditions.length).toBe(0);
 		expect(user1.AbbreviateName).toBe(true);
 		expect(eventScopeError).not.toBeNull();
-		expect(eventScopeError.message).toBe("Exceeded max scope depth.");
+		expect(eventScopeError!.message).toBe("Exceeded max scope depth.");
 	});
 });

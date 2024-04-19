@@ -1,11 +1,12 @@
 import { Event, EventObject, EventSubscriber } from "./events";
 import { Format } from "./format";
-import { Type, EntityType, isEntityType, getIdFromState } from "./type";
+import { Type, isEntityType, getIdFromState, TypeOfType } from "./type";
 import { InitializationContext } from "./initilization-context";
-import { ObjectMeta } from "./object-meta";
+import { ObjectMeta, ObjectMetaOfType } from "./object-meta";
 import { Property, Property$init, Property$pendingInit, Property$setter } from "./property";
 import { ObjectLookup, entries } from "./helpers";
-import { DefaultSerializationSettings } from "./entity-serializer";
+import { DefaultSerializationSettings, SerializationSettings } from "./entity-serializer";
+import { ObservableArray } from "./observable-array";
 
 export class Entity {
 	static ctorDepth: number = 0;
@@ -330,7 +331,7 @@ export class Entity {
 		// Get the entity format to use
 		let formatter: Format<Entity> = null;
 		if (format) {
-			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityType, format, formatEval);
+			formatter = this.meta.type.model.getFormat<Entity>(this.constructor as EntityConstructor, format, formatEval);
 		}
 		else {
 			formatter = this.meta.type.format;
@@ -353,7 +354,7 @@ export class Entity {
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(settings = DefaultSerializationSettings): object {
+	serialize(settings = DefaultSerializationSettings): Record<string, any> {
 		return this.serializer.serialize(this, settings);
 	}
 
@@ -384,31 +385,118 @@ export class Entity {
 	}
 }
 
-export interface EntityConstructor {
-	new(): Entity;
-	new(properties?: ObjectLookup<any>): Entity; // Construct new instance with state
+export type EntityDynamicPropertiesOfType<T> = {
+    [P in keyof T]:
+		T[P] extends (infer TItem)[]
+			? ObservableArray<(
+				TItem extends string ? string :
+				TItem extends number ? number :
+				TItem extends boolean ? boolean :
+				TItem extends Date ? Date :
+				EntityOfType<TItem>
+			)>
+			: (
+				T[P] extends string ? string :
+				T[P] extends number ? number :
+				T[P] extends boolean ? boolean :
+				T[P] extends Date ? Date :
+				EntityOfType<T[P]>
+			) | null;
+};
+
+export interface EntityBasePropertiesOfType<T> {
+	meta: ObjectMetaOfType<T>;
+	update(property: string, value?: any): Promise<void>;
+	update(args: EntityArgsOfType<T>): Promise<void>;
+	serialize(settings?: SerializationSettings): T;
+	readonly accessed: EventSubscriber<Entity, EntityAccessEventArgsForType<T>>;
+	readonly changed: EventSubscriber<Entity, EntityChangeEventArgsForType<T>>;
 }
 
-export interface EntityConstructorForType<TEntity extends Entity> extends EntityConstructor {
-	new(): TEntity;
-	new(properties?: ObjectLookup<any>): TEntity; // Construct new instance with state
+export type EntityOfType<T> = Entity & EntityBasePropertiesOfType<T> & EntityDynamicPropertiesOfType<T>;
+
+export type EntityArgsOfType<T> = Partial<{
+    -readonly [P in keyof T]:
+		T[P] extends (infer TItem)[]
+			? (
+				TItem extends string ? string[] :
+				TItem extends number ? number[] :
+				TItem extends boolean ? boolean[] :
+				TItem extends Date ? Date[] :
+				(EntityOfType<TItem> | EntityArgsOfType<TItem>)[]
+			)
+			: (
+				T[P] extends string ? string :
+				T[P] extends number ? number :
+				T[P] extends boolean ? boolean :
+				T[P] extends Date ? Date :
+				(EntityOfType<T[P]> | EntityArgsOfType<T[P]>)
+			) | null;
+}>;
+
+export interface EntityConstructor {
+	/**
+	 * Construct a new instance with no initial state specified
+	 */
+	new(): Entity;
+	/**
+	 * Construct an existing instance with persisted state
+	 */
+	new(id: string, args?: ObjectLookup<any>): Entity;
+	/**
+	 * Construct a new instance with initial state
+	 */
+	new(args?: ObjectLookup<any>): Entity;
 	meta: Type;
 }
 
+export type EntityConstructorForType<T> =
+	T extends string ? never :
+	T extends number ? never :
+	T extends boolean ? never :
+	T extends Date ? never :
+	{
+		/**
+		 * Construct a new instance with no initial state specified
+		 */
+		new(): EntityOfType<T>;
+		/**
+		 * Construct an existing instance with persisted state
+		 */
+		new(id: string, args?: EntityArgsOfType<T>): EntityOfType<T>;
+		/**
+		 * Construct a new instance with initial state
+		 */
+		new(args?: EntityArgsOfType<T>): EntityOfType<T>;
+		meta: TypeOfType<T>;
+	};
+
 export interface EntityRegisteredEventArgs {
 	entity: Entity;
+}
+
+export interface EntityRegisteredEventArgsForType<T> {
+	entity: EntityOfType<T>;
 }
 
 export interface EntityInitNewEventArgs {
 	entity: Entity;
 }
 
+export interface EntityInitNewEventArgsForType<T> {
+	entity: EntityOfType<T>;
+}
+
 export interface EntityInitExistingEventArgs {
 	entity: Entity;
 }
 
-export interface EntityAccessEventHandler {
-	(this: Property, args: EventObject & EntityAccessEventArgs): void;
+export interface EntityInitExistingEventArgsForType<T> {
+	entity: EntityOfType<T>;
+}
+
+export interface EntityAccessEventHandler<T> {
+	(this: Property, args: EventObject & EntityAccessEventArgsForType<T>): void;
 }
 
 export interface EntityAccessEventArgs {
@@ -416,8 +504,12 @@ export interface EntityAccessEventArgs {
 	property: Property;
 }
 
-export interface EntityChangeEventHandler {
-	(this: Property, args: EventObject & EntityChangeEventArgs): void;
+export interface EntityAccessEventArgsForType<T> extends EntityAccessEventArgs {
+	entity: EntityOfType<T>;
+}
+
+export interface EntityChangeEventHandler<T> {
+	(this: Property, args: EventObject & EntityChangeEventArgsForType<T>): void;
 }
 
 export interface EntityChangeEventArgs {
@@ -427,6 +519,10 @@ export interface EntityChangeEventArgs {
 	newValue: any;
 }
 
-export function isEntity(obj): obj is Entity {
+export interface EntityChangeEventArgsForType<T> extends EntityChangeEventArgs {
+	entity: EntityOfType<T>;
+}
+
+export function isEntity<T>(obj): obj is EntityOfType<T> {
 	return obj && obj.meta && obj.meta.type && obj.meta.type.jstype && isEntityType(obj.meta.type.jstype);
 }

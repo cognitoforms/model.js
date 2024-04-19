@@ -1,4 +1,4 @@
-import { Entity, EntityConstructorForType, EntityChangeEventArgs } from "./entity";
+import { Entity, EntityConstructor, EntityChangeEventArgs } from "./entity";
 import { PropertyPath } from "./property-path";
 import { Property$pendingInit, Property } from "./property";
 import { Event } from "./events";
@@ -17,7 +17,7 @@ export class Rule {
 	readonly rootType: Type;
 	readonly name: string;
 
-	invocationTypes: RuleInvocationType = 0;
+	invocationTypes: RuleInvocationType = 0 as any;
 	predicates: PropertyPath[] = [];
 	returnValues: Property[] = [];
 
@@ -260,7 +260,7 @@ export interface RuleOptions {
 	/** Array of properties (strings or Property instances) that the rule is responsible for calculating */
 	returns?: Property[];
 
-	rootType?: EntityConstructorForType<Entity>;
+	rootType?: EntityConstructor;
 }
 
 export interface RuleInvocationOptions {

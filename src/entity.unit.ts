@@ -1,21 +1,69 @@
 /* eslint-disable no-new */
-import { Model } from "./model";
-import { Entity, EntityConstructorForType, isEntity } from "./entity";
+import { Model, ModelNamespace, ModelOfType, createModel } from "./model";
+import { Entity, EntityArgsOfType, EntityOfType, isEntity } from "./entity";
 import "./resource-en";
 import { CultureInfo } from "./globalization";
 import { ArrayChangeType, updateArray } from "./observable-array";
 import { createEventObject } from "./events";
 import { Property$pendingInit } from "./property";
 
-let Types: { [name: string]: EntityConstructorForType<Entity> };
+type Namespace = {
+	Credits: Credits,
+	LineItem: LineItem,
+	Budget: Budget,
+	Address: Address,
+	Movie: Movie,
+	Person: Person
+};
 
-function resetModel() {
-	Types = {};
+type Credits = {
+	Movie: Movie;
+	CastSize: number;
+};
+
+type LineItem = {
+	Label: string;
+	Cost: number;
+};
+
+type Budget = {
+	LineItems: LineItem[]
+};
+
+type Address = {
+	City: string;
+	State: string;
+};
+
+type Movie = {
+	Id: string;
+	Title: string;
+	Director: Person;
+	ReleaseDate: Date,
+	ReleaseYear: number;
+	Genres: string[];
+	Credits: Credits;
+	Cast: Person[];
+	Budget: Budget;
+};
+
+type Person = {
+	Id: string;
+	FirstName: string;
+	LastName: string;
+	readonly FullName: string;
+	readonly Species: "Homo sapiens";
+	Movie: Movie;
+	Address: Address;
+	Salary: number;
+}
+
+function resetModel<TTypes>(ns?: any) {
 	CultureInfo.setup();
-	return new Model({
-		$namespace: Types as any,
+	return createModel<Namespace>({
+		$namespace: ns,
 		$locale: "en",
-		$culture: CultureInfo.CurrentCulture,
+		$culture: CultureInfo.CurrentCulture as any,
 		Credits: {
 			Movie: "Movie",
 			CastSize: {
@@ -23,7 +71,7 @@ function resetModel() {
 				get: {
 					dependsOn: "Movie.Cast",
 					function() {
-						return this.Movie.Cast.length;
+						return this.Movie ? this.Movie.Cast.length : 0;
 					}
 				}
 			}
@@ -56,7 +104,7 @@ function resetModel() {
 					return this.ReleaseDate ? this.ReleaseDate.getFullYear() : null;
 				},
 				required() {
-					return !isNaN(this.ReleaseYear);
+					return this.ReleaseYear != null && !isNaN(this.ReleaseYear);
 				},
 				dependsOn: "ReleaseDate"
 			},
@@ -118,9 +166,11 @@ const Alien = {
 };
 
 describe("Entity", () => {
-	let model: Model;
-	beforeEach(() => {
-		model = resetModel();
+	let model: ModelOfType<Namespace>;
+	let Types: ModelNamespace<Namespace>;
+	beforeEach(async () => {
+		model = await resetModel({});
+		Types = model.$namespace!;
 	});
 
 	describe("construction", () => {
@@ -136,11 +186,11 @@ describe("Entity", () => {
 		});
 
 		it("can be constructed with provided state", () => {
-			const movie = new Types.Movie(Alien) as any;
+			const movie = new Types.Movie(Alien);
 
 			expect(movie.Title).toBe(Alien.Title);
-			expect(movie.Director.FirstName).toBe(Alien.Director.FirstName);
-			expect(movie.Director.LastName).toBe(Alien.Director.LastName);
+			expect(movie.Director!.FirstName).toBe(Alien.Director.FirstName);
+			expect(movie.Director!.LastName).toBe(Alien.Director.LastName);
 			// call slice to get rid of observable overrides
 			expect(movie.Genres.slice()).toEqual(Alien.Genres);
 		});
@@ -156,7 +206,7 @@ describe("Entity", () => {
 		});
 
 		it("cannot initialize calculated properties", () => {
-			const person = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" });
+			const person = new Types.Person({ FirstName: "John", LastName: "Doe", FullName: "Jane Doe" } as any);
 			expect(person.FullName).toBe("John Doe");
 		});
 
@@ -195,7 +245,10 @@ describe("Entity", () => {
 				if (prop.name === "Budget" && value === "BUDGET_1")
 					return Promise.resolve(Budget1);
 			});
-			const movie = new Types.Movie({ ...Alien, Budget: "BUDGET_1" });
+			// TODO: Allow values of any type since async initializers could expect any type
+			var args: EntityArgsOfType<Movie> = { ...Alien };
+			(args as any)["Budget"] = "BUDGET_1";
+			const movie = new Types.Movie(args);
 			const expected = { ...Alien, Budget: Budget1 };
 			expect(movie.serialize()).not.toEqual(expected);
 			await movie.initialized;
@@ -248,14 +301,16 @@ describe("Entity", () => {
 
 			const movie = new Types.Movie(Alien);
 
-			const updateTask = movie.update({ Title: "Alien 2", Budget: "BUDGET_1" });
+			// NOTE: as Entity is necessary to avoid TS complaining about "Budget"
+			const updateTask = (movie as Entity).update({ Title: "Alien 2", Budget: "BUDGET_1" });
 
 			expect(movie.Title).toBe("Alien 2");
 			expect(movie.Budget).toBeNull();
 
 			await updateTask;
 
-			expect(movie.Budget.serialize()).toEqual(Budget1);
+			expect(movie.Budget).not.toBeNull();
+			expect(movie.Budget!.serialize()).toEqual(Budget1);
 		});
 
 		it("asynchronous property is initialized before initExisting event published ", async () => {
@@ -267,7 +322,7 @@ describe("Entity", () => {
 			});
 
 			Types.Movie.meta.initExisting.subscribe(({ entity: movie }) => {
-				expect(movie.Budget.serialize()).toEqual(Budget1);
+				expect(movie.Budget!.serialize()).toEqual(Budget1);
 			});
 
 			await Types.Movie.meta.create({ ...Alien, Id: "1", Budget: "BUDGET_1" });
@@ -473,7 +528,11 @@ describe("Entity", () => {
 		});
 
 		it("default values are run when serializing", async () => {
-			const defaultModel = new Model({
+			const defaultModel = await createModel<{
+				Test: {
+					A: string;
+				}
+			}>({
 				Test: {
 					A: {
 						type: String,
@@ -497,12 +556,12 @@ describe("Entity", () => {
 		describe("static", () => {
 			beforeAll(() => {
 				Types.Person.meta.extend({
-					FirstName: { default: _default.Director.FirstName },
-					LastName: { default: _default.Director.LastName }
+					FirstName: { type: String, default: _default.Director.FirstName },
+					LastName: { type: String, default: _default.Director.LastName }
 				});
 
 				Types.Movie.meta.extend({
-					Title: { default: _default.Title }
+					Title: { type: String, default: _default.Title }
 				});
 			});
 
@@ -513,7 +572,7 @@ describe("Entity", () => {
 			});
 
 			it("does not overwrite provided state of existing entity", async () => {
-				const state = { Id: "1", ...Alien };
+				const state = { ...Alien, Id: "1" };
 				const movie = await Types.Movie.meta.create(state);
 
 				expect(movie.serialize()).toEqual(state);
@@ -526,15 +585,15 @@ describe("Entity", () => {
 				calculated.mockReset();
 			});
 
-			beforeAll(() => {
+			beforeEach(() => {
 				Types.Person.meta.extend({
-					FirstName: { default: () => _default.Director.FirstName },
-					LastName: { default: () => _default.Director.LastName }
+					FirstName: { type: String, default: () => _default.Director.FirstName },
+					LastName: { type: String, default: () => _default.Director.LastName }
 				});
 
 				Types.Movie.meta.extend({
-					Title: { default: () => _default.Title },
-					Director: { default: () => new Types.Person() }
+					Title: { type: String, default: () => _default.Title },
+					Director: { type: "Person", default: () => new Types.Person() }
 				});
 			});
 
@@ -545,7 +604,7 @@ describe("Entity", () => {
 			});
 
 			it("does not overwrite initial state of existing entity", async () => {
-				const state = { Id: "1", ...Alien };
+				const state = { ...Alien, Id: "1" };
 				const movie = await Types.Movie.meta.create(state);
 
 				expect(movie.serialize()).toEqual(state);
@@ -559,34 +618,53 @@ describe("Entity", () => {
 	});
 
 	describe("list", () => {
-		const PersonWithSkillsModel = {
-			Skill: {
-				Name: String,
-				Proficiency: {
-					default() { return null; },
-					type: Number
-				}
-			},
-			Person: {
-				Id: { identifier: true, type: String },
-				Skills: {
+		type Person = {
+			Id: string;
+			Skills: Skill[];
+		};
+
+		type Skill = {
+			Name: string;
+			Proficiency: number;
+		};
+
+		type PersonWithSkillsNamespace = {
+			Person: Person;
+			Skill: Skill;
+		};
+
+		let PersonWithSkillsTypes: ModelNamespace<PersonWithSkillsNamespace>;
+		beforeEach(async () => {
+			PersonWithSkillsTypes = {} as any;
+			await createModel<PersonWithSkillsNamespace>({
+				$namespace: PersonWithSkillsTypes,
+				Skill: {
+					Name: String,
+					Proficiency: {
+						default() { return null; },
+						type: Number
+					}
+				},
+				Person: {
 					Id: { identifier: true, type: String },
-					type: "Skill[]",
-					default() {
-						return [{
-							Id: 1,
-							Name: "Climbing",
-							Proficiency: 4
-						},
-						{
-							Id: 2,
-							Name: "Eating",
-							Proficiency: 4
-						}];
+					Skills: {
+						type: "Skill[]",
+						default() {
+							return [{
+								Id: 1,
+								Name: "Climbing",
+								Proficiency: 4
+							},
+							{
+								Id: 2,
+								Name: "Eating",
+								Proficiency: 4
+							}];
+						}
 					}
 				}
-			}
-		};
+			});
+		});
 
 		it("can add/remove primitive items", () => {
 			const movie = new Types.Movie(Alien) as any;
@@ -623,47 +701,40 @@ describe("Entity", () => {
 		});
 
 		it("can set an empty list", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [] });
 			expect(instance.Skills.length).toBe(0);
 		});
 
 		it("Updating a list with an array with less items does not leave extra items in the array", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
-			const skillInstance = await model.types.Skill.create({ Name: "Surfing" }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
+			const skillInstance = await PersonWithSkillsTypes.Skill.meta.create({ Name: "Surfing" }) as any;
 			expect(instance.Skills.length).toBe(2);
 			instance.update({ Skills: [skillInstance] }, null, true);
 			expect(instance.Skills.length).toBe(1);
 		});
 
 		it("runs default rule for list property for new instance with no property value in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 		});
 
 		it("does not runs default rule for list property for new object with empty list in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({ Skills: [] }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({ Skills: [] }) as any;
 			expect(instance.Skills.length).toBe(0);
 		});
 
 		it("runs default rule for list property for existing object with no property value in initial state", async () => {
-			const model = new Model(PersonWithSkillsModel);
-			const instance = await model.types.Person.create({ Id: "test" }) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({ Id: "test" }) as any;
 			expect(instance.Skills.length).toBe(2);
 		});
 
 		it("triggers property change when default calculation runs for list", async () => {
-			const model = new Model(PersonWithSkillsModel);
-
 			const skillsChanged = jest.fn();
-			model.types["Person"].getProperty("Skills").changed.subscribe(skillsChanged);
+			PersonWithSkillsTypes.Person.meta.getProperty("Skills").changed.subscribe(skillsChanged);
 
-			const instance = await model.types.Person.create({}) as any;
+			const instance = await PersonWithSkillsTypes.Person.meta.create({}) as any;
 			expect(instance.Skills.length).toBe(2);
 
 			expect(skillsChanged).toBeCalledTimes(1);
@@ -688,7 +759,7 @@ describe("Entity", () => {
 
 		it("uses format of properties targeted by tokens", () => {
 			const movie = new Types.Movie(Alien);
-			movie.Director.Salary = 100000;
+			movie.Director!.Salary = 100000;
 			expect(movie.toString("[Director]")).toBe("Ridley Scott $100,000.00");
 		});
 	});
@@ -703,13 +774,13 @@ describe("Entity", () => {
 
 		it("nested entity is not considered new when assigned alongside identifier property", () => {
 			const movie = new Types.Movie(Alien);
-			movie.Director.update({
+			movie.Director!.update({
 				Id: "1",
 				Address: { City: "Orlando", State: "Florida" }
 			});
 
-			expect(movie.Director.meta.isNew).toBeFalsy();
-			expect(movie.Director.Address.meta.isNew).toBeFalsy();
+			expect(movie.Director!.meta.isNew).toBeFalsy();
+			expect(movie.Director!.Address!.meta.isNew).toBeFalsy();
 		});
 
 		it("asynchronously resolved nested entity is not considered new when assigned alongside identifier property", async () => {
@@ -718,13 +789,15 @@ describe("Entity", () => {
 					return Promise.resolve({ City: "Orlando", State: "Florida" });
 			});
 			const movie = new Types.Movie(Alien);
-			await movie.Director.update({
+
+			// NOTE: as Entity is necessary to avoid TS complaining about "Address"
+			await (movie.Director as Entity).update({
 				Id: "1",
 				Address: "test_async_address"
 			});
 
-			expect(movie.Director.meta.isNew).toBeFalsy();
-			expect(movie.Director.Address.meta.isNew).toBeFalsy();
+			expect(movie.Director!.meta.isNew).toBeFalsy();
+			expect(movie.Director!.Address!.meta.isNew).toBeFalsy();
 		});
 
 		it("does not affect non-identifying entity", () => {
@@ -734,7 +807,7 @@ describe("Entity", () => {
 		});
 
 		describe("identifying entity", () => {
-			let movie: Entity;
+			let movie: EntityOfType<Movie>;
 
 			beforeEach(() => {
 				movie = new Types.Movie(Alien);	// Movie type has an identifier property
@@ -756,8 +829,8 @@ describe("Entity", () => {
 				it("does not affect nested entities", () => {
 					movie.markPersisted();
 
-					expect(movie.Budget.meta.isNew).toBeTruthy();
-					for (const lineItem of movie.Budget.LineItems)
+					expect(movie.Budget!.meta.isNew).toBeTruthy();
+					for (const lineItem of movie.Budget!.LineItems)
 						expect(lineItem.meta.isNew).toBeTruthy();
 				});
 			});
@@ -770,8 +843,8 @@ describe("Entity", () => {
 				it("marks nested, non-identifying entities as not new", () => {
 					movie.markPersisted();
 
-					expect(movie.Budget.meta.isNew).toBeFalsy();
-					for (const lineItem of movie.Budget.LineItems)
+					expect(movie.Budget!.meta.isNew).toBeFalsy();
+					for (const lineItem of movie.Budget!.LineItems)
 						expect(lineItem.meta.isNew).toBeFalsy();
 				});
 
@@ -780,24 +853,24 @@ describe("Entity", () => {
 
 					movie.markPersisted();
 
-					expect(movie.Credits.meta.isNew).toBeFalsy();
+					expect(movie.Credits!.meta.isNew).toBeFalsy();
 				});
 
 				it("does not affect nested, sovereign entities", () => {
 					movie.markPersisted();
-					expect(movie.Director.meta.isNew).toBeTruthy();
+					expect(movie.Director!.meta.isNew).toBeTruthy();
 
-					movie.Director.update({ Id: "1" });
+					movie.Director!.update({ Id: "1" });
 
 					// Assigning the Director's id will mark it as not new
-					expect(movie.Director.meta.isNew).toBeFalsy();
+					expect(movie.Director!.meta.isNew).toBeFalsy();
 
-					movie.Director.update({ Address: { City: "Orlando", State: "Florida" } });
+					movie.Director!.update({ Address: { City: "Orlando", State: "Florida" } });
 
 					movie.markPersisted();
 
 					// But the Director's Address (an "owned" entity) should not be marked persisted as a result of persisting the Movie
-					expect(movie.Director.Address.meta.isNew).toBeTruthy();
+					expect(movie.Director!.Address!.meta.isNew).toBeTruthy();
 				});
 			});
 		});

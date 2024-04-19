@@ -1,21 +1,21 @@
 import { Event, EventSubscriber } from "./events";
 import { replaceTokens, ObjectLookup } from "./helpers";
-import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs } from "./entity";
-import { Type, PropertyType, isEntityType, ValueType, TypeOptions, TypeExtensionOptions } from "./type";
+import { EntityRegisteredEventArgs, Entity, EntityChangeEventArgs, EntityConstructorForType } from "./entity";
+import { Type, PropertyType, isEntityType, ValueConstructor, TypeOptionsForType, TypeOfType } from "./type";
 import { Format, createFormat } from "./format";
 import { EntitySerializer } from "./entity-serializer";
 import { LocalizedResourcesMap, setDefaultLocale, defineResources, getResource, resourceExists } from "./resource";
 import { CultureInfo, formatNumber, parseNumber, formatDate, parseDate, expandDateFormat, getNumberStyle } from "./globalization";
 import { EventScope, EventScopeSettings, EVENT_SCOPE_DEFAULT_SETTINGS } from "./event-scope";
 
-const valueTypes: { [name: string]: ValueType } = { string: String, number: Number, date: Date, boolean: Boolean };
+const valueTypes: { [name: string]: ValueConstructor } = { string: String, number: Number, date: Date, boolean: Boolean };
 
 export class Model {
 	readonly types: { [name: string]: Type };
 
 	readonly settings: ModelSettings;
 
-	readonly $namespace: any;
+	readonly $namespace: ModelNamespace<any> | null;
 	readonly $locale: string;
 	readonly $resources: LocalizedResourcesMap;
 	readonly $culture: CultureInfo;
@@ -27,11 +27,11 @@ export class Model {
 
 	private _readyCallbacks: (() => void)[];
 	private _readyProcessing = false;
-	private readonly _formats: { [name: string]: { [name: string]: Format<ValueType> } };
+	private readonly _formats: { [name: string]: { [name: string]: Format<ValueConstructor> } };
 
 	readonly serializer = new EntitySerializer();
 
-	constructor(options?: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions, config?: ModelConfiguration) {
+	constructor(options?: ModelOptions<any>, config?: ModelConfiguration) {
 		this.types = {};
 		this.settings = new ModelSettings(config);
 		this.entityRegistered = new Event<Model, EntityRegisteredEventArgs>();
@@ -158,7 +158,7 @@ export class Model {
 	 * Extends the model with the specified type information.
 	 * @param options The set of model types to add and/or extend.
 	 */
-	extend(options: ModelOptions & ModelNamespaceOption & ModelLocalizationOptions): void {
+	extend(options: ModelOptions<unknown>): void {
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.prepare(() => {
 			// Namespace
@@ -249,7 +249,7 @@ export class Model {
 					}
 				}
 
-				let typeOptions = options[typeName] as TypeOptions & TypeExtensionOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptionsForType<unknown>;
 				let type = this.types[typeName];
 
 				typesToInitialize.push(typeName);
@@ -272,7 +272,7 @@ export class Model {
 
 			// Extend Types
 			for (let typeName of typesToInitialize) {
-				let typeOptions = options[typeName] as TypeOptions & TypeExtensionOptions<Entity>;
+				let typeOptions = options[typeName] as TypeOptionsForType<unknown>;
 				this.types[typeName].extend(typeOptions);
 			}
 		});
@@ -348,7 +348,7 @@ export class Model {
 
 		// Otherwise, create and cache the format
 		if (isEntityType(type)) {
-			return (formats[format] = Format.fromTemplate(type.meta, format, formatEval));
+			return (formats[format] = Format.fromTemplate<unknown>(type.meta, format, formatEval)) as unknown as Format<T>;
 		}
 		else {
 			// otherwise, call the format provider to create a new format
@@ -370,15 +370,34 @@ export class Model {
 	}
 }
 
-export interface ModelConstructor {
-	new(createOwnProperties?: boolean): Model;
+export function createModel<TTypes>(options?: ModelTypeOptions<TTypes> & Required<ModelNamespaceOption<TTypes>> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelWithNamespace<TTypes>>;
+export function createModel<TTypes>(options?: ModelTypeOptions<TTypes> & ModelLocalizationOptions, config?: ModelConfiguration): Promise<ModelOfType<TTypes> & ModelNamespace<TTypes>>;
+export function createModel<TTypes>(options?: ModelOptions<TTypes>, config?: ModelConfiguration): Promise<ModelOfType<TTypes>> {
+	return new Promise((resolve) => {
+		const model = new Model(options, config);
+		model.ready(() => {
+			resolve(model as ModelOfType<TTypes>);
+		});
+	});
 }
 
-export type ModelOptions = {
+export interface ModelOfType<TTypes> extends Model {
+	readonly types: { [T in keyof TTypes]: TypeOfType<TTypes[T]> };
+}
+
+export interface ModelWithNamespace<TNamespace> extends Model {
+	readonly $namespace: ModelNamespace<TNamespace>;
+}
+
+export interface ModelConstructor<TNamespace> {
+	new(createOwnProperties?: boolean): ModelOfType<TNamespace>;
+}
+
+export type ModelTypeOptions<TTypes> = {
 	/**
 	 * Standard type options ($extends and $format), properties, and methods/rules
 	 */
-	[name: string]: (TypeOptions & TypeExtensionOptions<Entity>) | string;
+	[T in keyof TTypes]: (TypeOptionsForType<TTypes[T]>) | string;
 }
 
 export type ModelLocalizationOptions = {
@@ -398,12 +417,18 @@ export type ModelLocalizationOptions = {
 	$culture?: CultureInfo | string;
 }
 
-export type ModelNamespaceOption = {
+export type ModelNamespace<TTypes> = {
+	[T in keyof TTypes]: EntityConstructorForType<TTypes[T]>;
+}
+
+export type ModelNamespaceOption<TTypes> = {
 	/**
 	 * The object to use as the namespace for model types
 	 */
-	$namespace?: object;
+	$namespace?: Partial<ModelNamespace<TTypes>>;
 }
+
+export type ModelOptions<TTypes> = ModelTypeOptions<TTypes> & ModelNamespaceOption<TTypes> & ModelLocalizationOptions;
 
 export type ModelConfiguration = {
 

@@ -9,7 +9,7 @@
   "scripts": {
     "type-check": "tsc --noEmit",
     "type-check:watch": "npm run type-check -- --watch",
-    "build:typescript": "tsc",
+    "build:typescript": "rimraf ./@types && rimraf ./lib && tsc",
     "build:esm": "tsc --target es5 --outDir ./esm --module ES2015",
     "build:webpack": "webpack --mode=production",
     "build": "npm run build:typescript && npm run build:esm && npm run build:webpack",

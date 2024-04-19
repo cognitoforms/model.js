@@ -1,15 +1,5 @@
 import { PropertyChain } from "./property-chain";
-import { Model } from "./model";
-import { Type } from "./type";
-
-function createModel(options): Promise<Model> {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
+import { createModel } from "./model";
 
 describe("PropertyChain", () => {
 	it("Doesn't call PropertyChain.testConnection() when not needed", async () => {
@@ -17,7 +7,26 @@ describe("PropertyChain", () => {
 		// we create a model that has some type (Person).This type has multiple properties (GroupName, GroupId, GroupCountry etc...)
 		// that references back to one shared object's (Group) properties
 
-		const model = await createModel({
+		type Person = {
+			Name: string;
+			Group: Group;
+			GroupName: string;
+			GroupId: string;
+			GroupCountry: string;
+			GroupLanguage: string;
+		};
+
+		type Group = {
+			Name: string;
+			Id: string;
+			Country: string;
+			Language: string;
+		};
+
+		const { Person, Group } = await createModel<{
+			Person: Person;
+			Group: Group;
+		}>({
 			Person: {
 				Name: {
 					type: String,
@@ -30,28 +39,28 @@ describe("PropertyChain", () => {
 					type: String,
 					get: {
 					  dependsOn: "Group.Name",
-					  function() { return this.Group.Name; }
+					  function() { return this.Group!.Name; }
 					}
 				},
 				GroupId: {
 					type: String,
 					get: {
 					  dependsOn: "Group.Id",
-					  function() { return this.Group.Id; }
+					  function() { return this.Group!.Id; }
 					}
 				},
 				GroupCountry: {
 					type: String,
 					get: {
 					  dependsOn: "Group.Country",
-					  function() { return this.Group.Country; }
+					  function() { return this.Group!.Country; }
 					}
 				},
 				GroupLanguage: {
 					type: String,
 					get: {
 					  dependsOn: "Group.Language",
-					  function() { return this.Group.Language; }
+					  function() { return this.Group!.Language; }
 					}
 				}
 			},
@@ -63,8 +72,6 @@ describe("PropertyChain", () => {
 			}
 		});
 
-		const Person = model.getJsType("Person");
-
 		// Create multiple Persons (will just sit in memory)
 		// The effect is more pronounced when there are a large number of objects in memory.
 		for (let i = 0; i < 1000; i++) {
@@ -73,7 +80,6 @@ describe("PropertyChain", () => {
 		}
 
 		// Create new Group
-		const Group = model.getJsType("Group");
 		const group = new Group({
 			Name: "Test Group",
 			Id: "XDA-1V9-AM3",
@@ -89,7 +95,7 @@ describe("PropertyChain", () => {
 		// on the Person's container object, which would unnecessarily loop over pooled entities to
 		// see if they are linked to the changed entity via a null property. This is where the slowdown comes into play.
 		// With the fix, we would prevent unnecessarily looping over said entities.
-		for (let p of (Person.meta as Type).known())
+		for (let p of Person.meta.known())
 			p.Group = group;
 
 		//	Assure that testConnection() is not called (we are not unnecessarily looping) on initial assignment

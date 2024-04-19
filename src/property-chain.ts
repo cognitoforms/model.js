@@ -1,4 +1,4 @@
-import { Type, EntityType } from "./type";
+import { Type } from "./type";
 import { Property, PropertyBooleanFunction } from "./property";
 import { PropertyPath, PropertyAccessEventArgs, PropertyChangeEventArgs, PropertyChangeEventHandler, PropertyAccessEventHandler } from "./property-path";
 import { Event, EventSubscriber, EventPublisher } from "./events";
@@ -13,7 +13,7 @@ import { Format } from "./format";
 export class PropertyChain implements PropertyPath {
 	readonly rootType: Type;
 	readonly properties: Property[];
-	readonly required: boolean | PropertyBooleanFunction;
+	readonly required: boolean | PropertyBooleanFunction<unknown>;
 	readonly changed: EventSubscriber<Entity, PropertyChangeEventArgs>;
 	readonly accessed: EventSubscriber<Entity, PropertyAccessEventArgs>;
 
@@ -43,7 +43,7 @@ export class PropertyChain implements PropertyPath {
 			}
 
 			// Get the current type of the step
-			currentType = (property.propertyType as EntityConstructorForType<Entity>).meta;
+			currentType = (property.propertyType as EntityConstructorForType<unknown>).meta;
 			if (parsed[3]) {
 				currentType = rootType.model.types[parsed[3]];
 			}
@@ -343,7 +343,7 @@ function getPropertyChainPathFromIndex(chain: PropertyChain, startIndex: number)
 			}
 		}
 		steps.push(p.name);
-		previousStepType = (p.propertyType as EntityType).meta;
+		previousStepType = (p.propertyType as EntityConstructorForType<unknown>).meta;
 	});
 
 	return steps.join(".");

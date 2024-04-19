@@ -1,20 +1,23 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("StringFormatRule", ()=>{
 	it("format", async () => {
-		const model = await createModel({
+		type Name = {
+			First: string;
+			Last: string;
+		};
+
+		type Person = {
+			Name: Name;
+		};
+
+		const { Person } = await createModel<{
+			Name: Name;
+			Person: Person;
+		}>({
 			Name: {
 				First: String,
 				Last: String
@@ -26,13 +29,16 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Person = model.getJsType("Person");
 		const p = new Person({ Name: { First: "John", Last: "Doe" } });
 		expect(p.toString("[Name]")).toBe("John Doe");
 	});
 
 	it("Description, reformat, expression", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Phone: string;
+			}
+		}>({
 			Test: {
 				Phone: {
 					format: {
@@ -44,7 +50,6 @@ describe("StringFormatRule", ()=>{
 				}
 			}
 		});
-		const Test = model.getJsType("Test");
 		const p = new Test({ Phone: "1234567890" });
 		expect(p.toString("[Phone]")).toBe("(123) 456-7890");
 		p.Phone = "1234567890x1234";

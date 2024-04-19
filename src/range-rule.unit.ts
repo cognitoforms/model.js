@@ -1,20 +1,16 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("RangeRule", () => {
+	type Person = {
+		FirstName: string;
+		Age: number;
+	};
+
 	it("can be configured with contant min and max values", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -24,8 +20,6 @@ describe("RangeRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
@@ -49,7 +43,7 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -59,8 +53,6 @@ describe("RangeRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
@@ -77,11 +69,9 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
-				IsAdult: Boolean,
-				IsCentenarian: Boolean,
 				Age: {
 					label: "[FirstName]'s age",
 					type: Number,
@@ -90,8 +80,6 @@ describe("RangeRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ FirstName: "Jane", Age: 1 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
@@ -112,7 +100,7 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with function min and max values", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				Age: {
@@ -125,8 +113,6 @@ describe("RangeRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range
@@ -150,7 +136,14 @@ describe("RangeRule", () => {
 	});
 
 	it("can be configured with dynamic function min and max values", async () => {
-		const model = await createModel({
+		type Person = {
+			FirstName: string;
+			IsAdult: boolean;
+			IsCentenarian: boolean;
+			Age: number;
+		};
+
+		const { Person } = await createModel<{ Person: Person }>({
 			Person: {
 				FirstName: String,
 				IsAdult: {
@@ -173,8 +166,6 @@ describe("RangeRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ FirstName: "Jane", Age: 50 });
 		expect(p.meta.conditions.length).toBe(0); // initially in range

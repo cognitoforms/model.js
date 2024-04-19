@@ -2,7 +2,7 @@ import { FormatError } from "./format-error";
 import { Property } from "./property";
 import { PropertyChain } from "./property-chain";
 import { Type } from "./type";
-import { Entity } from "./entity";
+import { Entity, EntityOfType } from "./entity";
 import { evalPath, getConstructorName } from "./helpers";
 import { Model } from "./model";
 import { expandDateFormat, formatDate, parseDate, formatNumber, parseNumber, getNumberStyle } from "./globalization";
@@ -82,8 +82,8 @@ export abstract class Format<T> {
 		return new CustomFormat<T>(model, options);
 	}
 
-	static fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<TEntity> {
-		return new ModelFormat<TEntity>(type, template, formatEval);
+	static fromTemplate<TEntity>(type: Type, template: string, formatEval?: (tokenValue: string) => string): Format<EntityOfType<TEntity>> {
+		return new ModelFormat<EntityOfType<TEntity>>(type, template, formatEval);
 	}
 
 	static hasTokens(template: string): boolean {
@@ -93,7 +93,7 @@ export abstract class Format<T> {
 
 export interface FormatConstructor {
 	create<T>(options: CustomFormatOptions<T>): Format<T>;
-	fromTemplate<TEntity extends Entity>(type: Type, template: string, formatEval?: unknown): Format<TEntity>;
+	fromTemplate<TEntity>(type: Type, template: string, formatEval?: unknown): Format<EntityOfType<TEntity>>;
 }
 
 export interface FormatOptions {

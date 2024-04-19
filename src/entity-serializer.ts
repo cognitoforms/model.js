@@ -163,8 +163,8 @@ export class EntitySerializer {
 	 * Produces a JSON-valid object representation of the entity.
 	 * @param entity
 	 */
-	serialize(entity: Entity, settings: SerializationSettings = DefaultSerializationSettings): object {
-		let result: object = {};
+	serialize(entity: Entity, settings: SerializationSettings = DefaultSerializationSettings): Record<string, any> {
+		let result: Record<string, unknown> = {};
 		const type = entity.meta.type;
 		flatMap(this.getPropertyInjectors(type), i => i.inject(entity))
 			.concat(type.properties
@@ -175,7 +175,7 @@ export class EntitySerializer {
 					if (result.hasOwnProperty(pair.key))
 						throw new Error(`Property '${pair.key}' was encountered twice during serialization. Make sure injected properties do not collide with model properties.`);
 
-					(result as any)[pair.key] = pair.value;
+					result[pair.key] = pair.value;
 				}
 			});
 		return result;
@@ -192,7 +192,7 @@ export class EntitySerializer {
 
 		let value: any;
 
-		const resolveEntity = (type: EntityConstructorForType<Entity>, state: any) => {
+		const resolveEntity = <T>(type: EntityConstructorForType<T>, state: any) => {
 			let entity: Entity;
 			let id: any = type.meta.identifier ? state[type.meta.identifier.name] : null;
 			if (id)

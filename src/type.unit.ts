@@ -1,8 +1,19 @@
-import { Model } from "./model";
+import { createModel, ModelOfType } from "./model";
 
 describe("Type", () => {
-	test("identifier property is inherited from baseType", () => {
-		const model = new Model({
+	test("identifier property is inherited from baseType", async () => {
+		type Base = {
+			Id: string;
+		};
+
+		type Sub = {
+			// No additional properties
+		};
+
+		const model = await createModel<{
+			Base: Base,
+			Sub: Sub
+		}>({
 			Base: {
 				Id: {
 					identifier: true,
@@ -19,7 +30,27 @@ describe("Type", () => {
 
 	describe("create", () => {
 		it("should support multilevel async resolution", async () => {
-			const model = new Model({
+			type Sibling = {
+				Id: string;
+				Name: string;
+			};
+
+			type Child = {
+				Id: string;
+				Sibling: Sibling;
+				Name: string;
+			};
+
+			type Parent = {
+				Id: string;
+				Child: Child;
+			};
+
+			const model = await createModel<{
+				Sibling: Sibling,
+				Child: Child;
+				Parent: Parent;
+			}>({
 				Sibling: {
 					Id: { identifier: true, type: String },
 					Name: String
@@ -52,7 +83,25 @@ describe("Type", () => {
 	 * would not prevent further processing of the waiting queue.
 	 */
 		it("should support multilevel async resolution within list items", async () => {
-			const model = new Model({
+			type Lookup = {
+				Id: string;
+				Name: string;
+			};
+
+			type ListItem = {
+				Lookup: Lookup;
+			};
+
+			type Parent = {
+				Id: string;
+				List: ListItem[];
+			};
+
+			const model = await createModel<{
+				Lookup: Lookup;
+				ListItem: ListItem;
+				Parent: Parent;
+			}>({
 				Lookup: {
 					Id: { identifier: true, type: String },
 					Name: String
@@ -95,7 +144,15 @@ describe("Type", () => {
 		});
 
 		it("should throw error when asked to create an entity which already exists", async () => {
-			const model = new Model({
+			type Entity = {
+				Id: string;
+				Name: string;
+				Sibling: Entity
+			};
+
+			const model = await createModel<{
+				Entity: Entity
+			}>({
 				Entity: {
 					Id: { identifier: true, type: String },
 					Name: String,
@@ -108,7 +165,30 @@ describe("Type", () => {
 		});
 
 		it("Extended properties have the correct type", async () => {
-			const model = new Model({
+			type RootLeaf = {
+				LeafId: number;
+			};
+
+			type Root = {
+				Id: number;
+				Leaf: RootLeaf;
+			};
+
+			type BranchLeaf = Partial<RootLeaf> & {
+				LeafId: string;
+			};
+
+			type Branch = Partial<Root> & {
+				Id: number;
+				Leaf: BranchLeaf;
+			};
+
+			const model = await createModel<{
+				"Root.Leaf": RootLeaf;
+				Root: Root;
+				"Branch.Leaf": BranchLeaf;
+				Branch: Branch;
+			}>({
 				"Root.Leaf": {
 					LeafId: {
 						type: Number
@@ -125,15 +205,17 @@ describe("Type", () => {
 				"Branch.Leaf": {
 					$extends: "Root.Leaf",
 					LeafId: {
-						type: String
+						// TODO: New property with different type
+						type: String as any
 					}
 				},
+				// TODO: optional base type propeties
 				Branch: {
 					$extends: "Root",
 					Leaf: {
 						type: "Branch.Leaf"
 					}
-				}
+				} as any
 			});
 			const branch = await model.types.Branch.create({ Id: 1, Leaf: { LeafId: "1" } }) as any;
 			expect(branch.meta.type.fullName).toBe("Branch");
@@ -144,9 +226,17 @@ describe("Type", () => {
 	});
 
 	describe("createIfNotExists", () => {
-		let model: Model;
-		beforeEach(() => {
-			model = new Model({
+		type Entity = {
+			Id: string;
+			Name: string;
+			Sibling: Entity;
+		};
+
+		let model: ModelOfType<{ Entity: Entity }>;
+		beforeEach(async () => {
+			model = await createModel<{
+				Entity: Entity
+			}>({
 				Entity: {
 					Id: { identifier: true, type: String },
 					Name: String,
@@ -168,8 +258,8 @@ describe("Type", () => {
 		});
 
 		it("should return known instance if id is known", () => {
-			const known = model.types.Entity.createSync({ Id: "x", Name: "Test123" });
-			expect(model.types.Entity.createIfNotExists({ Id: "x", Name: "New123" })).toBe(known);
+			const known = model.types.Entity.createSync({ Id: "y", Name: "Test123" });
+			expect(model.types.Entity.createIfNotExists({ Id: "y", Name: "New123" })).toBe(known);
 			expect(known.Name).toBe("Test123");
 		});
 	});

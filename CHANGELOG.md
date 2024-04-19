@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+### Fixed
+- Check `isList` when determining whether to create a list-length or string-length rule.
+- typing: Allow `message` and `error` functions to return `null` or `undefined`.
+- Avoid incorrect TS error because `$namespace` option is an object that does not already contain the model's types.
+### Changed
+- Add `TEntity` generic type arguments to various types
+- Rename `ValueType` -> `ValueConstructor`
+- Removed `EntityType` type alias (use `EntityConstructor` or `EntityConstructorForType` instead)
+### Added
+- Add generic types: `EntityOfType`, `ObjectMetaOfType`, `TypeOfType`, etc.
+- Add `Model.create` method with better type checking and inferencing.
 ## [0.8.45] - 2023-11-21
 ### Changed
 - Use `Object.defineProperty` for fields of `Entity` and `ObjectMeta`.

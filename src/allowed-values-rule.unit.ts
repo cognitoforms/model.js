@@ -1,19 +1,14 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("AllowedValuesRule", () => {
 	test("Prevent the setting of value if value is not in allowedValues list.", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Choice: string;
+			}
+		}>({
 			Test: {
 				Choice: {
 					allowedValues: {
@@ -24,8 +19,7 @@ describe("AllowedValuesRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
+		});
 		var t = new Test({ Choice: "First" });
 		try {
 			t.Choice = "Second";

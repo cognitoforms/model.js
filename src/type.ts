@@ -1,5 +1,5 @@
 import { Model } from "./model";
-import { Entity, EntityConstructorForType, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor } from "./entity";
+import { Entity, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType, EntityInitNewEventArgsForType, EntityInitExistingEventArgsForType, EntityConstructorForType, EntityArgsOfType } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
 import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
@@ -18,7 +18,7 @@ export class Type {
 	// changed without fundamentally changing what it represents
 	readonly model: Model;
 	readonly fullName: string;
-	readonly jstype: EntityType;
+	readonly jstype: EntityConstructor;
 	readonly baseType: Type;
 	readonly derivedTypes: Type[];
 
@@ -40,7 +40,7 @@ export class Type {
 	readonly initExisting: EventSubscriber<Type, EntityInitExistingEventArgs>;
 	// readonly conditionsChanged: EventSubscriber<Type, ConditionTargetsChangedEventArgs>;
 
-	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptions<Entity>) {
+	constructor(model: Model, fullName: string, baseType: Type = null, format: string | Format<Entity>, options?: TypeExtensionOptionsForType<unknown>) {
 		this.model = model;
 		this.fullName = fullName;
 		this.jstype = Type$generateConstructor(this, fullName, baseType, model.settings.useGlobalObject ? getGlobalObject() : null);
@@ -391,7 +391,7 @@ export class Type {
 	 * Extends the current type with the specified format, properties and methods
 	 * @param options The options specifying how to extend the type
 	 */
-	extend(options: TypeExtensionOptions<Entity>): void {
+	extend(options: TypeExtensionOptionsForType<unknown>): void {
 		let type = this;
 
 		// Utility function to convert a path string into a resolved array of Property and PropertyChain instances
@@ -410,7 +410,7 @@ export class Type {
 
 		// Use prepare() to defer property path resolution while the model is being extended
 		this.model.prepare(() => {
-			const isRuleMethod = (value: any): value is RuleOrMethodOptions<Entity> => value.hasOwnProperty("function");
+			const isRuleMethod = (value: any): value is RuleOrMethodOptions<unknown> => value.hasOwnProperty("function");
 
 			// Type Members
 			for (let [name, member] of entries(options)) {
@@ -448,7 +448,7 @@ export class Type {
 
 				// Property
 				else {
-					member = { ...member } as PropertyOptions;
+					member = { ...member } as PropertyOptions<unknown, any>;
 
 					// Get Property
 					let property = this.getProperty(name);
@@ -503,35 +503,65 @@ export class Type {
 }
 
 export type Value = string | number | Date | boolean;
-export type ValueType = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
-export type EntityType = EntityConstructorForType<Entity>;
-export type PropertyType = ValueType | EntityType | ObjectConstructor;
+
+export type ValueConstructor = StringConstructor | NumberConstructor | DateConstructor | BooleanConstructor;
+export type ValueConstructorForType<T> =
+	T extends string ? StringConstructor :
+	T extends number ? NumberConstructor :
+	T extends boolean ? BooleanConstructor :
+	T extends Date ? DateConstructor :
+	never;
+
+export type PropertyType = ValueConstructor | EntityConstructor | ObjectConstructor;
+
+export type PropertyTypeForType<T> = ValueConstructorForType<T> | EntityConstructorForType<T> | ObjectConstructor;
 
 export interface TypeConstructor {
 	new(model: Model, fullName: string, baseType?: Type, origin?: string): Type;
 }
 
-export interface TypeOptions {
+export interface TypeOfType<T> extends Type {
+	readonly jstype: EntityConstructorForType<T>;
+	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgsForType<T>>;
+	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgsForType<T>>;
+	createIfNotExists(state: EntityArgsOfType<T>): EntityOfType<T>;
+	createIfNotExists(state: any): EntityOfType<T>;
+	createSync(state: EntityArgsOfType<T>): EntityOfType<T>;
+	createSync(state: any): EntityOfType<T>;
+	create(state: EntityArgsOfType<T>): Promise<EntityOfType<T>>;
+	create(state: any): Promise<EntityOfType<T>>;
+	register(obj: EntityOfType<T>): void;
+	changeObjectId(oldId: string, newId: string): EntityOfType<T> | void;
+	get(id: string, exactTypeOnly?: boolean): EntityOfType<T>;
+	known(): EntityOfType<T>[];
+	addRule(optionsOrFunction: ((this: EntityOfType<T>) => void) | RuleOptions): Rule;
+	extend(options: TypeExtensionOptionsForType<Partial<T>>): void;
+	extend(options: TypeExtensionOptionsForType<unknown>): void;
+}
+
+interface TypeBasicOptions {
 	$extends?: string;
 	$format?: string | Format<Entity>;
 }
 
-export interface RuleOrMethodOptions<TEntity extends Entity> {
-	function: (this: TEntity, ...args: any[]) => any;
+export interface RuleOrMethodOptions<TEntity> {
+	function: (this: EntityOfType<TEntity>, ...args: any[]) => any;
 	dependsOn?: string;
 }
 
-export type RuleOrMethodFunctionOrOptions<EntityType extends Entity> = ((this: EntityType, ...args: any[]) => any) | RuleOrMethodOptions<EntityType>;
+export type RuleOrMethodFunctionOrOptions<TEntity> = ((this: EntityOfType<TEntity>, ...args: any[]) => any) | RuleOrMethodOptions<TEntity>;
 
-export interface TypeExtensionOptions<EntityType extends Entity> {
-	[name: string]: string | ValueType | PropertyOptions | RuleOrMethodFunctionOrOptions<EntityType>;
+export type TypeExtensionOptionsForType<TEntity> = {
+	[P in keyof TEntity]: ValueConstructorForType<TEntity[P]> | string | PropertyOptions<TEntity, TEntity[P]> | RuleOrMethodFunctionOrOptions<TEntity>;
 }
 
-export function isValueType(type: any): type is ValueType {
+export type TypeOptionsForType<TEntity> = TypeBasicOptions & TypeExtensionOptionsForType<TEntity>;
+
+export function isValueType(type: any): type is ValueConstructor {
 	return type === String || type === Number || type === Date || type === Boolean;
 }
 
-export function isValue<T = Value | string | number | Date | boolean>(value: any, type: ValueType = null): value is T {
+export function isValue<T = Value>(value: any, type: ValueConstructor = null): value is T {
 	if (value == null)
 		return false;
 
@@ -559,7 +589,7 @@ export function isValueArray(value: any): value is Value[] {
 	return isValueType(itemType);
 }
 
-export function isEntityType(type: any): type is EntityType {
+export function isEntityType(type: any): type is EntityConstructorForType<any> {
 	return type.meta && type.meta instanceof Type;
 }
 
@@ -578,7 +608,7 @@ export function Type$generateMethod(type: Type, target: any, name: string, fn: F
 // TODO: Get rid of disableConstruction?
 let disableConstruction = false;
 
-export function Type$generateConstructor(type: Type, fullName: string, baseType: Type = null, global: any = null): EntityConstructorForType<Entity> {
+export function Type$generateConstructor(type: Type, fullName: string, baseType: Type = null, global: any = null): EntityConstructor {
 	// Create namespaces as needed
 	let nameTokens: string[] = fullName.split(".");
 	let token: string = nameTokens.shift();
@@ -598,7 +628,7 @@ export function Type$generateConstructor(type: Type, fullName: string, baseType:
 	// The final name to use is the last token
 	let finalName = token;
 
-	let BaseConstructor: EntityConstructor;
+	let BaseConstructor: EntityConstructor | typeof Entity;
 
 	if (baseType) {
 		BaseConstructor = baseType.jstype;

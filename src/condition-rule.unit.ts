@@ -1,19 +1,14 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("ConditionRule", () => {
 	test("Custom condition", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Text: string;
+			}
+		}>({
 			Test: {
 				Text: {
 					error: {
@@ -28,8 +23,7 @@ describe("ConditionRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
+		});
 		var p = new Test();
 		expect(p.meta.conditions).toHaveLength(0);
 		p.Text = "x";
@@ -38,19 +32,25 @@ describe("ConditionRule", () => {
 	});
 
 	test("Nested Property- Error appears on referenced field", async () =>{
-		const model = await createModel({
+		type Test = {
+			Section: Section;
+			Calculation: string;
+		};
+
+		type Section = {
+			Text: string;
+		};
+
+		const { Test, Section } = await createModel<{ Test: Test, Section: Section }>({
 			Test: {
 				Section: {
-					type: "Section",
-					Test: {
-						type: String
-					}
+					type: "Section"
 				},
 				Calculation: {
 					type: String,
 					get: {
 						dependsOn: "Section.Text",
-						function() { return this.Section.Text; }
+						function() { return this.Section!.Text; }
 					},
 					error: {
 						dependsOn: "{Calculation, Section.Text}",
@@ -69,14 +69,12 @@ describe("ConditionRule", () => {
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
-		const Section = model.getJsType("Section");
+		});
 		var testForm = new Test({
 			Section: new Section()
 		});
 		expect(testForm.meta.conditions).toHaveLength(0);
-		testForm.Section.Text = "x";
+		testForm.Section!.Text = "x";
 		expect(testForm.meta.conditions).toHaveLength(1);
 		expect(testForm.meta.conditions[0].condition.targets).toHaveLength(2);
 	});

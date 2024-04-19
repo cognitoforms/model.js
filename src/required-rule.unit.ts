@@ -1,27 +1,22 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("RequiredRule", () => {
 	test("Required boolean", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Text: string;
+			}
+		}>({
 			Test: {
 				Text: {
 					required: true,
 					type: String
 				}
 			}
-		}) as any;
-		const Test = model.getJsType("Test");
+		});
+
 		const t = new Test();
 		expect(t.meta.conditions.length).toBe(1);
 		expect(t.meta.conditions[0].condition.message).toBe("Text is required.");
@@ -30,7 +25,12 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Text1: string;
+				Text2: string;
+			}
+		}>({
 			Test: {
 				Text1: {
 					required: {
@@ -43,9 +43,8 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
 		const t = new Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";
@@ -56,7 +55,12 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required message function", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Text1: string;
+				Text2: string;
+			};
+		}>({
 			Test: {
 				Text1: {
 					required: {
@@ -75,9 +79,8 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
 		const t = new Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";
@@ -88,7 +91,12 @@ describe("RequiredRule", () => {
 	});
 
 	test("Required function with custom message", async () => {
-		const model = await createModel({
+		const { Test } = await createModel<{
+			Test: {
+				Text1: string;
+				Text2: string;
+			}
+		}>({
 			Test: {
 				Text1: {
 					required: {
@@ -102,9 +110,8 @@ describe("RequiredRule", () => {
 					type: String
 				}
 			}
-		}) as any;
+		});
 
-		const Test = model.getJsType("Test");
 		const t = new Test();
 		expect(t.meta.conditions.length).toBe(0);
 		t.Text2 = "A";

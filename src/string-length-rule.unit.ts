@@ -1,20 +1,15 @@
-import { Model } from "./model";
+import { createModel } from "./model";
 
 // Import English resources
 import "./resource-en";
 
-function createModel(options) {
-	return new Promise((resolve) => {
-		let model = new Model(options);
-		model.ready(() => {
-			resolve(model);
-		});
-	});
-}
-
 describe("StringLengthRule", () => {
 	it("can be configured with contant min and max length", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{
+			Person: {
+				Name: string;
+			}
+		}>({
 			Person: {
 				Name: {
 					type: String,
@@ -22,8 +17,6 @@ describe("StringLengthRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
@@ -45,7 +38,11 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with a constant min value (no max value)", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{
+			Person: {
+				Name: string;
+			}
+		}>({
 			Person: {
 				Name: {
 					type: String,
@@ -53,8 +50,6 @@ describe("StringLengthRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
@@ -68,7 +63,11 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with a constant max value (no min value)", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{
+			Person: {
+				Name: string;
+			}
+		}>({
 			Person: {
 				Name: {
 					type: String,
@@ -76,8 +75,6 @@ describe("StringLengthRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially within range
@@ -91,7 +88,12 @@ describe("StringLengthRule", () => {
 	});
 
 	it("can be configured with dynamic function min and max values", async () => {
-		const model = await createModel({
+		const { Person } = await createModel<{
+			Person: {
+				IsFullName: boolean;
+				Name: string;
+			}
+		}>({
 			Person: {
 				IsFullName: Boolean,
 				Name: {
@@ -108,8 +110,6 @@ describe("StringLengthRule", () => {
 				}
 			}
 		});
-
-		const Person = model.getJsType("Person");
 
 		var p = new Person({ Name: "Jane" });
 		expect(p.meta.conditions.length).toBe(0); // initially in range

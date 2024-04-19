@@ -1,6 +1,6 @@
 /* eslint-disable no-new */
 import { createEventObject } from "./events";
-import { Model } from "./model";
+import { Model, createModel } from "./model";
 import { ArrayChangeType } from "./observable-array";
 import { Property$pendingInit } from "./property";
 
@@ -614,8 +614,14 @@ describe("Property", () => {
 		describe("calculated value property", () => {
 			let calcValuePropModel: Model;
 
-			beforeAll(() => {
-				calcValuePropModel = new Model({
+			beforeAll(async () => {
+				calcValuePropModel = await createModel<{
+					Person: {
+						Id: string;
+						Name: string;
+						Email: string;
+					}
+				}>({
 					Person: {
 						Id: {
 							type: String,
@@ -668,8 +674,14 @@ describe("Property", () => {
 		describe("defaulted value property", () => {
 			let defaultedValuePropModel: Model;
 
-			beforeAll(() => {
-				defaultedValuePropModel = new Model({
+			beforeAll(async () => {
+				defaultedValuePropModel = await createModel<{
+					Person: {
+						Id: string;
+						Name: string;
+						Email: string;
+					}
+				}>({
 					Person: {
 						Id: {
 							type: String,
