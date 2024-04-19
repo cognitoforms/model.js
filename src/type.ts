@@ -1,5 +1,5 @@
 import { Model } from "./model";
-import { Entity, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType, EntityInitNewEventArgsForType, EntityInitExistingEventArgsForType, EntityConstructorForType } from "./entity";
+import { Entity, EntityInitNewEventArgs, EntityInitExistingEventArgs, EntityRegisteredEventArgs, EntityConstructor, EntityOfType, EntityInitNewEventArgsForType, EntityInitExistingEventArgsForType, EntityConstructorForType, EntityArgsOfType } from "./entity";
 import { Property, PropertyOptions, Property$generateOwnProperty, Property$generatePrototypeProperty, Property$generateShortcuts } from "./property";
 import { navigateAttribute, getTypeName, parseFunctionName, ensureNamespace, getGlobalObject, entries } from "./helpers";
 import { Event, EventSubscriber } from "./events";
@@ -524,14 +524,19 @@ export interface TypeOfType<T> extends Type {
 	readonly jstype: EntityConstructorForType<T>;
 	readonly initNew: EventSubscriber<TypeOfType<T>, EntityInitNewEventArgsForType<T>>;
 	readonly initExisting: EventSubscriber<TypeOfType<T>, EntityInitExistingEventArgsForType<T>>;
+	createIfNotExists(state: EntityArgsOfType<T>): EntityOfType<T>;
 	createIfNotExists(state: any): EntityOfType<T>;
+	createSync(state: EntityArgsOfType<T>): EntityOfType<T>;
 	createSync(state: any): EntityOfType<T>;
+	create(state: EntityArgsOfType<T>): Promise<EntityOfType<T>>;
 	create(state: any): Promise<EntityOfType<T>>;
 	register(obj: EntityOfType<T>): void;
 	changeObjectId(oldId: string, newId: string): EntityOfType<T> | void;
 	get(id: string, exactTypeOnly?: boolean): EntityOfType<T>;
 	known(): EntityOfType<T>[];
 	addRule(optionsOrFunction: ((this: EntityOfType<T>) => void) | RuleOptions): Rule;
+	extend(options: TypeExtensionOptionsForType<Partial<T>>): void;
+	extend(options: TypeExtensionOptionsForType<unknown>): void;
 }
 
 interface TypeBasicOptions {
