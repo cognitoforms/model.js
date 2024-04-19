@@ -610,7 +610,6 @@ export class Property implements PropertyPath {
 	}
 }
 
-// TODO: update generic type args
 export interface PropertyOptions<TEntity, TProperty> {
 
 	/** The name or Javascript type of the property */
