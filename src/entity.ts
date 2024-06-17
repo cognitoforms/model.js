@@ -67,7 +67,7 @@ export class Entity {
 			}
 
 			// Raise the initNew or initExisting event on this type and all base types
-			this.initialized = new Promise(resolve => {
+			this.initialized = new Promise((resolve, reject) => {
 				context.whenReady(() => {
 					// Set values of new entity for provided properties
 					if (isNew && properties)
@@ -80,7 +80,13 @@ export class Entity {
 							(t.initExisting as Event<Type, EntityInitExistingEventArgs>).publish(t, { entity: this });
 					}
 
-					context.whenReady(resolve);
+					context.whenReady(resolve, e => {
+						console.warn(`Inner whenReady call was rejected: `, e);
+						reject(e);
+					});
+				}, e => {
+					console.warn(`Initial whenReady call was rejected: `, e);
+					reject(e);
 				});
 			});
 		}
@@ -156,6 +162,9 @@ export class Entity {
 		if (context !== null && !hadContext) {
 			context.whenReady(() => {
 				this._context = null;
+			}, e => {
+				console.warn(`Initial whenReady call was rejected: `, e);
+				// reject(e);
 			});
 		}
 	}
@@ -210,6 +219,7 @@ export class Entity {
 
 			// call markPersistedWhenIdAssigned using whenReady and after the promise resolves to ensure models with no async
 			// behavior produce the correct outcome upon returning from update()
+			// TODO: onrejected?
 			context.whenReady(markPersistedWhenIdAssigned);
 			return context.ready.then(markPersistedWhenIdAssigned);
 		}
