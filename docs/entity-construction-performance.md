@@ -317,7 +317,7 @@ If we decide to optimize this area, the likely best order is:
 
 1. **Profile with real workloads** to confirm the same rule/property patterns dominate.
 2. **Prototype an opt-in bulk-hydration / deferred-init API**.
-3. **Measure whether suppressing/defering `onInit` yields the expected win**.
+3. **Measure whether suppressing/deferring `onInit` yields the expected win**.
 4. **Only then consider deeper engine work** like specialized init-rule dispatch or property-resolution fast paths.
 
 That sequence has the best chance of producing a large gain without destabilizing the existing model semantics.
