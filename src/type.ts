@@ -31,6 +31,7 @@ export class Type {
 	private readonly __known__: ObservableArray<Entity>;
 	private readonly __pool__: { [id: string]: Entity };
 	private readonly __properties__: { [name: string]: Property };
+	private _propertiesList: Property[];
 
 	private readonly _chains: { [path: string]: PropertyChain };
 
@@ -54,6 +55,7 @@ export class Type {
 		Object.defineProperty(this, "_lastId", { enumerable: false, configurable: false, writable: true, value: 0 });
 		Object.defineProperty(this, "_formats", { enumerable: false, configurable: false, writable: true, value: {} });
 		Object.defineProperty(this, "_chains", { enumerable: false, configurable: false, writable: true, value: {} });
+		Object.defineProperty(this, "_propertiesList", { enumerable: false, configurable: false, writable: true, value: null });
 
 		if (baseType) {
 			baseType.derivedTypes.push(this);
@@ -335,15 +337,24 @@ export class Type {
 	}
 
 	get properties(): Property[] {
-		let propertiesObject: { [name: string]: Property } = { ...this.__properties__ };
-		for (var type: Type = this.baseType; type != null; type = type.baseType) {
-			for (var propertyName in type.__properties__) {
-				if (!propertiesObject.hasOwnProperty(propertyName)) {
-					propertiesObject[propertyName] = type.__properties__[propertyName];
+		if (!this._propertiesList) {
+			let propertiesObject: { [name: string]: Property } = { ...this.__properties__ };
+			for (var type: Type = this.baseType; type != null; type = type.baseType) {
+				for (var propertyName in type.__properties__) {
+					if (!propertiesObject.hasOwnProperty(propertyName)) {
+						propertiesObject[propertyName] = type.__properties__[propertyName];
+					}
 				}
 			}
+			this._propertiesList = Object.values(propertiesObject);
 		}
-		return Object.values(propertiesObject);
+		return this._propertiesList;
+	}
+
+	private clearPropertiesCache() {
+		this._propertiesList = null;
+		for (const derivedType of this.derivedTypes)
+			derivedType.clearPropertiesCache();
 	}
 
 	addRule(optionsOrFunction: ((this: Entity) => void) | RuleOptions): Rule {
@@ -449,6 +460,7 @@ export class Type {
 				// Property
 				else {
 					member = { ...member } as PropertyOptions<unknown, any>;
+					this.clearPropertiesCache();
 
 					// Get Property
 					let property = this.getProperty(name);

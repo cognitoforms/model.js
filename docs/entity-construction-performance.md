@@ -141,6 +141,37 @@ Additional rule fan-out comparison:
 - Many small `onInit` rules are somewhat worse than a coalesced rule, but not by an order of magnitude.
 - `createOwnProperties` is a real cost, but it does not appear to be the dominant issue unless enabled in a hot path.
 
+## Behavior-preserving experiment results
+
+Because changing semantics was ruled out, I tried a few small optimizations that should preserve existing behavior and re-ran the same benchmark scenarios.
+
+Tested changes:
+
+1. **Skip property sorting unless the supplied state actually mixes entity and non-entity values**
+   - `src/entity.ts`
+2. **Replace `InitializationContext.execute()`'s marker-promise bookkeeping with a simple synchronous execution counter**
+   - `src/initilization-context.ts`
+3. **Cache the aggregated `Type.properties` array and invalidate it when a type or one of its base types is extended**
+   - `src/type.ts`
+
+Clean baseline vs combined patch (warm runs, 3,000 entities):
+
+| Scenario | Baseline | Combined patch | Delta |
+| --- | ---: | ---: | ---: |
+| Flat entity, 20 props, no rules | ~29.2 ms | ~29.2 ms | ~0% |
+| Flat entity, 20 props, one `onInit` rule touching all props | ~76.1 ms | ~75.5 ms | ~1% faster |
+| Flat entity, 20 props, `init()` functions on props + one `onInit` rule touching all props | ~209.7 ms | ~191.9 ms | ~8% faster |
+| Flat entity, 20 props, `createOwnProperties: true` + one `onInit` rule | ~84.7 ms | ~85.1 ms | noise / neutral |
+| Nested graph + `onInit` summary rule | ~256.9 ms | ~233.2 ms | ~9% faster |
+
+Isolating the individual changes suggested:
+
+- **`InitializationContext` counter** was the main contributor in the initializer-heavy case.
+- **`Type.properties` caching** was the clearest contributor in the nested graph case.
+- **Property sort fast path** looked small but still directionally positive in the nested graph scenario.
+
+This reinforces the earlier conclusion that the biggest remaining costs are still the rule/property initialization pipeline itself. These micro-optimizations help, but they do not fundamentally change the shape of the problem.
+
 ## Likely highest-impact opportunities
 
 These are ordered by probable impact, not by implementation ease.

@@ -3,6 +3,7 @@ import { Property } from "./property";
 
 export class InitializationContext {
 	private newDocument = false;
+	private executing = 0;
 	private tasks = new Set<Promise<any>>();
 	private waiting: (() => void)[] = [];
 
@@ -15,16 +16,15 @@ export class InitializationContext {
 	 * @returns The return value of `action`.
 	 */
 	execute<T>(action: () => T): T {
-		// create a promise which will never actually be resolved, but it will prevent the waiting queue from being processed
-		const marker = new Promise(() => {});
-		this.tasks.add(marker);
+		this.executing++;
 
-		const result = action();
-
-		this.tasks.delete(marker);
-		this.processWaitingQueue();
-
-		return result;
+		try {
+			return action();
+		}
+		finally {
+			this.executing--;
+			this.processWaitingQueue();
+		}
 	}
 
 	wait(task: Promise<any>) {
@@ -39,7 +39,7 @@ export class InitializationContext {
 	}
 
 	get canProcessQueue() {
-		return this.tasks.size === 0;
+		return this.executing === 0 && this.tasks.size === 0;
 	}
 
 	private processWaitingQueue() {

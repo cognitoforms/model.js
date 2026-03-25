@@ -28,6 +28,42 @@ describe("Type", () => {
 		expect(model.types.Sub.identifier).toBe(model.types.Base.identifier);
 	});
 
+	test("properties cache reflects later base type extensions", async () => {
+		type Base = {
+			Id: string;
+		};
+
+		type Sub = {
+			Name: string;
+		};
+
+		const model = await createModel<{
+			Base: Base,
+			Sub: Sub
+		}>({
+			Base: {
+				Id: {
+					identifier: true,
+					type: String
+				}
+			},
+			Sub: {
+				$extends: "Base",
+				Name: String
+			}
+		});
+
+		expect(model.types.Sub.properties.map(p => p.name)).toEqual(["Name", "Id"]);
+
+		model.extend({
+			Base: {
+				Extra: String
+			}
+		} as any);
+
+		expect(model.types.Sub.properties.map(p => p.name)).toEqual(["Name", "Id", "Extra"]);
+	});
+
 	describe("create", () => {
 		it("should support multilevel async resolution", async () => {
 			type Sibling = {

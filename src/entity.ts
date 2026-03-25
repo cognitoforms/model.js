@@ -87,9 +87,25 @@ export class Entity {
 	}
 
 	private static getSortedPropertyData(properties: ObjectLookup<any>) {
-		return entries(properties).sort((a: [string, any], b: [string, any]) => {
-			return Number(b[1] instanceof Entity) - Number(a[1] instanceof Entity);
-		});
+		const propertyData = entries(properties);
+		if (propertyData.length < 2)
+			return propertyData;
+
+		let hasEntityValue = false;
+		let hasNonEntityValue = false;
+		for (const [, value] of propertyData) {
+			if (value instanceof Entity)
+				hasEntityValue = true;
+			else
+				hasNonEntityValue = true;
+
+			if (hasEntityValue && hasNonEntityValue)
+				return propertyData.sort((a: [string, any], b: [string, any]) => {
+					return Number(b[1] instanceof Entity) - Number(a[1] instanceof Entity);
+				});
+		}
+
+		return propertyData;
 	}
 
 	private init(properties: ObjectLookup<any>, context: InitializationContext): void;
